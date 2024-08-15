@@ -27,6 +27,18 @@ export const WebpackCodeLensProvider: CodeLensProvider = {
 
                 const range = new Range(document.positionAt(node.getStart()), document.positionAt(node.getEnd()));
                 lenses.push(new CodeLens(range, {
+                    title: "View Module",
+                    command: "vencord-companion.extractFind",
+                    arguments: [{
+                        type: "extractFind",
+                        data: {
+                            args: args.filter(isNotNull),
+                            type
+                        }
+                    }],
+                    tooltip: "View Module"
+                }))
+                lenses.push(new CodeLens(range, {
                     title: "Test Find",
                     command: "vencord-companion.testFind",
                     arguments: [{ type, args: args.filter(isNotNull) }]

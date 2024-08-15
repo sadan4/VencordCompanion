@@ -19,7 +19,21 @@ export interface FunctionNode {
     type: "function";
     value: string;
 }
-
+export enum ExtractResponseType {
+    OK,
+    ERROR,
+    NOT_FOUND
+}
+export interface ExtractSendData {
+    extractType: string
+    idOrSearch: string | number,
+}
+export interface ExtraceRecieveData {
+    moduleNumber: number,
+    type: string,
+    status: ExtractResponseType,
+    data?: string
+}
 export interface PatchData {
     find: string | null;
     replacement: {

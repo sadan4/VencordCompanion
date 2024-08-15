@@ -1,5 +1,6 @@
 import { RawData, WebSocket, WebSocketServer } from "ws";
-import { outputChannel } from "./shared";
+import { ExtraceRecieveData, ExtractResponseType, outputChannel } from "./shared";
+import { commands, window, workspace } from "vscode";
 
 export let wss: WebSocketServer | undefined;
 
@@ -8,7 +9,7 @@ export const sockets = new Set<WebSocket>();
 const enum CloseCode {
     POLICY_VIOLATION = 1008
 }
-
+export const moduleCache: string[] = [];
 let nonceCounter = 8485;
 
 export async function sendToSockets(data: { type: string, data: unknown; }) {
@@ -96,7 +97,43 @@ export function startWebSocketServer() {
         });
 
         sock.on("message", msg => {
-            outputChannel.appendLine(`[WS] RECV: ${msg}`);
+            try {
+                const rec = JSON.parse(msg.toString());
+                switch (rec.type){
+                    case "extract":{
+                        const data: ExtraceRecieveData = rec;
+                        if(data.status === ExtractResponseType.ERROR){
+                            handleError(data);
+                            return;
+                        }
+                        if(data.data) {
+                            data.data = `//WebpackModule${data.moduleNumber}\n//EXTRACED WEPBACK MODULE ${data.moduleNumber}\n 0,\n${data.data}`
+                        }
+                        workspace.openTextDocument({
+                            content: data.data || "ERROR: NO DATA RECIVED",
+                            language: "javascript"
+                        })
+                        .then( e => 
+                            {
+                                commands.executeCommand("vscode.open", e.uri)
+                                .then(() => setTimeout(() => commands.executeCommand("editor.action.formatDocument"), 500))
+                            }
+                        )
+                        break;
+                    }
+                    case "moduleList": {
+                        // should be something like ["123", "58913"]
+                        const modules: string[] = JSON.parse(rec.data);
+                        moduleCache.length = 0;
+                        moduleCache.push(...modules);
+                        break;
+                    }
+                }
+            }
+            catch (e){
+                console.error(e)
+                outputChannel.appendLine(String(e));
+            }
         });
 
         sock.on("error", err => {
@@ -131,4 +168,8 @@ export function startWebSocketServer() {
 export function stopWebSocketServer() {
     wss?.close();
     wss = undefined;
+}
+
+function handleError(data: ExtraceRecieveData) {
+    window.showErrorMessage(data.data || "NO ERROR DATA");
 }

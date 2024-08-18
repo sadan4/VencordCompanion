@@ -64,13 +64,17 @@ export function activate(context: ExtensionContext) {
 				quickPick.dispose();
 				if (!modId || isNaN(+modId))
 					return vscWindow.showErrorMessage("No Module ID provided")
-				await sendToSockets({
-					type:"extract",
-					data: {
-						extractType: "id",
-						idOrSearch: +modId
-					} as ExtractSendData,
-				})})
+				try {
+					await sendToSockets({
+						type:"extract",
+						data: {
+							extractType: "id",
+							idOrSearch: +modId
+						} as ExtractSendData,
+					})
+				} catch (error) {
+					vscWindow.showErrorMessage(String(error))
+				}})
 				
 		}),
 		commands.registerCommand("vencord-companion.extractSearch", async (args: string) => {
@@ -85,13 +89,17 @@ export function activate(context: ExtensionContext) {
 			const input = await window.showInputBox();
 			if (!input)
 				return void window.showErrorMessage("No Input Provided")
-			await sendToSockets({
-				type: "extract",
-				data: {
-					extractType: "search",
-					idOrSearch: input
-				}
-			})
+			try {
+				await sendToSockets({
+					type: "extract",
+					data: {
+						extractType: "search",
+						idOrSearch: input
+					}
+				})
+			} catch (error) {
+				vscWindow.showErrorMessage(String(error))
+			}
 		}),
 		commands.registerCommand("vencord-companion.testPatch", async (patch: PatchData) => {
 			try {

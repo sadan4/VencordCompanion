@@ -1,5 +1,5 @@
 import { RawData, WebSocket, WebSocketServer } from "ws";
-import { ExtraceRecieveData, ExtractResponseType, outputChannel } from "./shared";
+import { ExtraceRecieveData, outputChannel } from "./shared";
 import { commands, window, workspace } from "vscode";
 
 export let wss: WebSocketServer | undefined;
@@ -22,6 +22,7 @@ export async function sendToSockets(data: { type: string, data: unknown; }) {
 
     const promises = Array.from(sockets, sock => new Promise<void>((resolve, reject) => {
         const onMessage = (data: RawData) => {
+            console.log("b");
             const msg = data.toString("utf-8");
             try {
                 var parsed = JSON.parse(msg);
@@ -97,17 +98,14 @@ export function startWebSocketServer() {
         });
 
         sock.on("message", msg => {
+            console.log("a");
             try {
                 const rec = JSON.parse(msg.toString());
                 switch (rec.type){
                     case "extract":{
                         const data: ExtraceRecieveData = rec;
-                        if(data.status === ExtractResponseType.ERROR){
-                            handleError(data);
-                            return;
-                        }
                         if(data.data) {
-                            data.data = `//WebpackModule${data.moduleNumber}\n//EXTRACED WEPBACK MODULE ${data.moduleNumber}\n 0,\n${data.data}`
+                            data.data = `//WebpackModule${data.moduleNumber}\n${data.find ? `//OPEN FULL MODULE: ${data.moduleNumber}\n`: ""}//EXTRACED WEPBACK MODULE ${data.moduleNumber}\n 0,\n${data.data}`
                         }
                         workspace.openTextDocument({
                             content: data.data || "ERROR: NO DATA RECIVED",
@@ -123,9 +121,8 @@ export function startWebSocketServer() {
                     }
                     case "moduleList": {
                         // should be something like ["123", "58913"]
-                        const modules: string[] = JSON.parse(rec.data);
                         moduleCache.length = 0;
-                        moduleCache.push(...modules);
+                        moduleCache.push(...rec.data);
                         break;
                     }
                 }

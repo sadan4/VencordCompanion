@@ -1,6 +1,7 @@
 import { RawData, WebSocket, WebSocketServer } from "ws";
 import { ExtraceRecieveData, outputChannel } from "./shared";
 import { commands, window, workspace } from "vscode";
+import format from "./format";
 
 export let wss: WebSocketServer | undefined;
 
@@ -97,26 +98,24 @@ export function startWebSocketServer() {
             sockets.delete(sock);
         });
 
-        sock.on("message", msg => {
+        sock.on("message", async msg => {
             console.log("a");
             try {
                 const rec = JSON.parse(msg.toString());
-                switch (rec.type){
-                    case "extract":{
+                switch (rec.type) {
+                    case "extract": {
                         const data: ExtraceRecieveData = rec;
-                        if(data.data) {
-                            data.data = `//WebpackModule${data.moduleNumber}\n${data.find ? `//OPEN FULL MODULE: ${data.moduleNumber}\n`: ""}//EXTRACED WEPBACK MODULE ${data.moduleNumber}\n 0,\n${data.data}`
+                        if (data.data) {
+                            data.data = `//WebpackModule${data.moduleNumber}\n${data.find ? `//OPEN FULL MODULE: ${data.moduleNumber}\n` : ""}//EXTRACED WEPBACK MODULE ${data.moduleNumber}\n 0,\n${data.data}`
                         }
                         workspace.openTextDocument({
-                            content: data.data || "ERROR: NO DATA RECIVED",
+                            content: await format(data.data) || "ERROR: NO DATA RECIVED",
                             language: "javascript"
                         })
-                        .then( e => 
-                            {
+                            .then(e => {
                                 commands.executeCommand("vscode.open", e.uri)
-                                .then(() => setTimeout(() => commands.executeCommand("editor.action.formatDocument"), 500))
                             }
-                        )
+                            )
                         break;
                     }
                     case "moduleList": {
@@ -127,7 +126,7 @@ export function startWebSocketServer() {
                     }
                 }
             }
-            catch (e){
+            catch (e) {
                 console.error(e)
                 outputChannel.appendLine(String(e));
             }

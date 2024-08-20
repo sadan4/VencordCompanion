@@ -49,6 +49,14 @@
         },
         "commands": [
             {
+                "command": "vencord-companion.diffModuleSearch",
+                "title": "Diff Module Search"
+            },
+            {
+                "command": "vencord-companion.diffModule",
+                "title": "Diff Module"
+            },
+            {
                 "command": "vencord-companion.extract",
                 "title": "Extract"
             },

@@ -1,6 +1,6 @@
 import { RawData, WebSocket, WebSocketServer } from "ws";
 import { ExtraceRecieveData, outputChannel } from "./shared";
-import { commands, window, workspace } from "vscode";
+import { commands, Uri, window, workspace } from "vscode";
 import format from "./format";
 
 export let wss: WebSocketServer | undefined;
@@ -99,17 +99,23 @@ export function startWebSocketServer() {
         });
 
         sock.on("message", async msg => {
-            console.log("a");
             try {
                 const rec = JSON.parse(msg.toString());
                 switch (rec.type) {
+                    case "diff": {
+                        const { data , moduleNumber} = rec;
+                        const sourceUri = mkStringUri(await format("0," + data.source));
+                        const patchedUri = mkStringUri(await format("0," + data.patched));
+                        commands.executeCommand("vscode.diff", sourceUri, patchedUri, "Patch Diff: " + moduleNumber)
+                        break;
+                    }
                     case "extract": {
                         const data: ExtraceRecieveData = rec;
                         if (data.data) {
                             data.data = `//WebpackModule${data.moduleNumber}\n${data.find ? `//OPEN FULL MODULE: ${data.moduleNumber}\n` : ""}//EXTRACED WEPBACK MODULE ${data.moduleNumber}\n 0,\n${data.data}`
                         }
                         workspace.openTextDocument({
-                            content: await format(data.data) || "ERROR: NO DATA RECIVED",
+                            content: await format(data.data || "//ERROR: NO DATA RECIVED\n//This module may be lazy loaded"),
                             language: "javascript"
                         })
                             .then(e => {
@@ -169,3 +175,12 @@ export function stopWebSocketServer() {
 function handleError(data: ExtraceRecieveData) {
     window.showErrorMessage(data.data || "NO ERROR DATA");
 }
+function mkStringUri(patched: any) {
+    console.log(patched)
+    const SUFFIX = ".js"
+    const PREFIX = "vencord-companion://b64string/"
+    const a = Buffer.from(patched)
+    console.log(a.toString("base64url"))
+    return Uri.parse(PREFIX + a.toString("base64url") + SUFFIX);
+}
+

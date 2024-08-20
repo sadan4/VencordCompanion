@@ -155,17 +155,23 @@ export class PatchCodeLensProvider implements CodeLensProvider {
 
                 const range = new Range(document.positionAt(patch.properties.pos), document.positionAt(patch.properties.end));
                 lenses.push(new CodeLens(range, {
-                    title: "View Module", 
+                    title: "View Module",
                     command: "vencord-companion.extractSearch",
                     arguments: [data.find],
                     tooltip: "View Module"
                 }))
                 lenses.push(new CodeLens(range, {
-                        title: "Test Patch",
-                        command: "vencord-companion.testPatch",
-                        arguments: [data],
-                        tooltip: "Test Patch",
-                    }));
+                    title: "Diff Module",
+                    command: "vencord-companion.diffModuleSearch",
+                    arguments: [data.find],
+                    tooltip: "Diff Module"
+                }))
+                lenses.push(new CodeLens(range, {
+                    title: "Test Patch",
+                    command: "vencord-companion.testPatch",
+                    arguments: [data],
+                    tooltip: "Test Patch"
+                }));
             }
             return lenses;
         }

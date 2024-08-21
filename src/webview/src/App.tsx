@@ -5,7 +5,6 @@ import data from "./data.json"
 if(window.reporterData === undefined)
   //@ts-ignore
   window.reporterData = data
-debugger;
 function App() {
   return (
     <ReporterSections/>

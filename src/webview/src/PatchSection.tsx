@@ -1,16 +1,19 @@
-import { Patch } from "./types";
+import Patch from "./Patch";
+import { Patch as IPatch } from "./types";
 
 interface props {
-    data: Patch[]
+    data: IPatch[]
     name: string
 }
-export default function(props: props){
+function PatchSection(props: props){
+    const data = props.data.sort((a, b) => a.plugin.localeCompare(b.plugin))
     return <>
     <h2>
         {props.name}
     </h2>
-    {
-        JSON.stringify(props)
-    }
+    {props.data.length === 0 ? "No Patches Errored" : data.map(x => <Patch patch={x}/>)}
+
     </>
 }
+
+export default PatchSection

@@ -28,7 +28,7 @@ export interface Patch {
 
 export type TypeWebpackSearchHistory = "find" | "findByProps" | "findByCode" | "findStore" | "findComponent" | "findComponentByCode" | "findExportedComponent" | "waitFor" | "waitForComponent" | "waitForStore" | "proxyLazyWebpack" | "LazyComponentWebpack" | "extractAndLoadChunks" | "mapMangledModule";
 
-interface EvaledPatch extends Patch {
+export interface EvaledPatch extends Patch {
     id: number | string;
 }
 

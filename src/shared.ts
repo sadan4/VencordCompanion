@@ -31,6 +31,7 @@ export interface ExtraceRecieveData {
     find?: boolean
 }
 export interface PatchData {
+    findType: FindType;
     find: string | null;
     replacement: {
         match: StringNode | RegexNode | null;
@@ -42,3 +43,8 @@ export interface FindData {
     type: string;
     args: Array<StringNode | FunctionNode>;
 }
+export enum FindType {
+    STRING,
+    REGEX
+}
+

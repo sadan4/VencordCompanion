@@ -1,9 +1,9 @@
-import { commands, ExtensionContext, languages, QuickPickItem, window as vscWindow, window, workspace } from "vscode";
+import { commands, ExtensionContext, languages, QuickPickItem,  window as vscWindow, window, workspace } from "vscode";
 import { PatchCodeLensProvider } from "./PatchCodeLensProvider";
-import { ExtractSendData, FindData, PatchData } from "./shared";
+import { ExtractSendData, FindData, FindType, PatchData } from "./shared";
 import { WebpackCodeLensProvider } from "./WebpackCodeLensProvider";
 import { moduleCache, sendToSockets, startWebSocketServer, stopWebSocketServer } from "./webSocketServer";
-import generateFinds from "./findGenerator";
+import { startReporter } from "./reporter";
 
 export function activate(context: ExtensionContext) {
 	startWebSocketServer();
@@ -17,6 +17,7 @@ export function activate(context: ExtensionContext) {
 		languages.registerCodeLensProvider({ language: "typescript" }, WebpackCodeLensProvider),
 		languages.registerCodeLensProvider({ language: "typescriptreact" }, WebpackCodeLensProvider),
 
+		commands.registerCommand("vencord-companion.runReporter", startReporter),
 		workspace.registerTextDocumentContentProvider("vencord-companion", {
 			async provideTextDocumentContent(uri) {
 				console.log(uri)
@@ -26,8 +27,8 @@ export function activate(context: ExtensionContext) {
 			},
 		}),
 
-		commands.registerCommand("vencord-companion.generateFinds", async (args) => {
-			console.log(generateFinds());
+		commands.registerCommand("vencord-companion.generateFinds", async () => {
+				// console.log(generateFinds());
 		}),
 		commands.registerCommand("vencord-companion.diffModule", async args => {
 			if (args)
@@ -74,12 +75,13 @@ export function activate(context: ExtensionContext) {
 
 
 		}),
-		commands.registerCommand("vencord-companion.diffModuleSearch", async (args:string) => {
+		commands.registerCommand("vencord-companion.diffModuleSearch", async (args: string, findType: FindType) => {
 			if (args)
 				return sendToSockets({
 					type: "diff",
 					data: {
 						extractType: "search",
+						findType,
 						idOrSearch: args
 					}
 				})
@@ -91,6 +93,7 @@ export function activate(context: ExtensionContext) {
 					type: "diff",
 					data: {
 						extractType: "search",
+						findType: FindType.STRING,
 						idOrSearch: input
 					}
 				})
@@ -160,12 +163,13 @@ export function activate(context: ExtensionContext) {
 			})
 
 		}),
-		commands.registerCommand("vencord-companion.extractSearch", async (args: string) => {
+		commands.registerCommand("vencord-companion.extractSearch", async (args: string, findType: FindType) => {
 			if (args)
 				return sendToSockets({
 					type: "extract",
 					data: {
 						extractType: "search",
+						findType,
 						idOrSearch: args
 					}
 				})
@@ -177,6 +181,7 @@ export function activate(context: ExtensionContext) {
 					type: "extract",
 					data: {
 						extractType: "search",
+						findType: FindType.STRING,
 						idOrSearch: input
 					}
 				})

@@ -1,13 +1,16 @@
-import { ArrayLiteralExpression, createSourceFile, Expression, IntersectionTypeNode, isArrayLiteralExpression, isCallExpression, isExportAssignment, isIdentifier, isIntersectionTypeNode, isObjectLiteralExpression, isPropertyAssignment, isStringLiteral, isTypeReferenceNode, isVariableDeclaration, isVariableStatement, Node, ObjectLiteralExpression, ScriptTarget, TypeReferenceNode } from "typescript";
+import { ArrayLiteralExpression, createSourceFile, Expression, IntersectionTypeNode, isArrayLiteralExpression, isCallExpression, isExportAssignment, isIdentifier, isIntersectionTypeNode, isObjectLiteralExpression, isPropertyAssignment, isRegularExpressionLiteral, isStringLiteral, isTypeReferenceNode, isVariableDeclaration, isVariableStatement, Node, ObjectLiteralExpression, ScriptTarget, TypeReferenceNode } from "typescript";
 import { CodeLens, CodeLensProvider, Range, TextDocument } from "vscode";
 import { hasName, isNotNull, tryParseFunction, tryParseRegularExpressionLiteral, tryParseStringLiteral } from "./helpers";
-import { PatchData } from "./shared";
-
+import { FindType, PatchData } from "./shared";
 function parseFind(patch: ObjectLiteralExpression) {
     const find = patch.properties.find(p => hasName(p, "find"));
-    if (!find || !isPropertyAssignment(find) || !isStringLiteral(find.initializer)) return null;
+    if(!find || !isPropertyAssignment(find)) return null;
+    if (!(isStringLiteral(find.initializer) || isRegularExpressionLiteral(find.initializer))) return null;
 
-    return find.initializer.text;
+    return {
+        findType: isStringLiteral(find.initializer) ? FindType.STRING : FindType.REGEX,
+        find: find.initializer.text
+    }
 }
 
 function parseMatch(node: Expression) {
@@ -56,7 +59,7 @@ function parsePatch(document: TextDocument, patch: ObjectLiteralExpression): Pat
     if (!replacement || !find) return null;
 
     return {
-        find,
+        ...find,
         replacement
     };
 }
@@ -157,13 +160,13 @@ export class PatchCodeLensProvider implements CodeLensProvider {
                 lenses.push(new CodeLens(range, {
                     title: "View Module",
                     command: "vencord-companion.extractSearch",
-                    arguments: [data.find],
+                    arguments: [data.find, data.findType],
                     tooltip: "View Module"
                 }))
                 lenses.push(new CodeLens(range, {
                     title: "Diff Module",
                     command: "vencord-companion.diffModuleSearch",
-                    arguments: [data.find],
+                    arguments: [data.find, data.findType],
                     tooltip: "Diff Module"
                 }))
                 lenses.push(new CodeLens(range, {

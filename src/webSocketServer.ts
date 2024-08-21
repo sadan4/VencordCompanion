@@ -1,7 +1,8 @@
 import { RawData, WebSocket, WebSocketServer } from "ws";
 import { ExtraceRecieveData, outputChannel } from "./shared";
-import { commands, Uri, window, workspace } from "vscode";
+import { commands, Uri, workspace } from "vscode";
 import format from "./format";
+import { handleAfterRecive } from "./reporter";
 
 export let wss: WebSocketServer | undefined;
 
@@ -102,6 +103,14 @@ export function startWebSocketServer() {
             try {
                 const rec = JSON.parse(msg.toString());
                 switch (rec.type) {
+                    case "report": {
+                        workspace.openTextDocument({
+                            content: JSON.stringify(rec.data),
+                            language: "json"
+                        })
+                        handleAfterRecive();
+                        break;
+                    }
                     case "diff": {
                         const { data , moduleNumber} = rec;
                         const sourceUri = mkStringUri(await format("0," + data.source));
@@ -172,12 +181,9 @@ export function stopWebSocketServer() {
     wss = undefined;
 }
 
-function handleError(data: ExtraceRecieveData) {
-    window.showErrorMessage(data.data || "NO ERROR DATA");
-}
-function mkStringUri(patched: any) {
+function mkStringUri(patched: any, filetype = "js") {
     console.log(patched)
-    const SUFFIX = ".js"
+    const SUFFIX = "." + filetype
     const PREFIX = "vencord-companion://b64string/"
     const a = Buffer.from(patched)
     console.log(a.toString("base64url"))

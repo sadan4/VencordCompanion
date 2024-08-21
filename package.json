@@ -49,12 +49,20 @@
         },
         "commands": [
             {
+                "command": "vencord-companion.runReporter",
+                "title": "Run Reporter"
+            },
+            {
                 "command": "vencord-companion.diffModuleSearch",
                 "title": "Diff Module Search"
             },
             {
                 "command": "vencord-companion.diffModule",
                 "title": "Diff Module"
+            },
+            {
+                "command": "vencord-companion.generateFinds",
+                "title": "Generate Finds"
             },
             {
                 "command": "vencord-companion.extract",

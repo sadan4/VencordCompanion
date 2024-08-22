@@ -1,5 +1,7 @@
 import { ShellExecution, tasks, window } from "vscode";
 import { sendToSockets } from "./webSocketServer";
+import { ReporterData } from "./types";
+import { ReporterPanel } from "./webview";
 // 1. rebuild with reporter
 // 2. send reload command
 // 3. await results back from vencord
@@ -34,7 +36,7 @@ export async function startReporter() {
         running = !running
     }
 }
-export async function handleAfterRecive() {
+export async function handleAfterRecive(data: ReporterData) {
     running = false
     try {
         const task = await getNormalBuildTask();
@@ -47,8 +49,12 @@ export async function handleAfterRecive() {
             type: "reload",
             data: undefined
         })
+        console.log("breofer")
+        ReporterPanel.createOrShow(data)
+        console.log("after")
     } catch (error) {
         window.showErrorMessage(String(error))
+        console.error(error)
     }
 }
 async function getNormalBuildTask() {

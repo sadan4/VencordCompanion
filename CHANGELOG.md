@@ -20,3 +20,7 @@
 # 0.1.3
 
 - Now also supports plugin definitions stored in variables, like `const p: PluginDef = { ... }`
+
+# 0.2.0
+
+TODO: write notes

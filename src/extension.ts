@@ -1,11 +1,14 @@
-import { commands, ExtensionContext, languages, QuickPickItem,  window as vscWindow, window, workspace } from "vscode";
+import { commands, ExtensionContext, languages, QuickPickItem,  Uri,  window as vscWindow, window, workspace } from "vscode";
 import { PatchCodeLensProvider } from "./PatchCodeLensProvider";
 import { ExtractSendData, FindData, FindType, PatchData } from "./shared";
 import { WebpackCodeLensProvider } from "./WebpackCodeLensProvider";
 import { moduleCache, sendToSockets, startWebSocketServer, stopWebSocketServer } from "./webSocketServer";
 import { startReporter } from "./reporter";
-
+export let extensionUri: Uri;
+export let extensionPath: string;
 export function activate(context: ExtensionContext) {
+	extensionUri = context.extensionUri;
+	extensionPath = context.extensionPath;
 	startWebSocketServer();
 
 	context.subscriptions.push(

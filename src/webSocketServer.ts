@@ -104,11 +104,7 @@ export function startWebSocketServer() {
                 const rec = JSON.parse(msg.toString());
                 switch (rec.type) {
                     case "report": {
-                        workspace.openTextDocument({
-                            content: JSON.stringify(rec.data),
-                            language: "json"
-                        })
-                        handleAfterRecive();
+                        handleAfterRecive(rec.data);
                         break;
                     }
                     case "diff": {

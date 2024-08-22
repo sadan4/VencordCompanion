@@ -1,15 +1,61 @@
 html, body {
   height: 100%;
   width: 100%;
+  background-color: #282c34;
+}
+.rotate180 {
+  transform: rotate(180deg);
+}
+.rotate270 {
+  transform: rotate(270deg);
+}
+.rotate90 {
+  transform: rotate(90deg);
 }
 #reporter {
-  background-color: #282c34;
-  position: absolute;
-  top: 0px;
-  left: 0px;
   flex-direction: column;
-  height: 100%;
   width: 100%;
   display: flex;
   color: white;
+}
+.codeblock {
+  position: relative;
+  margin-left: .5%;
+  background-color: #1a1b26;
+  color: #4fd6be;
+  width: fit-content;
+  padding: .25%;
+  border-radius: 25px;
+  font-family: monospace;
+}
+span {
+  display: flex;
+  flex-direction: row;
+}
+.patchBody {
+  width: fit-content;
+}
+
+button {
+  padding: 1vh;
+  background-color: #0e639c;
+  color: white;
+  border: none;
+  border-radius: .3vw;
+}
+button:enabled:active {
+  filter: brightness(70%);
+}
+
+button:disabled {
+  filter: brightness(50%);
+}
+.buttons {
+  padding-top: 1vh;
+  padding-bottom: 1vh;
+  display: flex;
+  gap: .5vw;
+}
+.indent {
+  text-indent: 1.5em;
 }

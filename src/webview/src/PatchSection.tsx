@@ -7,6 +7,7 @@ interface props {
 }
 function PatchSection(props: props){
     const data = props.data.sort((a, b) => a.plugin.localeCompare(b.plugin))
+    if(props.data.length === 0) return <></>
     return <>
     <h2>
         {props.name}

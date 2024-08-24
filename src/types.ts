@@ -41,3 +41,8 @@ export interface ReporterData {
     };
     failedWebpack: Record<TypeWebpackSearchHistory, string[][]>;
 }
+
+export interface WebviewMessage {
+    type: string,
+    data: any,
+}

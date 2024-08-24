@@ -4,7 +4,7 @@
 import path = require("path");
 import * as vscode from "vscode"
 import { extensionPath, extensionUri } from "./extension";
-import { ReporterData } from "./types";
+import { ReporterData, WebviewMessage } from "./types";
 export class ReporterPanel {
 	/**
 	 * Track the currently panel. Only allow a single panel to exist at a time.
@@ -54,11 +54,30 @@ export class ReporterPanel {
 		this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
 
 		// Handle messages from the webview
-		this._panel.webview.onDidReceiveMessage(message => {
-			switch (message.command) {
-				case 'alert':
-					vscode.window.showErrorMessage(message.text);
-					return;
+		this._panel.webview.onDidReceiveMessage((message: WebviewMessage) => {
+			switch (message.type) {
+				case "disable": {
+					const { pluingName } = message.data;
+					//DISABLE PLUGIN
+					break;
+				}
+				case "gotopatch": {
+					const { patch } = message.data;
+					// jump to patch
+					break;
+				}
+				case "extract": {
+					const { moduleNumber } = message.data;
+					break;
+				}
+				case "diff": {
+					const {moduleNumber} = message.data;
+					break;
+				}
+				default: {
+					vscode.window.showErrorMessage("Unknown message type from webview, got : " + message.type)
+					break;
+				}
 			}
 		}, null, this._disposables);
 	}

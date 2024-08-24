@@ -1,21 +1,21 @@
 import { PropsWithChildren, SetStateAction, useState } from "react";
-import { EvaledPatch, Patch as IPatch, PatchReplacement } from "./types";
+import { EvaledPatch, PatchReplacement } from "./types";
 interface SVGProps {
     width?: string,
     height?: string
 }
-function DownArrow({width, height}: SVGProps){
+function DownArrow({ width, height }: SVGProps) {
     return (
         <svg xmlns="http://www.w3.org/2000/svg" width={width} height={height} viewBox="0 0 1024 1024" version="1.1">
-            <path d="M903.232 256l56.768 50.432L512 768 64 306.432 120.768 256 512 659.072z" fill="currentColor"/>
+            <path d="M903.232 256l56.768 50.432L512 768 64 306.432 120.768 256 512 659.072z" fill="currentColor" />
         </svg>
     )
 }
-function RightArrow({width, height}: SVGProps){
+function RightArrow({ width, height }: SVGProps) {
     return (
         <svg className="rotate90"
-        xmlns="http://www.w3.org/2000/svg" width={width} height={height} viewBox="0 0 1024 1024" version="1.1">
-            <path d="M903.232 256l56.768 50.432L512 768 64 306.432 120.768 256 512 659.072z" fill="currentColor"/>
+            xmlns="http://www.w3.org/2000/svg" width={width} height={height} viewBox="0 0 1024 1024" version="1.1">
+            <path d="M903.232 256l56.768 50.432L512 768 64 306.432 120.768 256 512 659.072z" fill="currentColor" />
         </svg>
     )
 }
@@ -25,15 +25,18 @@ interface props {
 }
 function Patch(props: props) {
     const [show, setShow] = useState(false)
+    const [dismiss, setDismiss] = useState(false);
+    if (dismiss)
+        return <></>
     return (
         <>
-        <div style={{
-            display: "flex",
-            flexDirection: "column"
-        }}>
-        <PatchHeader show={show} setShow={setShow} plugin={props.patch.plugin}/>
-        {show && <PatchBody patch={props.patch}/>}
-        </div>
+            <div style={{
+                display: "flex",
+                flexDirection: "column"
+            }}>
+                <PatchHeader show={show} setShow={setShow} plugin={props.patch.plugin} />
+                {show && <PatchBody close={setDismiss} patch={props.patch} />}
+            </div>
         </>
     )
 }
@@ -59,31 +62,32 @@ function PatchHeader({ setShow, show, plugin }: PatchHeaderProps) {
 
 interface PatchBodyProps {
     patch: EvaledPatch
+    close: (v: boolean) => void
 }
 
-function PatchBody({patch}: PatchBodyProps) {
+function PatchBody({ patch, close }: PatchBodyProps) {
     const replacement = Array.isArray(patch.replacement) ? patch.replacement : [patch.replacement];
     return <div className="patchBody">
-    <span>Find: <CodeBlock>
-        {String(patch.find)}
+        <span>Find: <CodeBlock>
+            {String(patch.find)}
         </CodeBlock>
         </span>
         <span>
-        ModuleId: <CodeBlock>
-            {patch.id ?? "-"}
-        </CodeBlock>
+            ModuleId: <CodeBlock>
+                {patch.id ?? "-"}
+            </CodeBlock>
         </span>
-        {replacement.map(x => <Replacement data={x}/>)}
+        {replacement.map(x => <Replacement data={x} />)}
         <div className="buttons">
-        <button>Disable Plugin</button>
-        <button>Go To Patch</button>
-        <button>Delete Entry</button>
-        <button disabled={!!(patch.id)}>Extract Module</button>
-        <button disabled={!!(patch.id)}>Diff Patch</button>
+            <button>Disable Plugin</button>
+            <button>Go To Patch</button>
+            <button onClick={() => close(true)}>Delete Entry</button>
+            <button disabled={!(patch.id)}>Extract Module</button>
+            <button disabled={!(patch.id)}>Diff Patch</button>
         </div>
-    </div>    
+    </div>
 }
-function CodeBlock({children}: PropsWithChildren) {
+function CodeBlock({ children }: PropsWithChildren) {
     return <div className="codeblock">
         {children}
     </div>
@@ -95,16 +99,16 @@ interface ReplacementProps {
 function Replacement({ data }: ReplacementProps) {
     console.log(data.match)
     return <div>
-    Replacement: <span className="indent">
-    Match: 
-    <CodeBlock>
-        {String(data.match)}
-    </CodeBlock>
-    </span>
-    <span className="indent">
-        Replace: <CodeBlock>
-            {data.replace}
-        </CodeBlock>
-    </span>
+        Replacement: <span className="indent">
+            Match:
+            <CodeBlock>
+                {String(data.match)}
+            </CodeBlock>
+        </span>
+        <span className="indent">
+            Replace: <CodeBlock>
+                {data.replace}
+            </CodeBlock>
+        </span>
     </div>
 }

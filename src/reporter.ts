@@ -49,9 +49,7 @@ export async function handleAfterRecive(data: ReporterData) {
             type: "reload",
             data: undefined
         })
-        console.log("breofer")
         ReporterPanel.createOrShow(data)
-        console.log("after")
     } catch (error) {
         window.showErrorMessage(String(error))
         console.error(error)

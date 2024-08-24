@@ -104,6 +104,7 @@ export function startWebSocketServer() {
                 const rec = JSON.parse(msg.toString());
                 switch (rec.type) {
                     case "report": {
+                        console.log(rec.data);
                         handleAfterRecive(rec.data);
                         break;
                     }

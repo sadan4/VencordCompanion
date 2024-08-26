@@ -1,61 +1,101 @@
-html, body {
-  height: 100%;
-  width: 100%;
-  background-color: #282c34;
+@import url('https://fonts.googleapis.com/css2?family=Poppins&wght@200&display=swap');
+
+:root {
+  --text: #cdd6f4;
+  --subtext1: #bac2de;
+  --subtext0: #a6adc8;
+  --overlay2: #9399b2;
+  --overlay1: #7f849c;
+  --overlay0: #6c7086;
+  --surface2: #585b70;
+  --surface1: #45475a;
+  --surface0: #313244;
+  --base: #1e1e2e;
+  --mantle: #181825;
+  --crust: #11111b;
 }
-.rotate180 {
-  transform: rotate(180deg);
-}
-.rotate270 {
-  transform: rotate(270deg);
-}
-.rotate90 {
-  transform: rotate(90deg);
-}
-#reporter {
-  flex-direction: column;
-  width: 100%;
-  display: flex;
-  color: white;
-}
-.codeblock {
-  position: relative;
-  margin-left: .5%;
-  background-color: #1a1b26;
-  color: #4fd6be;
-  width: fit-content;
-  padding: .25%;
-  border-radius: 25px;
-  font-family: monospace;
-}
-span {
+
+.PluginName
+{
   display: flex;
   flex-direction: row;
+  align-items: center;
+  height: 2.5rem;
+  cursor: pointer;
+  svg
+  {
+    height: 1.5rem;
+    width: 1.5rem;
+    margin-right: 0.5rem;
+  }
 }
-.patchBody {
+
+body
+{
+  padding: 1rem;
+  color: var(--text);
+  background-color: var(--base);
+  font-family: "Poppins";
+}
+
+#reporter h1
+{
+  margin-left: 1rem;
+}
+
+.ReportList
+{
+  background-color: var(--mantle);
+  min-width: 30em;
   width: fit-content;
-}
-
-button {
-  padding: 1vh;
-  background-color: #0e639c;
-  color: white;
-  border: none;
-  border-radius: .3vw;
-}
-button:enabled:active {
-  filter: brightness(70%);
-}
-
-button:disabled {
-  filter: brightness(50%);
-}
-.buttons {
-  padding-top: 1vh;
-  padding-bottom: 1vh;
+  padding: 1rem;
+  margin: 1rem;
+  border-radius: 1rem;
   display: flex;
-  gap: .5vw;
+  flex-direction: column;
 }
-.indent {
-  text-indent: 1.5em;
+
+.Codeblock
+{
+  background-color: var(--crust);
+  color: var(--subtext1);
+  width: fit-content;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  height: fit-content;
+  *
+  {
+    margin: 0px !important;
+  }
+}
+
+.CodeblockContainer
+{
+  display: flex;
+  height: fit-content;
+  align-items: center;
+  :nth-child(1)
+  {
+    margin-right: 0.5rem;
+  }
+}
+
+.PatchList > *
+{
+    margin-top: 1rem;
+}
+
+.Button
+{
+  background-color: var(--crust);
+  color: var(--subtext1);
+  width: fit-content;
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  height: fit-content;
+  *
+  {
+    margin: 0px !important;
+  }
+  cursor: pointer;
 }

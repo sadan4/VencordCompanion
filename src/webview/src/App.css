@@ -1,18 +1,13 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins&wght@200&display=swap');
 
 :root {
-  --text: #cdd6f4;
-  --subtext1: #bac2de;
-  --subtext0: #a6adc8;
-  --overlay2: #9399b2;
-  --overlay1: #7f849c;
-  --overlay0: #6c7086;
-  --surface2: #585b70;
-  --surface1: #45475a;
-  --surface0: #313244;
-  --base: #1e1e2e;
-  --mantle: #181825;
-  --crust: #11111b;
+  --text: var(--vscode-editor-foreground);
+  --subtext1: var(--vscode-descriptionForeground);
+  --base: var(--vscode-editor-background);
+  --mantle: var(--vscode-editorWidget-background);
+  --button-background: var(--vscode-button-background);
+  --button-foreground: var(--vscode-button-foreground);
+  --core: var(--base);
 }
 
 .PluginName
@@ -58,8 +53,8 @@ body
 
 .Codeblock
 {
-  background-color: var(--crust);
-  color: var(--subtext1);
+  background-color: var(--core);
+  color: var(--text);
   width: fit-content;
   padding: 0.5rem;
   border-radius: 0.5rem;
@@ -91,8 +86,8 @@ body
   >h3 {
     user-select: none;
   }
-  background-color: var(--crust);
-  color: var(--subtext1);
+  background-color: var(--button-background);
+  color: var(--button-foreground);
   width: fit-content;
   padding: 0.5rem;
   border-radius: 0.5rem;

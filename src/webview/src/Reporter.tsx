@@ -154,6 +154,26 @@ function ReportList({ brokenPatches, name }: ReportListProps) {
     )
 }
 
+interface FindListProps {
+    brokenFinds: string[][];
+    name: string;
+}
+
+function FindList({ name, brokenFinds}: FindListProps) {
+    return (
+        <div className="ReportList">
+            <h2>
+                {name}
+            </h2>
+            {Object.entries(brokenFinds).map(([_k,v]) => {
+                return (<ExpandableHeader header={v.length === 1 ? v[0].substring(0,120) ?? "ERROR" : `[${v[0].substring(0,120)}, ...]`}>
+                        {v.map(v => <>{v}<p/></>)}
+                </ExpandableHeader>)
+            })}
+        </div>
+    )
+}
+
 interface ReporterSectionsProps {
     data: ReporterData;
 }
@@ -173,6 +193,13 @@ export function ReporterSections({ data }: ReporterSectionsProps) {
                     <ReportList brokenPatches={value} name={key} />
                 );
             })}
+            {failedWebpack && Object.entries(failedWebpack).map(([k, v]) => {
+                if (v.length === 0) return null;
+                return (
+                    <FindList brokenFinds={v} name={k} />
+                )
+            })}
+            <div id="footer">Made by <a rel="noreferrer" target="_blank" href="https://discord.com/users/976176454511509554">Samwich</a> and <a rel="noreferrer" target="_blank" href="https://discord.com/users/521819891141967883">Sadan</a></div>
         </div>
     );
 }

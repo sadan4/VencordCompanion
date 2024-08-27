@@ -5,8 +5,7 @@ import { ReporterSections } from './Reporter';
 
 function App() {
   return (
-    //@ts-ignore
-    <ReporterSections data={window.reporterData}/>
+    <ReporterSections data={reporterData}/>
   );
 }
 

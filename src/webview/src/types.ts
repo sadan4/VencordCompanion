@@ -2,7 +2,7 @@ export type ReplaceFn = (match: string, ...groups: string[]) => string;
 
 export interface PatchReplacement {
     /** The match for the patch replacement. If you use a string it will be implicitly converted to a RegExp */
-    match: string ;
+    match: string | RegExp;
     /** The replacement string or function which returns the string for the patch replacement */
     replace: string;
     /** A function which returns whether this patch replacement should be applied */

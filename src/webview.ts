@@ -119,7 +119,7 @@ export class ReporterPanel {
 				<title>React App</title>
 				<script nonce="${nonce}">window.reporterData = ${JSON.stringify(data)}</script>
 				<link rel="stylesheet" type="text/css" href="${styleUri}">
-				<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${this._panel.webview.cspSource}; img-src ${this._panel.webview.cspSource} https:; script-src 'nonce-${nonce}';">
+				<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${this._panel.webview.cspSource} https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src ${this._panel.webview.cspSource} https:; script-src 'nonce-${nonce}';">
 
 				<base href="${this._panel.webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'dist/webview'))}/">
 			</head>

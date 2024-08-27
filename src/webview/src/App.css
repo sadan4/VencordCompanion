@@ -17,6 +17,7 @@
 
 .PluginName
 {
+  padding-bottom: .5rem;
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -87,6 +88,9 @@ body
 
 .Button
 {
+  >h3 {
+    user-select: none;
+  }
   background-color: var(--crust);
   color: var(--subtext1);
   width: fit-content;
@@ -98,4 +102,7 @@ body
     margin: 0px !important;
   }
   cursor: pointer;
+}
+.EvaledPatch .CodeblockContainer h4{
+      margin: 1rem .5rem;
 }

@@ -24,7 +24,6 @@ export async function sendToSockets(data: { type: string, data: unknown; }) {
 
     const promises = Array.from(sockets, sock => new Promise<void>((resolve, reject) => {
         const onMessage = (data: RawData) => {
-            console.log("b");
             const msg = data.toString("utf-8");
             try {
                 var parsed = JSON.parse(msg);
@@ -178,12 +177,10 @@ export function stopWebSocketServer() {
     wss = undefined;
 }
 
-function mkStringUri(patched: any, filetype = "js") {
-    console.log(patched)
+export function mkStringUri(patched: any, filetype = "js") {
     const SUFFIX = "." + filetype
     const PREFIX = "vencord-companion://b64string/"
     const a = Buffer.from(patched)
-    console.log(a.toString("base64url"))
     return Uri.parse(PREFIX + a.toString("base64url") + SUFFIX);
 }
 

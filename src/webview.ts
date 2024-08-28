@@ -2,9 +2,15 @@
  * Manages react webview panels
  */
 import path = require("path");
-import * as vscode from "vscode"
+import * as vscode from "vscode";
 import { extensionPath, extensionUri } from "./extension";
-import { ReporterData, WebviewMessage } from "./types";
+import { EvaledPatch, ReporterData, WebviewMessage } from "./types";
+import { mkStringUri, sendToSockets } from "./webSocketServer";
+import format from "./format";
+
+type Patch = { patch: EvaledPatch };
+type PluginName = { pluginName: string }
+type Diff = { oldModule: string, newModule: string }
 export class ReporterPanel {
 	/**
 	 * Track the currently panel. Only allow a single panel to exist at a time.
@@ -54,30 +60,55 @@ export class ReporterPanel {
 		this._panel.onDidDispose(() => this.dispose(), null, this._disposables);
 
 		// Handle messages from the webview
-		this._panel.webview.onDidReceiveMessage((message: WebviewMessage) => {
-			switch (message.type) {
-				case "disable": {
-					const { pluingName } = message.data;
-					//DISABLE PLUGIN
-					break;
+		this._panel.webview.onDidReceiveMessage(async (message: WebviewMessage) => {
+			try {
+				switch (message.type) {
+					case "disable": {
+						const { pluginName, enabled }: PluginName & { enabled: boolean } = message.data;
+						//DISABLE PLUGIN
+						await sendToSockets({
+							type: "disable",
+							data: {
+								pluginName,
+								enabled
+							}
+						})
+						break;
+					}
+					case "jumpToPatch": {
+						const { pluginName, patch }: Patch & PluginName = message.data;
+						// any attempt to get this to open without user interaction is a complete shitshow
+						// just use the builtin fuzzy finder and the patch find
+						// while there might be more than one find, the user can deal with that
+						vscode.commands.executeCommand("workbench.action.quickOpen", "%" + patch.find)
+						break;
+					}
+					case "extract": {
+						const { patch }: Patch = message.data;
+						vscode.commands.executeCommand("vencord-companion.extract", +patch.id)
+						break;
+					}
+					case "diff": {
+						const { oldModule, newModule, id }: Diff & EvaledPatch = message.data;
+						// we cant format code with syntax errors
+						let sourceUri, patchedUri;
+						try {
+							sourceUri = mkStringUri(await format(oldModule));
+							patchedUri = mkStringUri(await format(newModule));
+						} catch (error) {
+							sourceUri = mkStringUri(oldModule);
+							patchedUri = mkStringUri(newModule)
+						}
+						vscode.commands.executeCommand("vscode.diff", sourceUri, patchedUri, "Patch Diff: " + id)
+						break;
+					}
+					default: {
+						vscode.window.showErrorMessage("Unknown message type from webview, got : " + message.type)
+						break;
+					}
 				}
-				case "gotopatch": {
-					const { patch } = message.data;
-					// jump to patch
-					break;
-				}
-				case "extract": {
-					const { moduleNumber } = message.data;
-					break;
-				}
-				case "diff": {
-					const {moduleNumber} = message.data;
-					break;
-				}
-				default: {
-					vscode.window.showErrorMessage("Unknown message type from webview, got : " + message.type)
-					break;
-				}
+			} catch (error) {
+				vscode.window.showErrorMessage(String(error))
 			}
 		}, null, this._disposables);
 	}

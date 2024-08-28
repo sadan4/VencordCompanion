@@ -15,7 +15,7 @@ export interface Patch {
     /** A string or RegExp which is only include/matched in the module code you wish to patch. Prefer only using a RegExp if a simple string test is not enough */
     find: string | RegExp;
     /** The replacement(s) for the module being patched */
-    replacement: PatchReplacement | PatchReplacement[];
+    replacement: PatchReplacement[];
     /** Whether this patch should apply to multiple modules */
     all?: boolean;
     /** Do not warn if this patch did no changes */
@@ -28,7 +28,7 @@ export interface Patch {
 
 export type TypeWebpackSearchHistory = "find" | "findByProps" | "findByCode" | "findStore" | "findComponent" | "findComponentByCode" | "findExportedComponent" | "waitFor" | "waitForComponent" | "waitForStore" | "proxyLazyWebpack" | "LazyComponentWebpack" | "extractAndLoadChunks" | "mapMangledModule";
 
-interface EvaledPatch extends Patch {
+export interface EvaledPatch extends Patch {
     id: number | string;
 }
 

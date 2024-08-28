@@ -1,5 +1,6 @@
 import { PropsWithChildren, ReactNode, useState } from "react";
 import { EvaledPatch, ReporterData } from "./types";
+import { diffPatch, disablePlugin, enablePlugin, extractPatch, jumpToPatch } from "./util";
 
 interface CodeblockProps {
     label: ReactNode;
@@ -63,9 +64,9 @@ interface ButtonProps {
 
 function Button({ label, onClick, disabled }: ButtonProps) {
     return (
-        <div className="Button" onClick={disabled ? undefined : onClick} style={disabled ? { filter: "brightness(0.7)", cursor: "not-allowed" } : {}}>
+        <button disabled={disabled} onClick={onClick}>
             <h3>{label}</h3>
-        </div>
+        </button>
     )
 }
 
@@ -73,14 +74,16 @@ interface PluginReportProps {
     data: EvaledPatch[];
     name: string;
     onHide: () => void;
+    type: string;
 }
 
-function PluginReport({ data, name, onHide }: PluginReportProps) {
+function PluginReport({ data, name, onHide, type }: PluginReportProps) {
     console.log(name)
     return (
         <ExpandableHeader header={`${name} (${data.length})`}>
             <div style={{ display: "flex", flexDirection: "row", gap: "0.5rem" }}>
-                <Button label={"Disable Plugin"} onClick={() => void 0} />
+                <Button label={"Disable Plugin"} onClick={() => disablePlugin(name)} />
+                <Button label={"Enable Plugin"} onClick={() => enablePlugin(name)} />
             </div>
             <div className="PatchList">
                 {data.map((e, index) => {
@@ -88,9 +91,9 @@ function PluginReport({ data, name, onHide }: PluginReportProps) {
                         <div className="EvaledPatch">
                             <div style={{ display: "flex", flexDirection: "row", gap: "0.5rem" }}>
                                 <Button label={"Hide"} onClick={onHide} />
-                                <Button label={"Jump"} onClick={() => void 0} />
-                                <Button label={"Diff"} onClick={() => void 0} />
-                                <Button label={"Extract"} onClick={() => void 0} />
+                                <Button label={"Jump"} onClick={() => jumpToPatch(name, e)} />
+                                <Button label={"Diff"} onClick={() => diffPatch(e)} disabled={type === "hadNoEffect" || !e.id} />
+                                <Button label={"Extract"} onClick={() => extractPatch(e)} disabled={!e.id} />
                             </div>
                             <Codeblock label="Find:">{e.find}</Codeblock>
                             <Codeblock label="Module Number:">{e.id || "------"}</Codeblock>
@@ -104,8 +107,8 @@ function PluginReport({ data, name, onHide }: PluginReportProps) {
                                 <div style={{ display: "flex", flexDirection: "row", gap: "0.5rem" }}>
                                     <Button label={"Hide"} onClick={onHide} />
                                     <Button label={"Jump"} onClick={() => void 0} />
-                                    <Button label={"Diff"} onClick={() => void 0} />
-                                    <Button label={"Extract"} onClick={() => void 0} />
+                                    <Button label={"Diff"} onClick={() => diffPatch(e)} disabled={type === "hadNoEffect" || !e.id} />
+                                    <Button label={"Extract"} onClick={() => extractPatch(e)} disabled={!e.id} />
                                 </div>
                                 <Codeblock label="Find:">{e.find}</Codeblock>
                                 <Codeblock label="Module Number:">{e.id || "------"}</Codeblock>
@@ -147,7 +150,7 @@ function ReportList({ brokenPatches, name }: ReportListProps) {
             {Object.entries(list).map(([key, value]) => {
                 if (hidden.some((e: any) => e === key)) return null;
                 return (
-                    <PluginReport data={value} name={key} onHide={() => setHidden((e) => [...e, key])} />
+                    <PluginReport type={name} data={value} name={key} onHide={() => setHidden((e) => [...e, key])} />
                 )
             })}
         </div>
@@ -159,15 +162,15 @@ interface FindListProps {
     name: string;
 }
 
-function FindList({ name, brokenFinds}: FindListProps) {
+function FindList({ name, brokenFinds }: FindListProps) {
     return (
         <div className="ReportList">
             <h2>
                 {name}
             </h2>
-            {Object.entries(brokenFinds).map(([_k,v]) => {
-                return (<ExpandableHeader header={v.length === 1 ? v[0].substring(0,120) ?? "ERROR" : `[${v[0].substring(0,120)}, ...]`}>
-                        {v.map(v => <>{v}<p/></>)}
+            {Object.entries(brokenFinds).map(([_k, v]) => {
+                return (<ExpandableHeader header={v.length === 1 ? v[0].substring(0, 120) ?? "ERROR" : `[${v[0].substring(0, 120)}, ...]`}>
+                    {v.map(v => <>{v}<p /></>)}
                 </ExpandableHeader>)
             })}
         </div>
@@ -199,7 +202,7 @@ export function ReporterSections({ data }: ReporterSectionsProps) {
                     <FindList brokenFinds={v} name={k} />
                 )
             })}
-            <div id="footer">Made by <a rel="noreferrer" target="_blank" href="https://discord.com/users/976176454511509554">Samwich</a> and <a rel="noreferrer" target="_blank" href="https://discord.com/users/521819891141967883">Sadan</a></div>
+            <div id="footer">Made by <a rel="noreferrer" target="_blank" href="https://samwich.dev/">Samwich</a> and <a rel="noreferrer" target="_blank" href="https://sadan.zip">Sadan</a></div>
         </div>
     );
 }

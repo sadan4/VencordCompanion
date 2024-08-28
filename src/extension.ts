@@ -23,7 +23,6 @@ export function activate(context: ExtensionContext) {
 		commands.registerCommand("vencord-companion.runReporter", startReporter),
 		workspace.registerTextDocumentContentProvider("vencord-companion", {
 			async provideTextDocumentContent(uri) {
-				console.log(uri)
 				//FIXME: full uri shows up in title bar
 				const newLocal = Buffer.from(uri.path.substring(1, uri.path.lastIndexOf(".")), "base64url");
 				return newLocal.toString()
@@ -36,16 +35,16 @@ export function activate(context: ExtensionContext) {
 		commands.registerCommand("vencord-companion.diffModule", async args => {
 			if (args)
 				return sendToSockets({
-					type: "search",
+					type: "diff",
 					data: {
 						extractType: "id",
 						idOrSearch: args
 					}
-				})
+				}).catch(e => window.showErrorMessage(String(e)))
 			const quickPick = window.createQuickPick();
 			quickPick.placeholder = "module ID";
 			quickPick.canSelectMany = false;
-			const items: QuickPickItem[] = [{ label: "", alwaysShow: false }, { label: "", kind: -1 }, ...(moduleCache.map(m => { return { label: m }; }))];
+			const items: QuickPickItem[] = [{ label: "", alwaysShow: false }, { label: "", kind: -1 }, ...(moduleCache.map(m => ({ label: m })))];
 			quickPick.items = items;
 			quickPick.onDidChangeValue(() => {
 				if (!moduleCache.includes(quickPick.value)) {
@@ -87,7 +86,7 @@ export function activate(context: ExtensionContext) {
 						findType,
 						idOrSearch: args
 					}
-				})
+				}).catch(e => window.showErrorMessage(String(e)))
 			const input = await window.showInputBox();
 			if (!input)
 				return window.showErrorMessage("No Input Provided")
@@ -113,14 +112,14 @@ export function activate(context: ExtensionContext) {
 		}) => {
 			if (!args)
 				return vscWindow.showErrorMessage("No Data Provided");
-			await sendToSockets({
+			sendToSockets({
 				type: "extract",
 				data: {
 					extractType: "find",
 					findType: args.data.type,
 					findArgs: args.data.args
 				}
-			})
+			}).catch(e => window.showErrorMessage(String(e)))
 		}),
 		commands.registerCommand("vencord-companion.extract", async (args: number) => {
 			if (args)
@@ -130,7 +129,7 @@ export function activate(context: ExtensionContext) {
 						extractType: "id",
 						idOrSearch: args
 					}
-				})
+				}).catch(e => window.showErrorMessage(String(e)))
 			const quickPick = window.createQuickPick();
 			quickPick.placeholder = "module ID";
 			quickPick.canSelectMany = false;
@@ -175,7 +174,7 @@ export function activate(context: ExtensionContext) {
 						findType,
 						idOrSearch: args
 					}
-				})
+				}).catch(e => window.showErrorMessage(String(e)))
 			const input = await window.showInputBox();
 			if (!input)
 				return window.showErrorMessage("No Input Provided")

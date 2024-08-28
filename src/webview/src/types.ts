@@ -32,11 +32,16 @@ export interface EvaledPatch extends Patch {
     id?: number | string;
 }
 
+export interface ErroredPatch extends EvaledPatch {
+    oldModule: string;
+    newModule: string;
+}
+
 export type FailedPatchType = {
     foundNoModule: Patch[];
     hadNoEffect: EvaledPatch[];
     undoingPatchGroup: EvaledPatch[];
-    erroredPatch: EvaledPatch[];
+    erroredPatch: ErroredPatch[];
 };
 
 export interface ReporterData {

@@ -18,8 +18,7 @@
   align-items: center;
   height: 2.5rem;
   cursor: pointer;
-  svg
-  {
+  svg {
     height: 1.5rem;
     width: 1.5rem;
     margin-right: 0.5rem;
@@ -59,8 +58,7 @@ body
   padding: 0.5rem;
   border-radius: 0.5rem;
   height: fit-content;
-  *
-  {
+  * {
     margin: 0px !important;
   }
 }
@@ -70,8 +68,7 @@ body
   display: flex;
   height: fit-content;
   align-items: center;
-  :nth-child(1)
-  {
+  :nth-child(1) {
     margin-right: 0.5rem;
   }
 }
@@ -81,21 +78,28 @@ body
     margin-top: 1rem;
 }
 
-.Button
+button
 {
+  &:enabled:active {
+    filter: brightness(150%);
+  }
+  &:disabled {
+    cursor: not-allowed;
+    filter: brightness(60%);
+  }
   >h3 {
     user-select: none;
+  }
+  * {
+    margin: 0px !important;
   }
   background-color: var(--button-background);
   color: var(--button-foreground);
   width: fit-content;
   padding: 0.5rem;
+  border: none;
   border-radius: 0.5rem;
   height: fit-content;
-  *
-  {
-    margin: 0px !important;
-  }
   cursor: pointer;
 }
 .EvaledPatch .CodeblockContainer h4{

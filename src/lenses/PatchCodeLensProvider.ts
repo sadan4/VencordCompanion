@@ -1,7 +1,7 @@
 import { ArrayLiteralExpression, createSourceFile, Expression, IntersectionTypeNode, isArrayLiteralExpression, isCallExpression, isExportAssignment, isIdentifier, isIntersectionTypeNode, isObjectLiteralExpression, isPropertyAssignment, isRegularExpressionLiteral, isStringLiteral, isTypeReferenceNode, isVariableDeclaration, isVariableStatement, Node, ObjectLiteralExpression, ScriptTarget, TypeReferenceNode } from "typescript";
 import { CodeLens, CodeLensProvider, Range, TextDocument } from "vscode";
 import { hasName, isNotNull, tryParseFunction, tryParseRegularExpressionLiteral, tryParseStringLiteral } from "./helpers";
-import { FindType, PatchData } from "./shared";
+import { FindType, PatchData } from "../shared";
 function parseFind(patch: ObjectLiteralExpression) {
     const find = patch.properties.find(p => hasName(p, "find"));
     if(!find || !isPropertyAssignment(find)) return null;

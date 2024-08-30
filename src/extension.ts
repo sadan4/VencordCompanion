@@ -1,9 +1,10 @@
 import { commands, ExtensionContext, languages, QuickPickItem,  Uri,  window as vscWindow, window, workspace } from "vscode";
-import { PatchCodeLensProvider } from "./PatchCodeLensProvider";
 import { ExtractSendData, FindData, FindType, PatchData } from "./shared";
-import { WebpackCodeLensProvider } from "./WebpackCodeLensProvider";
+import { WebpackCodeLensProvider } from "./lenses/WebpackCodeLensProvider";
 import { moduleCache, sendToSockets, startWebSocketServer, stopWebSocketServer } from "./webSocketServer";
 import { startReporter } from "./reporter";
+import { PatchCodeLensProvider } from "./lenses/PatchCodeLensProvider";
+import PluginDefCodeLensProvider from "./lenses/PluginDefCodeLensProvider";
 export let extensionUri: Uri;
 export let extensionPath: string;
 export function activate(context: ExtensionContext) {
@@ -12,6 +13,10 @@ export function activate(context: ExtensionContext) {
 	startWebSocketServer();
 
 	context.subscriptions.push(
+		languages.registerCodeLensProvider(
+			{ pattern: "**/{plugins,userplugins,plugins/_*}/{*.ts,*.tsx,**/index.ts,**/index.tsx}" },
+			new PluginDefCodeLensProvider()
+		),
 		languages.registerCodeLensProvider(
 			{ pattern: "**/{plugins,userplugins,plugins/_*}/{*.ts,*.tsx,**/index.ts,**/index.tsx}" },
 			new PatchCodeLensProvider()
@@ -186,6 +191,17 @@ export function activate(context: ExtensionContext) {
 						findType: FindType.STRING,
 						idOrSearch: input
 					}
+				})
+			} catch (error) {
+				vscWindow.showErrorMessage(String(error))
+			}
+		}),
+		commands.registerCommand("vencord-companion.disablePlugin", async data => {
+			try {
+				if(!data) throw new Error("No args passed.");
+				await sendToSockets({
+					type: "disable",
+					data
 				})
 			} catch (error) {
 				vscWindow.showErrorMessage(String(error))

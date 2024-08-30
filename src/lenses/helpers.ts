@@ -1,7 +1,7 @@
 import { basename } from "path";
 import { CompilerOptions, createPrinter, EmitHint, findConfigFile, isArrowFunction, isFunctionExpression, isIdentifier, isRegularExpressionLiteral, isStringLiteral, NamedDeclaration, Node, parseJsonConfigFileContent, readConfigFile, sys, transpileModule } from "typescript";
 import { TextDocument } from "vscode";
-import { FunctionNode, RegexNode, StringNode } from "./shared";
+import { FunctionNode, RegexNode, StringNode } from "../shared";
 
 export function hasName(node: NamedDeclaration, name: string) {
     return node.name && isIdentifier(node.name) && node.name.text === name;

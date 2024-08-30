@@ -12,6 +12,7 @@
     // stupid
     "@typescript-eslint/ban-ts-comment": "off",
     "@typescript-eslint/no-explicit-any": "off",
-    "no-var": "off"
+    "no-var": "off",
+    "no-debugger": "warn"
   }
 }

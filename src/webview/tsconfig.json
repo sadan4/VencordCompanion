@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
-    "target": "es5",
+    // vscode targets ES2022
+    "target": "ES2022",
     "lib": [
       "dom",
       "dom.iterable",

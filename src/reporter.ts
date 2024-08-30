@@ -31,7 +31,6 @@ export async function startReporter() {
         })
     } catch (e) {
         window.showErrorMessage(String(e))
-        console.error(e)
         // peak logic
         running = !running
     }
@@ -52,7 +51,6 @@ export async function handleAfterRecive(data: ReporterData) {
         ReporterPanel.createOrShow(data)
     } catch (error) {
         window.showErrorMessage(String(error))
-        console.error(error)
     }
 }
 async function getNormalBuildTask() {

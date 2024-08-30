@@ -1,5 +1,5 @@
 import { vscodeAPI } from ".";
-import { ErroredPatch, Patch } from "./types";
+import { Patch } from "./types";
 
 const ensureAPI = () => !vscodeAPI && console.trace("NO VSCODE API FOUND")
 

@@ -46,10 +46,6 @@
                 "title": "Diff Module"
             },
             {
-                "command": "vencord-companion.generateFinds",
-                "title": "Generate Finds"
-            },
-            {
                 "command": "vencord-companion.extract",
                 "title": "Extract"
             },

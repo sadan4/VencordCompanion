@@ -78,7 +78,6 @@ interface PluginReportProps {
 }
 
 function PluginReport({ data, name, onHide, type }: PluginReportProps) {
-    console.log(name)
     return (
         <ExpandableHeader header={`${name} (${data.length})`}>
             <div style={{ display: "flex", flexDirection: "row", gap: "0.5rem" }}>
@@ -182,10 +181,7 @@ interface ReporterSectionsProps {
 }
 
 export function ReporterSections({ data }: ReporterSectionsProps) {
-    console.log(data);
     const { failedPatches, failedWebpack } = data;
-
-    console.log(failedPatches);
 
     return (
         <div id="reporter">

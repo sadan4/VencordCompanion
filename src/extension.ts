@@ -33,10 +33,6 @@ export function activate(context: ExtensionContext) {
 				return newLocal.toString()
 			},
 		}),
-
-		commands.registerCommand("vencord-companion.generateFinds", async () => {
-				// console.log(generateFinds());
-		}),
 		commands.registerCommand("vencord-companion.diffModule", async args => {
 			if (args)
 				return sendToSockets({

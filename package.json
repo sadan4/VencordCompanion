@@ -32,21 +32,6 @@
         "typecheck": "tsc --noEmit"
     },
     "contributes": {
-        "configuration": {
-            "title": "Vencord Companion configuration",
-            "properties": {
-                "vencord-companion.delModulesOnExit": {
-                    "default": false,
-                    "type": "boolean",
-                    "description": "delete extracted modules on exit"
-                },
-                "vencord-companion.moduleSavePath": {
-                    "type": "string",
-                    "description": "The path to save extracted modules, only automatically works if delModulesOnExit is false",
-                    "default": null
-                }
-            }
-        },
         "commands": [
             {
                 "command": "vencord-companion.runReporter",

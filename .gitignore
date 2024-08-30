@@ -1,5 +1,5 @@
 dist
-src/webview/build
+src/webview/dist
 node_modules
 .vscode-test/
 *.vsix

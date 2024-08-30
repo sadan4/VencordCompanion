@@ -23,12 +23,12 @@
     "publisher": "Vendicated",
     "main": "./dist/extension.js",
     "scripts": {
-        "compile": "esbuild ./src/extension.ts --platform=node --external:vscode --bundle --sourcemap --log-level=info --outfile=./dist/extension.js",
+        "build": "node ./scripts/build.mjs",
+        "watch": "node ./scripts/watch.mjs",
         "lint": "eslint src --ext ts && pnpm typecheck",
         "package": "vsce package --no-dependencies",
-        "vscode:prepublish": "pnpm compile --minify && pnpm lint",
+        "vscode:prepublish": "pnpm build && pnpm lint",
         "publish": "vsce publish --no-dependencies",
-        "watch": "pnpm compile --watch",
         "typecheck": "tsc --noEmit"
     },
     "contributes": {
@@ -89,7 +89,7 @@
         "@typescript-eslint/eslint-plugin": "^5.53.0",
         "@typescript-eslint/parser": "^5.53.0",
         "@vscode/vsce": "^2.18.0",
-        "esbuild": "^0.17.19",
+        "esbuild": "^0.23.1",
         "eslint": "^8.34.0"
     },
     "engines": {

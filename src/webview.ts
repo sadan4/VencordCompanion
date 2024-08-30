@@ -128,14 +128,9 @@ export class ReporterPanel {
     }
 
     private _getHtmlForWebview(data: ReporterData) {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const manifest = require(path.join(this._extensionPath, 'dist/webview', 'asset-manifest.json'));
-        const mainScript = manifest['files']['main.js'];
-        const mainStyle = manifest['files']['main.css'];
-
-        const scriptPathOnDisk = vscode.Uri.joinPath(this._extensionUri, 'dist/webview', mainScript);
+        const scriptPathOnDisk = vscode.Uri.joinPath(this._extensionUri, 'dist/webview/index.js');
         const scriptUri = this._panel.webview.asWebviewUri(scriptPathOnDisk)
-        const stylePathOnDisk = vscode.Uri.joinPath(this._extensionUri, 'dist/webview', mainStyle);
+        const stylePathOnDisk = vscode.Uri.joinPath(this._extensionUri, 'dist/webview/index.css');
         const styleUri = this._panel.webview.asWebviewUri(stylePathOnDisk)
 
         // Use a nonce to whitelist which scripts can be run

@@ -29,7 +29,8 @@
         "package": "vsce package --no-dependencies",
         "vscode:prepublish": "pnpm build && pnpm lint",
         "publish": "vsce publish --no-dependencies",
-        "typecheck": "tsc --noEmit"
+        "typecheck": "tsc --noEmit",
+        "postinstall": "(cd src/webview && pnpm i)"
     },
     "contributes": {
         "commands": [

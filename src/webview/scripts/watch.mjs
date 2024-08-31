@@ -2,11 +2,15 @@ import esbuild from "esbuild";
 import { commonOpts } from "./common.mjs";
 
 //@ts-check
+/**
+ * @type {esbuild.BuildOptions}
+ */
 const opts = {
     ...commonOpts
 }
 
 opts.minify = false;
+opts.sourcemap = "linked"
 
 const ctx = await esbuild.context(opts);
 

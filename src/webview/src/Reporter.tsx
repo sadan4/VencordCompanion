@@ -78,51 +78,60 @@ interface PluginReportProps {
 }
 
 function PluginReport({ data, name, onHide, type }: PluginReportProps) {
+    const [shown, setShown] = useState<number[]>([]);
     return (
-        <ExpandableHeader header={`${name} (${data.length})`}>
+        <>
+        {shown.length === data.length ? <></> :
+            <ExpandableHeader header={`${name} (${data.length})`}>
             <div style={{ display: "flex", flexDirection: "row", gap: "0.5rem" }}>
-                <Button label={"Disable Plugin"} onClick={() => disablePlugin(name)} />
-                <Button label={"Enable Plugin"} onClick={() => enablePlugin(name)} />
+            <Button label={"Disable Plugin"} onClick={() => disablePlugin(name)} />
+            <Button label={"Enable Plugin"} onClick={() => enablePlugin(name)} />
             </div>
             <div className="PatchList">
-                {data.map((e, index) => {
-                    if (data.length === 1) return (
-                        <div className="EvaledPatch">
-                            <div style={{ display: "flex", flexDirection: "row", gap: "0.5rem" }}>
-                                <Button label={"Hide"} onClick={onHide} />
-                                <Button label={"Jump"} onClick={() => jumpToPatch(name, e)} />
-                                <Button label={"Diff"} onClick={() => diffPatch(e)} disabled={type === "hadNoEffect" || !e.id} />
-                                <Button label={"Extract"} onClick={() => extractPatch(e)} disabled={!e.id} />
-                            </div>
-                            <Codeblock label="Find:">{e.find}</Codeblock>
-                            <Codeblock label="Module Number:">{e.id || "------"}</Codeblock>
-                            <Codeblock label="Match:">{String(e.replacement[0].match)}</Codeblock>
-                            <Codeblock label="Replace:">{String(e.replacement[0].replace)}</Codeblock>
-                        </div>
-                    )
-                    return (
+            {data.map((e, index) => {
+                if (data.length === 1) return (
+                    <div className="EvaledPatch">
+                <div style={{ display: "flex", flexDirection: "row", gap: "0.5rem" }}>
+                <Button label={"Hide"} onClick={onHide} />
+                <Button label={"Jump"} onClick={() => jumpToPatch(name, e)} />
+                <Button label={"Diff"} onClick={() => diffPatch(e)} disabled={type === "hadNoEffect" || !e.id} />
+                <Button label={"Extract"} onClick={() => extractPatch(e)} disabled={!e.id} />
+                </div>
+                <Codeblock label="Find:">{e.find}</Codeblock>
+                <Codeblock label="Module Number:">{e.id || "------"}</Codeblock>
+                <Codeblock label="Match:">{String(e.replacement[0].match)}</Codeblock>
+                <Codeblock label="Replace:">{String(e.replacement[0].replace)}</Codeblock>
+                </div>
+                )
+                return (
+                    <>
+                    {!shown.includes(index) &&
                         <div className="EvaledPatch" key={index}>
-                            <ExpandableHeader header={<Codeblock label="">{e.find}</Codeblock>}>
-                                <div style={{ display: "flex", flexDirection: "row", gap: "0.5rem" }}>
-                                    <Button label={"Hide"} onClick={onHide} />
-                                    <Button label={"Jump"} onClick={() => void 0} />
-                                    <Button label={"Diff"} onClick={() => diffPatch(e)} disabled={type === "hadNoEffect" || !e.id} />
-                                    <Button label={"Extract"} onClick={() => extractPatch(e)} disabled={!e.id} />
-                                </div>
-                                <Codeblock label="Find:">{e.find}</Codeblock>
-                                <Codeblock label="Module Number:">{e.id || "------"}</Codeblock>
-                                {e.replacement.map(i =>
-                                    <>
-                                        <Codeblock label="Match:">{String(i.match)}</Codeblock>
-                                        <Codeblock label="Replace:">{i.replace}</Codeblock>
-                                    </>
-                                )}
-                            </ExpandableHeader>
-                        </div>
-                    )
-                })}
+                    <ExpandableHeader header={<Codeblock label="">{e.find}</Codeblock>}>
+                    <div style={{ display: "flex", flexDirection: "row", gap: "0.5rem" }}>
+                    <Button label={"Hide"} onClick={() => setShown((s) => [index, ...s])} />
+                    <Button label={"Jump"} onClick={() => jumpToPatch(name, e)} />
+                    <Button label={"Diff"} onClick={() => diffPatch(e)} disabled={type === "hadNoEffect" || !e.id} />
+                    <Button label={"Extract"} onClick={() => extractPatch(e)} disabled={!e.id} />
+                    </div>
+                    <Codeblock label="Find:">{e.find}</Codeblock>
+                    <Codeblock label="Module Number:">{e.id || "------"}</Codeblock>
+                    {e.replacement.map(i =>
+                                       <>
+                                       <Codeblock label="Match:">{String(i.match)}</Codeblock>
+                                       <Codeblock label="Replace:">{i.replace}</Codeblock>
+                                       </>
+                                      )}
+                                      </ExpandableHeader>
+                                      </div>
+                    }
+                    </>
+                )
+            })}
             </div>
-        </ExpandableHeader>
+            </ExpandableHeader>
+        }
+        </>
     );
 }
 
@@ -132,9 +141,9 @@ interface ReportListProps {
 }
 
 function ReportList({ brokenPatches, name }: ReportListProps) {
-    let [hidden, setHidden] = useState<string[]>([]);
+    const [hidden, setHidden] = useState<string[]>([]);
 
-    let list = brokenPatches.reduce((acc, obj) => {
+    const list = brokenPatches.reduce((acc, obj) => {
         const plugin = obj.plugin;
         if (!acc[plugin]) {
             acc[plugin] = [];
@@ -147,7 +156,7 @@ function ReportList({ brokenPatches, name }: ReportListProps) {
         <div className="ReportList">
             <h2 style={{ marginLeft: "0.5rem" }}>{name}</h2>
             {Object.entries(list).map(([key, value]) => {
-                if (hidden.some((e: any) => e === key)) return null;
+                if (hidden.some((e) => e === key)) return null;
                 return (
                     <PluginReport type={name} data={value} name={key} onHide={() => setHidden((e) => [...e, key])} />
                 )

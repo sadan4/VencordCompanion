@@ -1,16 +1,18 @@
 import { ArrayLiteralExpression, createSourceFile, Expression, IntersectionTypeNode, isArrayLiteralExpression, isCallExpression, isExportAssignment, isIdentifier, isIntersectionTypeNode, isObjectLiteralExpression, isPropertyAssignment, isRegularExpressionLiteral, isStringLiteral, isTypeReferenceNode, isVariableDeclaration, isVariableStatement, Node, ObjectLiteralExpression, ScriptTarget, TypeReferenceNode } from "typescript";
 import { CodeLens, CodeLensProvider, Range, TextDocument } from "vscode";
-import { hasName, isNotNull, tryParseFunction, tryParseRegularExpressionLiteral, tryParseStringLiteral } from "./helpers";
+
 import { FindType, PatchData } from "../shared";
+import { hasName, isNotNull, tryParseFunction, tryParseRegularExpressionLiteral, tryParseStringLiteral } from "./helpers";
+
 function parseFind(patch: ObjectLiteralExpression) {
     const find = patch.properties.find(p => hasName(p, "find"));
-    if(!find || !isPropertyAssignment(find)) return null;
+    if (!find || !isPropertyAssignment(find)) return null;
     if (!(isStringLiteral(find.initializer) || isRegularExpressionLiteral(find.initializer))) return null;
 
     return {
         findType: isStringLiteral(find.initializer) ? FindType.STRING : FindType.REGEX,
         find: find.initializer.text
-    }
+    };
 }
 
 function parseMatch(node: Expression) {
@@ -92,7 +94,7 @@ const recursivelyFindType = (node: TypeReferenceNode | IntersectionTypeNode, typ
             if (t) return t;
         }
     }
-}
+};
 
 
 function parsePossiblePatches(node: Node): ArrayLiteralExpression | ParseResult {
@@ -162,13 +164,13 @@ export class PatchCodeLensProvider implements CodeLensProvider {
                     command: "vencord-companion.extractSearch",
                     arguments: [data.find, data.findType],
                     tooltip: "View Module"
-                }))
+                }));
                 lenses.push(new CodeLens(range, {
                     title: "Diff Module",
                     command: "vencord-companion.diffModuleSearch",
                     arguments: [data.find, data.findType],
                     tooltip: "Diff Module"
-                }))
+                }));
                 lenses.push(new CodeLens(range, {
                     title: "Test Patch",
                     command: "vencord-companion.testPatch",

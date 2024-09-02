@@ -1,8 +1,9 @@
-import { RawData, WebSocket, WebSocketServer } from "ws";
-import { ExtraceRecieveData, outputChannel } from "./shared";
 import { commands, Uri, workspace } from "vscode";
+import { RawData, WebSocket, WebSocketServer } from "ws";
+
 import format from "./format";
 import { handleAfterRecive } from "./reporter";
+import { ExtraceRecieveData, outputChannel } from "./shared";
 
 export let wss: WebSocketServer | undefined;
 
@@ -107,25 +108,25 @@ export function startWebSocketServer() {
                         break;
                     }
                     case "diff": {
-                        const { data , moduleNumber} = rec;
+                        const { data, moduleNumber } = rec;
                         const sourceUri = mkStringUri(await format("0," + data.source));
                         const patchedUri = mkStringUri(await format("0," + data.patched));
-                        commands.executeCommand("vscode.diff", sourceUri, patchedUri, "Patch Diff: " + moduleNumber)
+                        commands.executeCommand("vscode.diff", sourceUri, patchedUri, "Patch Diff: " + moduleNumber);
                         break;
                     }
                     case "extract": {
                         const data: ExtraceRecieveData = rec;
                         if (data.data) {
-                            data.data = `//WebpackModule${data.moduleNumber}\n${data.find ? `//OPEN FULL MODULE: ${data.moduleNumber}\n` : ""}//EXTRACED WEPBACK MODULE ${data.moduleNumber}\n 0,\n${data.data}`
+                            data.data = `//WebpackModule${data.moduleNumber}\n${data.find ? `//OPEN FULL MODULE: ${data.moduleNumber}\n` : ""}//EXTRACED WEPBACK MODULE ${data.moduleNumber}\n 0,\n${data.data}`;
                         }
                         workspace.openTextDocument({
                             content: await format(data.data || "//ERROR: NO DATA RECIVED\n//This module may be lazy loaded"),
                             language: "javascript"
                         })
                             .then(e => {
-                                commands.executeCommand("vscode.open", e.uri)
+                                commands.executeCommand("vscode.open", e.uri);
                             }
-                            )
+                            );
                         break;
                     }
                     case "moduleList": {
@@ -137,7 +138,7 @@ export function startWebSocketServer() {
                 }
             }
             catch (e) {
-                console.error(e)
+                console.error(e);
                 outputChannel.appendLine(String(e));
             }
         });
@@ -177,9 +178,9 @@ export function stopWebSocketServer() {
 }
 
 export function mkStringUri(patched: any, filetype = "js") {
-    const SUFFIX = "." + filetype
-    const PREFIX = "vencord-companion://b64string/"
-    const a = Buffer.from(patched)
+    const SUFFIX = "." + filetype;
+    const PREFIX = "vencord-companion://b64string/";
+    const a = Buffer.from(patched);
     return Uri.parse(PREFIX + a.toString("base64url") + SUFFIX);
 }
 

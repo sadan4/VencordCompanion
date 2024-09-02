@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins&wght@200&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Poppins&wght@200&display=swap");
 
 :root {
   --text: var(--vscode-editor-foreground);
@@ -10,9 +10,8 @@
   --core: var(--base);
 }
 
-.PluginName
-{
-  padding-bottom: .5rem;
+.PluginName {
+  padding-bottom: 0.5rem;
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -25,21 +24,21 @@
   }
 }
 
-body
-{
+body {
   padding: 1rem;
   color: var(--text);
   background-color: var(--base);
-  font-family: "Poppins";
+  font-family: var(--vscode-editor-font-family);
+  font-weight: var(--vscode-editor-font-weight);
+  font-size: var(--vscode-editor-font-size);
+  /* font-family: "Poppins"; */
 }
 
-#reporter h1
-{
+#reporter h1 {
   margin-left: 1rem;
 }
 
-.ReportList
-{
+.ReportList {
   background-color: var(--mantle);
   min-width: 30em;
   width: fit-content;
@@ -50,8 +49,7 @@ body
   flex-direction: column;
 }
 
-.Codeblock
-{
+.Codeblock {
   background-color: var(--core);
   color: var(--text);
   width: fit-content;
@@ -63,8 +61,7 @@ body
   }
 }
 
-.CodeblockContainer
-{
+.CodeblockContainer {
   display: flex;
   height: fit-content;
   align-items: center;
@@ -73,13 +70,11 @@ body
   }
 }
 
-.PatchList > *
-{
-    margin-top: 1rem;
+.PatchList > * {
+  margin-top: 1rem;
 }
 
-button
-{
+button {
   &:enabled:active {
     filter: brightness(150%);
   }
@@ -87,7 +82,7 @@ button
     cursor: not-allowed;
     filter: brightness(60%);
   }
-  >h3 {
+  > h3 {
     user-select: none;
   }
   * {
@@ -102,6 +97,6 @@ button
   height: fit-content;
   cursor: pointer;
 }
-.EvaledPatch .CodeblockContainer h4{
-      margin: 1rem .5rem;
+.EvaledPatch .CodeblockContainer h4 {
+  margin: 1rem 0.5rem;
 }

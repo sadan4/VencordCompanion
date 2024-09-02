@@ -1,6 +1,7 @@
 import { ShellExecution, tasks, window } from "vscode";
-import { sendToSockets } from "./webSocketServer";
+
 import { ReporterData } from "./types";
+import { sendToSockets } from "./webSocketServer";
 import { ReporterPanel } from "./webview";
 // 1. rebuild with reporter
 // 2. send reload command
@@ -12,62 +13,62 @@ export let running = false;
 export async function startReporter() {
     try {
         if (running) {
-            running = false
-            throw new Error("The reporter is currently running, please wait.\nIf you think this is a bug, please report this.")
+            running = false;
+            throw new Error("The reporter is currently running, please wait.\nIf you think this is a bug, please report this.");
         }
 
-        running = true
-        const task = await getReporterTask()
+        running = true;
+        const task = await getReporterTask();
 
         // used to kill watch tasks
-        ensureOnlyTask()
+        ensureOnlyTask();
 
-        await tasks.executeTask(task)
+        await tasks.executeTask(task);
         // cant find a way to await the vscode task finish
-        await new Promise((r) => setTimeout(r, 1000))
+        await new Promise(r => setTimeout(r, 1000));
         await sendToSockets({
             type: "reload",
             data: undefined
-        })
+        });
     } catch (e) {
-        window.showErrorMessage(String(e))
+        window.showErrorMessage(String(e));
         // peak logic
-        running = !running
+        running = !running;
     }
 }
 export async function handleAfterRecive(data: ReporterData) {
-    running = false
+    running = false;
     try {
         const task = await getNormalBuildTask();
-        ensureOnlyTask()
+        ensureOnlyTask();
 
-        await tasks.executeTask(task)
+        await tasks.executeTask(task);
         // cant find a way to await the vscode task finish
-        await new Promise((r) => setTimeout(r, 1000))
+        await new Promise(r => setTimeout(r, 1000));
         await sendToSockets({
             type: "reload",
             data: undefined
-        })
-        ReporterPanel.createOrShow(data)
+        });
+        ReporterPanel.createOrShow(data);
     } catch (error) {
-        window.showErrorMessage(String(error))
+        window.showErrorMessage(String(error));
     }
 }
 async function getNormalBuildTask() {
-    const task = (await tasks.fetchTasks()).filter(t => t.execution instanceof ShellExecution && t.execution.commandLine?.includes("build") && t.execution.commandLine?.includes("--dev") && !t.execution.commandLine?.includes("--companion-test"))
+    const task = (await tasks.fetchTasks()).filter(t => t.execution instanceof ShellExecution && t.execution.commandLine?.includes("build") && t.execution.commandLine?.includes("--dev") && !t.execution.commandLine?.includes("--companion-test"));
     if (task.length === 0)
-        throw new Error("No build task found")
+        throw new Error("No build task found");
     if (task.length > 1)
         throw new Error("More than one task found");
-    return task[0]
+    return task[0];
 }
 async function getReporterTask() {
-    const task = (await tasks.fetchTasks()).filter(t => t.execution instanceof ShellExecution && String(t.execution.commandLine).includes("--companion-test"))
+    const task = (await tasks.fetchTasks()).filter(t => t.execution instanceof ShellExecution && String(t.execution.commandLine).includes("--companion-test"));
     if (task.length === 0)
-        throw new Error("No build task found")
+        throw new Error("No build task found");
     if (task.length > 1)
         throw new Error("More than one task found");
-    return task[0]
+    return task[0];
 }
 
 /**
@@ -76,5 +77,5 @@ async function getReporterTask() {
 function ensureOnlyTask() {
     if (tasks.taskExecutions.length === 0)
         return;
-    tasks.taskExecutions.forEach(t => t.terminate())
+    tasks.taskExecutions.forEach(t => t.terminate());
 }

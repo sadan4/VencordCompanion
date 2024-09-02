@@ -1,5 +1,6 @@
 import { createSourceFile, isCallExpression, Node, ScriptTarget } from "typescript";
 import { CodeLens, CodeLensProvider, Range } from "vscode";
+
 import { isNotNull, tryParseFunction, tryParseRegularExpressionLiteral, tryParseStringLiteral } from "./helpers";
 
 const vencordWebpackImportRegex = /import \{(.+?)\} from ['`"]@webpack(\/.+?)?['`"]/;
@@ -37,7 +38,7 @@ export const WebpackCodeLensProvider: CodeLensProvider = {
                         }
                     }],
                     tooltip: "View Module"
-                }))
+                }));
                 lenses.push(new CodeLens(range, {
                     title: "Test Find",
                     command: "vencord-companion.testFind",

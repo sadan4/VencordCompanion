@@ -1,10 +1,11 @@
-import { commands, ExtensionContext, languages, QuickPickItem,  Uri,  window as vscWindow, window, workspace } from "vscode";
-import { ExtractSendData, FindData, FindType, PatchData } from "./shared";
-import { WebpackCodeLensProvider } from "./lenses/WebpackCodeLensProvider";
-import { moduleCache, sendToSockets, startWebSocketServer, stopWebSocketServer } from "./webSocketServer";
-import { startReporter } from "./reporter";
+import { commands, ExtensionContext, languages, QuickPickItem, Uri, window as vscWindow, window, workspace } from "vscode";
+
 import { PatchCodeLensProvider } from "./lenses/PatchCodeLensProvider";
 import PluginDefCodeLensProvider from "./lenses/PluginDefCodeLensProvider";
+import { WebpackCodeLensProvider } from "./lenses/WebpackCodeLensProvider";
+import { startReporter } from "./reporter";
+import { ExtractSendData, FindData, FindType, PatchData } from "./shared";
+import { moduleCache, sendToSockets, startWebSocketServer, stopWebSocketServer } from "./webSocketServer";
 export let extensionUri: Uri;
 export let extensionPath: string;
 export function activate(context: ExtensionContext) {
@@ -28,9 +29,9 @@ export function activate(context: ExtensionContext) {
 		commands.registerCommand("vencord-companion.runReporter", startReporter),
 		workspace.registerTextDocumentContentProvider("vencord-companion", {
 			async provideTextDocumentContent(uri) {
-				//FIXME: full uri shows up in title bar
+				// FIXME: full uri shows up in title bar
 				const newLocal = Buffer.from(uri.path.substring(1, uri.path.lastIndexOf(".")), "base64url");
-				return newLocal.toString()
+				return newLocal.toString();
 			},
 		}),
 		commands.registerCommand("vencord-companion.diffModule", async args => {
@@ -41,7 +42,7 @@ export function activate(context: ExtensionContext) {
 						extractType: "id",
 						idOrSearch: args
 					}
-				}).catch(e => window.showErrorMessage(String(e)))
+				}).catch(e => window.showErrorMessage(String(e)));
 			const quickPick = window.createQuickPick();
 			quickPick.placeholder = "module ID";
 			quickPick.canSelectMany = false;
@@ -55,14 +56,14 @@ export function activate(context: ExtensionContext) {
 				} else {
 					items[0].alwaysShow = false;
 				}
-				quickPick.items = items
-			})
-			quickPick.show()
+				quickPick.items = items;
+			});
+			quickPick.show();
 			quickPick.onDidAccept(async () => {
 				const modId = quickPick.value;
 				quickPick.dispose();
 				if (!modId || isNaN(+modId))
-					return vscWindow.showErrorMessage("No Module ID provided")
+					return vscWindow.showErrorMessage("No Module ID provided");
 				try {
 					await sendToSockets({
 						type: "search",
@@ -70,11 +71,11 @@ export function activate(context: ExtensionContext) {
 							extractType: "id",
 							idOrSearch: +modId
 						},
-					})
+					});
 				} catch (error) {
-					vscWindow.showErrorMessage(String(error))
+					vscWindow.showErrorMessage(String(error));
 				}
-			})
+			});
 
 
 		}),
@@ -87,10 +88,10 @@ export function activate(context: ExtensionContext) {
 						findType,
 						idOrSearch: args
 					}
-				}).catch(e => window.showErrorMessage(String(e)))
+				}).catch(e => window.showErrorMessage(String(e)));
 			const input = await window.showInputBox();
 			if (!input)
-				return window.showErrorMessage("No Input Provided")
+				return window.showErrorMessage("No Input Provided");
 			try {
 				await sendToSockets({
 					type: "diff",
@@ -99,9 +100,9 @@ export function activate(context: ExtensionContext) {
 						findType: FindType.STRING,
 						idOrSearch: input
 					}
-				})
+				});
 			} catch (error) {
-				vscWindow.showErrorMessage(String(error))
+				vscWindow.showErrorMessage(String(error));
 			}
 		}),
 		commands.registerCommand("vencord-companion.extractFind", async (args: {
@@ -120,7 +121,7 @@ export function activate(context: ExtensionContext) {
 					findType: args.data.type,
 					findArgs: args.data.args
 				}
-			}).catch(e => window.showErrorMessage(String(e)))
+			}).catch(e => window.showErrorMessage(String(e)));
 		}),
 		commands.registerCommand("vencord-companion.extract", async (args: number) => {
 			if (args)
@@ -130,7 +131,7 @@ export function activate(context: ExtensionContext) {
 						extractType: "id",
 						idOrSearch: args
 					}
-				}).catch(e => window.showErrorMessage(String(e)))
+				}).catch(e => window.showErrorMessage(String(e)));
 			const quickPick = window.createQuickPick();
 			quickPick.placeholder = "module ID";
 			quickPick.canSelectMany = false;
@@ -144,14 +145,14 @@ export function activate(context: ExtensionContext) {
 				} else {
 					items[0].alwaysShow = false;
 				}
-				quickPick.items = items
-			})
-			quickPick.show()
+				quickPick.items = items;
+			});
+			quickPick.show();
 			quickPick.onDidAccept(async () => {
 				const modId = quickPick.value;
 				quickPick.dispose();
 				if (!modId || isNaN(+modId))
-					return vscWindow.showErrorMessage("No Module ID provided")
+					return vscWindow.showErrorMessage("No Module ID provided");
 				try {
 					await sendToSockets({
 						type: "extract",
@@ -159,11 +160,11 @@ export function activate(context: ExtensionContext) {
 							extractType: "id",
 							idOrSearch: +modId
 						} as ExtractSendData,
-					})
+					});
 				} catch (error) {
-					vscWindow.showErrorMessage(String(error))
+					vscWindow.showErrorMessage(String(error));
 				}
-			})
+			});
 
 		}),
 		commands.registerCommand("vencord-companion.extractSearch", async (args: string, findType: FindType) => {
@@ -175,10 +176,10 @@ export function activate(context: ExtensionContext) {
 						findType,
 						idOrSearch: args
 					}
-				}).catch(e => window.showErrorMessage(String(e)))
+				}).catch(e => window.showErrorMessage(String(e)));
 			const input = await window.showInputBox();
 			if (!input)
-				return window.showErrorMessage("No Input Provided")
+				return window.showErrorMessage("No Input Provided");
 			try {
 				await sendToSockets({
 					type: "extract",
@@ -187,20 +188,20 @@ export function activate(context: ExtensionContext) {
 						findType: FindType.STRING,
 						idOrSearch: input
 					}
-				})
+				});
 			} catch (error) {
-				vscWindow.showErrorMessage(String(error))
+				vscWindow.showErrorMessage(String(error));
 			}
 		}),
 		commands.registerCommand("vencord-companion.disablePlugin", async data => {
 			try {
-				if(!data) throw new Error("No args passed.");
+				if (!data) throw new Error("No args passed.");
 				await sendToSockets({
 					type: "disable",
 					data
-				})
+				});
 			} catch (error) {
-				vscWindow.showErrorMessage(String(error))
+				vscWindow.showErrorMessage(String(error));
 			}
 		}),
 		commands.registerCommand("vencord-companion.testPatch", async (patch: PatchData) => {

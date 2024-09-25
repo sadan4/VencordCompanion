@@ -1,8 +1,10 @@
 import { commands, ExtensionContext, languages, QuickPickItem, Uri, window as vscWindow, window, workspace } from "vscode";
 
+import PartialModuleJumpCodeLensProvider from "./lenses/PartialModuleJumpCodeLensProvider";
 import { PatchCodeLensProvider } from "./lenses/PatchCodeLensProvider";
 import PluginDefCodeLensProvider from "./lenses/PluginDefCodeLensProvider";
 import { WebpackCodeLensProvider } from "./lenses/WebpackCodeLensProvider";
+import { DefinitionProvider } from "./lsp";
 import { startReporter } from "./reporter";
 import { ExtractSendData, FindData, FindType, PatchData } from "./shared";
 import { moduleCache, sendToSockets, startWebSocketServer, stopWebSocketServer } from "./webSocketServer";
@@ -22,15 +24,17 @@ export function activate(context: ExtensionContext) {
 			{ pattern: "**/{plugins,userplugins,plugins/_*}/{*.ts,*.tsx,**/index.ts,**/index.tsx}" },
 			new PatchCodeLensProvider()
 		),
+		languages.registerDefinitionProvider({ language: "javascript" }, new DefinitionProvider),
 
 		languages.registerCodeLensProvider({ language: "typescript" }, WebpackCodeLensProvider),
 		languages.registerCodeLensProvider({ language: "typescriptreact" }, WebpackCodeLensProvider),
+		languages.registerCodeLensProvider({ language: "javascript" }, new PartialModuleJumpCodeLensProvider),
 
 		commands.registerCommand("vencord-companion.runReporter", startReporter),
 		workspace.registerTextDocumentContentProvider("vencord-companion", {
 			async provideTextDocumentContent(uri) {
 				// FIXME: full uri shows up in title bar
-				const newLocal = Buffer.from(uri.path.substring(1, uri.path.lastIndexOf(".")), "base64url");
+				const newLocal = Buffer.from(uri.path.substring(1, uri.path.lastIndexOf("/")), "base64url");
 				return newLocal.toString();
 			},
 		}),

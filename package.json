@@ -20,6 +20,12 @@
     },
     "license": "GPL-3.0",
     "author": "Vendicated <vendicated+npm@riseup.net>",
+    "contributors": [
+        {
+            "name": "sadan",
+            "url": "https://sadan.zip"
+        }
+    ],
     "publisher": "Vendicated",
     "main": "./dist/extension.js",
     "scripts": {
@@ -76,6 +82,7 @@
     ],
     "dependencies": {
         "prettier": "^3.3.3",
+        "tsutils": "^3.21.0",
         "typescript": "^4.9.5",
         "ws": "^8.12.1"
     },
@@ -90,7 +97,6 @@
         "esbuild": "^0.23.1",
         "eslint": "^9.9.1",
         "eslint-plugin-simple-import-sort": "^12.1.1",
-        "eslint-plugin-unused-imports": "^4.1.3",
         "typescript-eslint": "^8.3.0"
     },
     "engines": {

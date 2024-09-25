@@ -15,7 +15,14 @@ const enum CloseCode {
 export const moduleCache: string[] = [];
 let nonceCounter = 8485;
 
-export async function sendToSockets(data: { type: string, data: unknown; }) {
+export function sendAndGetData<T = any>(data: { type: string, data: unknown; }) {
+    return new Promise<T>((res, rej) => {
+        setTimeout(rej.bind(null, "Timed Out"), 10_000);
+        sendToSockets(data, res).catch(rej);
+    });
+}
+
+export async function sendToSockets(data: { type: string, data: unknown; }, dataCb?: (data: any) => void) {
     if (sockets.size === 0) {
         throw new Error("No Discord Clients Connected! Make sure you have Discord open, and have the DevCompanion plugin enabled (see README for more info!)");
     }
@@ -38,6 +45,7 @@ export async function sendToSockets(data: { type: string, data: unknown; }) {
 
             if (parsed.ok) {
                 resolve();
+                dataCb && dataCb(parsed);
             } else {
                 reject(parsed.error);
             }
@@ -107,17 +115,21 @@ export function startWebSocketServer() {
                         handleAfterRecive(rec.data);
                         break;
                     }
+                    // used to send data back to the sendAndGetData
+                    case "ret": {
+                        break;
+                    }
                     case "diff": {
                         const { data, moduleNumber } = rec;
-                        const sourceUri = mkStringUri(await format("0," + data.source));
-                        const patchedUri = mkStringUri(await format("0," + data.patched));
+                        const sourceUri = mkStringUri(await format(formatModule(data.source, moduleNumber)));
+                        const patchedUri = mkStringUri(await format(formatModule(data.patched, moduleNumber)));
                         commands.executeCommand("vscode.diff", sourceUri, patchedUri, "Patch Diff: " + moduleNumber);
                         break;
                     }
                     case "extract": {
                         const data: ExtraceRecieveData = rec;
                         if (data.data) {
-                            data.data = `//WebpackModule${data.moduleNumber}\n${data.find ? `//OPEN FULL MODULE: ${data.moduleNumber}\n` : ""}//EXTRACED WEPBACK MODULE ${data.moduleNumber}\n 0,\n${data.data}`;
+                            data.data = formatModule(data.data, data.moduleNumber, data.find);
                         }
                         workspace.openTextDocument({
                             content: await format(data.data || "//ERROR: NO DATA RECIVED\n//This module may be lazy loaded"),
@@ -177,10 +189,31 @@ export function stopWebSocketServer() {
     wss = undefined;
 }
 
-export function mkStringUri(patched: any, filetype = "js") {
-    const SUFFIX = "." + filetype;
+/**
+ * converts a string into a URI that will resolve to a file with the contents of the string
+ * @param patched the contents of the file
+ * @param filename the name of the file
+ * @param filetype the file extension
+ * @returns the Uri for the file
+ */
+export function mkStringUri(patched: any, filename = "module", filetype = "js"): Uri {
+    const SUFFIX = "/" + filename + "." + filetype;
+    if(filename.indexOf("/") !== -1 || filetype.indexOf("/") !== -1) throw new Error(`Filename and filetype must not contain \`/\`. Got: ${SUFFIX.substring(1)}`);
     const PREFIX = "vencord-companion://b64string/";
     const a = Buffer.from(patched);
     return Uri.parse(PREFIX + a.toString("base64url") + SUFFIX);
 }
 
+/**
+ * **does not** format the modules code see {@link format} for more code formating
+
+ * takes the raw contents of a module and prepends a header
+ * @param moduleContents the module
+ * @param moduleId the module id
+ * @param isFind if the module is coming from a find
+    eg: is it a partial module
+ * @returns a string with the formatted module
+ */
+export function formatModule(moduleContents: string, moduleId: string | number | undefined = "000000", isFind?: boolean): string {
+    return `//WebpackModule${moduleId}\n${isFind ? `//OPEN FULL MODULE: ${moduleId}\n` : ""}//EXTRACED WEPBACK MODULE ${moduleId}\n 0,\n${moduleContents}`;
+}

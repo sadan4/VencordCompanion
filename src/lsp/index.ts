@@ -1,4 +1,3 @@
-import assert = require("assert");
 import {
     collectVariableUsage,
     getTokenAtPosition,
@@ -17,19 +16,18 @@ import * as vscode from "vscode";
 
 import { formatModule, mkStringUri, sendAndGetData } from "../webSocketServer";
 import {
-    findExportLocation,
     findObjectLiteralByKey,
     findParrent,
+    findReturnIdentifier,
     findWebpackArg,
-    isWreq_d,
     getLeadingIdentifier,
     getModuleId,
+    isWreq_d,
     makeRange,
     zeroRange,
 } from "./util";
 import ts = require("typescript");
 import format from "../format";
-import { findReturnIdentifier } from "./util";
 import exp = require("constants");
 import { lchown } from "fs";
 
@@ -96,7 +94,7 @@ class WebpackAstParser {
         // map the assignment of required modules to their uses
         const modules = new Map(
             [...this.vars.entries()].filter(([k]) => {
-                return this.uses!.uses.some((e) => {
+                return this.uses!.uses.some(e => {
                     const node = findParrent<VariableDeclaration>(
                         e.location,
                         isVariableDeclaration
@@ -141,7 +139,7 @@ class WebpackAstParser {
     }
 
     public findExportLocation(exportName: string): vscode.Range {
-        return this.tryFindExportwreq_d(exportName) || this.tryFindExportWreq_t(exportName) || this.tryFindExportsWreq_e(exportName) || zeroRange
+        return this.tryFindExportwreq_d(exportName) || this.tryFindExportWreq_t(exportName) || this.tryFindExportsWreq_e(exportName) || zeroRange;
     }
 
     private tryFindExportwreq_d(exportName: string): vscode.Range | undefined {
@@ -174,7 +172,7 @@ class WebpackAstParser {
 
             const [exportDec] =
                 [...this.vars.entries()].find(([, v]) => {
-                    return v.uses.some((use) => use.location === exportVar);
+                    return v.uses.some(use => use.location === exportVar);
                 }) ?? [];
 
             if (!exportDec) return undefined;
@@ -186,16 +184,16 @@ class WebpackAstParser {
     private tryFindExportWreq_t(exportName: string): vscode.Range | undefined {
         const wreq_t = findWebpackArg(this.sourceFile, 1);
 
-        if (!wreq_t) return undefined
+        if (!wreq_t) return undefined;
 
-        const uses = this.vars.get(wreq_t)
+        const uses = this.vars.get(wreq_t);
 
-        if (!uses) return undefined
+        if (!uses) return undefined;
 
         const exports = uses.uses.find(({ location }) => {
             const [, exportAssignment] = getLeadingIdentifier(location);
             return exportAssignment?.text === exportName;
-        })
+        });
 
         return exports ? makeRange(exports.location, this.text) : undefined;
     }
@@ -212,9 +210,9 @@ class WebpackAstParser {
         const exportAssignment = uses.uses.find(({ location }) => {
             const [, moduleProp] = getLeadingIdentifier(location);
             return moduleProp?.text === "exports";
-        })
+        });
 
-        if (!exportAssignment) return undefined
+        if (!exportAssignment) return undefined;
 
         const exportObject = findParrent<ts.BinaryExpression | undefined>(exportAssignment.location, ts.isBinaryExpression)?.right;
 

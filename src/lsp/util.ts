@@ -1,6 +1,7 @@
 import { collectVariableUsage, isSyntaxList, VariableInfo, VariableUse } from "tsutils";
 import { FunctionExpression, Identifier, isBinaryExpression, isCallExpression, isExpressionStatement, isFunctionExpression, isIdentifier, isNumericLiteral, isPropertyAccessExpression, isReturnStatement, isVariableDeclaration, Node, ObjectLiteralExpression, PropertyAccessExpression, PropertyAssignment, SourceFile, VariableDeclaration } from "typescript";
 import * as vscode from "vscode";
+
 import { getNumberAndColumnFromPos } from "./lineUtil";
 
 export const zeroRange = new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 0));
@@ -52,12 +53,13 @@ function one<T>(arr: Array<T>, func: (t: T) => boolean): T | undefined {
     const filter = arr.filter(func);
     return (filter.length === 1 || undefined) && filter[0];
 }
+// i fucking hate jsdoc
+// FIXME: type the return for this
 /**
- * given an access chain like `one.b.three.d`
+ * given an access chain like `one.b.three.d` \@*returns* — `[one?, b?]`
  *
  * if b is returned, one is gaurenteed to be defined
  * @param node any node in the property access chain
- * @returns [one?, b?]
  */
 export function getLeadingIdentifier(node: Node | undefined): [Identifier | undefined, Identifier | undefined] {
     if (!node) return [node, undefined];
@@ -112,22 +114,22 @@ export function findExportLocation(exportFile: SourceFile, wpExportName: string)
 }
 
 export function isWreq_d(use: VariableUse): boolean {
-    if (getLeadingIdentifier(use.location)[1]?.text === "d") return true
+    if (getLeadingIdentifier(use.location)[1]?.text === "d") return true;
     return false;
 }
 
 /**
  * given an object literal, returns the property assignment for `prop` if it exsists
- * 
+ *
  * if prop is defined more than once, returns the first
  * @example
  * {
- *  prop: "examplePropValue"
+ *  exprop: "examplePropValue"
  * }
- * @param prop 
+ * @param prop exprop
  */
 export function findObjectLiteralByKey(object: ObjectLiteralExpression, prop: string) {
-    return object.properties.find(x => x.name?.getText() === prop)
+    return object.properties.find(x => x.name?.getText() === prop);
 }
 
 /**
@@ -146,7 +148,7 @@ export function findReturnIdentifier(func: FunctionExpression): Identifier | und
         || !lastStatment.expression || !isIdentifier(lastStatment.expression)
     ) return undefined;
 
-    return lastStatment.expression
+    return lastStatment.expression;
 }
 
 /**
@@ -154,7 +156,7 @@ export function findReturnIdentifier(func: FunctionExpression): Identifier | und
  *  @param text the document that node is in
  */
 export function makeRange(node: Node, text: string): vscode.Range {
-    return new vscode.Range(makeLocation(node.pos, text), makeLocation(node.end, text))
+    return new vscode.Range(makeLocation(node.pos, text), makeLocation(node.end, text));
 }
 
 /**

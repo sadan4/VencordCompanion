@@ -59,6 +59,10 @@
             {
                 "command": "vencord-companion.extractSearch",
                 "title": "Extract With Search"
+            },
+            {
+                "command": "vencord-companion.cacheModules",
+                "title": "Cache Modules"
             }
         ],
         "snippets": [

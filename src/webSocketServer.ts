@@ -15,14 +15,24 @@ const enum CloseCode {
 export const moduleCache: string[] = [];
 let nonceCounter = 8485;
 
-export function sendAndGetData<T = any>(data: { type: string, data: unknown; }) {
+const defaultOpts: SendToSocketsOpts = {
+    timeout: 5000
+};
+export function sendAndGetData<T = any>(data: { type: string, data: unknown; }, opts?: SendToSocketsOpts) {
+    const { timeout } = opts ?? defaultOpts;
     return new Promise<T>((res, rej) => {
-        setTimeout(rej.bind(null, "Timed Out"), 10_000);
-        sendToSockets(data, res).catch(rej);
+        setTimeout(rej.bind(null, "Timed Out"), timeout);
+        sendToSockets(data, res, opts).catch(rej);
     });
 }
-
-export async function sendToSockets(data: { type: string, data: unknown; }, dataCb?: (data: any) => void) {
+interface SendToSocketsOpts {
+    /**
+     * in ms, defaults to 5000
+     */
+    timeout: number;
+}
+export async function sendToSockets(data: { type: string, data: unknown; }, dataCb?: (data: any) => void, opts?: SendToSocketsOpts) {
+    const { timeout } = opts ?? defaultOpts;
     if (sockets.size === 0) {
         throw new Error("No Discord Clients Connected! Make sure you have Discord open, and have the DevCompanion plugin enabled (see README for more info!)");
     }
@@ -67,7 +77,7 @@ export async function sendToSockets(data: { type: string, data: unknown; }, data
         setTimeout(() => {
             cleanup();
             reject("Timed out");
-        }, 5000);
+        }, timeout);
 
         sock.send(JSON.stringify(data));
     }));
@@ -167,7 +177,6 @@ export function startWebSocketServer() {
             originalSend.call(this, data);
         };
 
-        console.log(sock);
     });
 
     wss.on("error", err => {
@@ -198,7 +207,7 @@ export function stopWebSocketServer() {
  */
 export function mkStringUri(patched: any, filename = "module", filetype = "js"): Uri {
     const SUFFIX = "/" + filename + "." + filetype;
-    if(filename.indexOf("/") !== -1 || filetype.indexOf("/") !== -1) throw new Error(`Filename and filetype must not contain \`/\`. Got: ${SUFFIX.substring(1)}`);
+    if (filename.indexOf("/") !== -1 || filetype.indexOf("/") !== -1) throw new Error(`Filename and filetype must not contain \`/\`. Got: ${SUFFIX.substring(1)}`);
     const PREFIX = "vencord-companion://b64string/";
     const a = Buffer.from(patched);
     return Uri.parse(PREFIX + a.toString("base64url") + SUFFIX);

@@ -213,16 +213,16 @@ class WebpackAstParser {
             const [, moduleProp] = getLeadingIdentifier(location);
             return moduleProp?.text === "exports";
         })
-        
+
         if (!exportAssignment) return undefined
 
         const exportObject = findParrent<ts.BinaryExpression | undefined>(exportAssignment.location, ts.isBinaryExpression)?.right;
-        
-        if(!exportObject || !ts.isObjectLiteralExpression(exportObject)) return undefined;
-        
+
+        if (!exportObject || !ts.isObjectLiteralExpression(exportObject)) return undefined;
+
         const exportItem = findObjectLiteralByKey(exportObject, exportName);
-        
-        if(!exportItem) return undefined;
+
+        if (!exportItem) return undefined;
 
         return makeRange(exportItem.name ?? exportItem, this.text);
     }

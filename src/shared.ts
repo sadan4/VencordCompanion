@@ -1,7 +1,7 @@
 import { window } from "vscode";
 
 export const outputChannel = window.createOutputChannel("Vencord Companion");
-
+// FIXME: properly type this, use keyed types
 export interface StringNode {
     type: "string";
     value: string;

@@ -12,6 +12,7 @@ import { mkStringUri, sendToSockets } from "./webSocketServer";
 type Patch = { patch: EvaledPatch };
 type PluginName = { pluginName: string };
 type Diff = { oldModule: string, newModule: string };
+// TODO: add persistant state
 export class ReporterPanel {
     /**
      * Track the currently panel. Only allow a single panel to exist at a time.

@@ -5,6 +5,7 @@ import { PatchCodeLensProvider } from "./lenses/PatchCodeLensProvider";
 import PluginDefCodeLensProvider from "./lenses/PluginDefCodeLensProvider";
 import { WebpackCodeLensProvider } from "./lenses/WebpackCodeLensProvider";
 import { DefinitionProvider } from "./lsp";
+import { ModuleCache, testProgressBar } from "./modules/cache";
 import { startReporter } from "./reporter";
 import { ExtractSendData, FindData, FindType, PatchData } from "./shared";
 import { moduleCache, sendToSockets, startWebSocketServer, stopWebSocketServer } from "./webSocketServer";
@@ -37,6 +38,9 @@ export function activate(context: ExtensionContext) {
 				const newLocal = Buffer.from(uri.path.substring(1, uri.path.lastIndexOf("/")), "base64url");
 				return newLocal.toString();
 			},
+		}),
+		commands.registerCommand("vencord-companion.cacheModules", async () => {
+			await new ModuleCache().downloadModules();
 		}),
 		commands.registerCommand("vencord-companion.diffModule", async args => {
 			if (args)

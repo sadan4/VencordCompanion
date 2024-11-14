@@ -1,9 +1,22 @@
 import { PathLike } from "fs";
-import * as fs from "fs/promises"
-import { CancellationToken, Progress, ProgressLocation, window, workspace } from "vscode";
+import * as fs from "fs/promises";
+import { CancellationToken, Progress, ProgressLocation, ProgressOptions, window, workspace } from "vscode";
 
 
 export class ProgressBar {
+    /**
+     * WARNING: the user pressing cancel only makes this this promise reject.
+     *
+     * It does not stop the underlying action
+     */
+    static forSingleFunc<T>(opts: ProgressOptions, func: () => PromiseLike<T>): PromiseLike<T> {
+        return window.withProgress(opts, (p, c) => {
+            return new Promise((res, rej) => {
+                c.onCancellationRequested(() => rej("Cancelled by user"));
+                func().then(res, rej);
+            });
+        });
+    }
     private onCancel: () => void = () => void 0;
     private message: string;
     protected total: number;
@@ -125,7 +138,7 @@ function getPercentMarkers(num: number): number[] {
 }
 export function getCurrentFolder() {
     const doc = window.activeTextEditor?.document.uri;
-    if(!doc) return;
+    if (!doc) return;
     return workspace.getWorkspaceFolder(doc)?.uri.fsPath;
 }
 
@@ -135,4 +148,14 @@ export async function exists(path: PathLike) {
     } catch {
         return false;
     }
+}
+/**
+ * **PATH MUST EXIST**
+ *
+ * \@throws if the path doesnt exist
+ *
+ * use {@link exists} to check if it exists
+ */
+export async function isDirectory(path: PathLike) {
+    return (await fs.stat(path)).isDirectory();
 }

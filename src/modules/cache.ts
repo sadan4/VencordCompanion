@@ -1,10 +1,11 @@
 import * as fs from "fs/promises";
 import { join } from "path";
-import { window, workspace } from "vscode";
+import { ProgressLocation, window, workspace } from "vscode";
 
 import format from "../format";
+import { WebpackAstParser } from "../lsp";
 import { formatModule, sendAndGetData } from "../webSocketServer";
-import { BufferedProgressBar, exists, getCurrentFolder, ProgressBar, SecTo } from "./util";
+import { BufferedProgressBar, exists, getCurrentFolder, isDirectory, ProgressBar, SecTo } from "./util";
 export class ModuleCache {
     folder: string;
     workspaceFolder: string;
@@ -37,7 +38,7 @@ export class ModuleCache {
             canceled = true;
         }).start();
         for (const [id, text] of Object.entries(modmap)) {
-            if(canceled) {
+            if (canceled) {
                 throw new Error("Module writing canceled");
             }
             try {
@@ -117,6 +118,149 @@ export class ModuleCache {
         return allModules.data as string[];
     }
 
+}
+const MODULE_ID_FILE_REGEX = /(\d+)\.js/;
+type DepsGeneratorOpts =
+    | {
+        modmap: Record<string, string>
+    }
+    | {
+        fromDisk: true,
+        folder?: string
+    };
+type AllDeps = Record<string, {
+    /**
+     * the modules that require this module syncranously
+     */
+    syncUses: string[];
+    /**
+     * the modules that require this module lazily
+     */
+    lazyUses: string[];
+}>;
+/**
+ * **YOU MUST CALL {@link ready} IF YOU PASS A FOLDER**
+**/
+export class DepsGenerator {
+    modmap!: Record<string, string>;
+    private readyPromise;
+    currentFolder: string;
+
+    constructor(opts: DepsGeneratorOpts) {
+        this.currentFolder = getCurrentFolder()!;
+        if (this.currentFolder == null)
+            throw new Error("No folder found, please make sure you are in a workspace");
+        if ("modmap" in opts) {
+            this.modmap = opts.modmap;
+        } else if (opts.fromDisk) {
+            this.readyPromise = this.generateModmap(opts.folder || ".modules")
+                .then(v => this.modmap = v);
+        }
+    }
+
+    public async ready() {
+        this.readyPromise && await this.readyPromise;
+        return this;
+    }
+
+    public async gererateDeps() {
+        // FIXME: horror
+        const toRet: AllDeps = DepsGenerator.makeDepsMap();
+        let cancelled = false;
+        const progress = await new ProgressBar(Object.entries(this.modmap).length, "Loading Module", () => {
+            cancelled = true;
+        }).start();
+        for (const [id, text] of Object.entries(this.modmap)) {
+            if (cancelled) {
+                throw new Error("canceled by user");
+            }
+            try {
+                const deps = await new WebpackAstParser(text).getDeps();
+                for (const syncDep of deps?.sync ?? []) {
+                    toRet[syncDep].syncUses.push(id);
+                }
+                for (const lazyDep of deps?.lazy ?? []) {
+                    toRet[lazyDep].lazyUses.push(id);
+                }
+                progress.increment();
+            } catch (e) {
+                progress.stop(e);
+                throw e;
+            }
+        }
+        return toRet;
+    }
+
+    private static makeDepsMap(): AllDeps {
+        const target = {};
+        return new Proxy(target, {
+            get(target, prop, rec) {
+                if (typeof prop === "string" && prop.match(/\d+/)) {
+                    if (!Reflect.has(target, prop)) {
+                        const val = ({
+                            lazyUses: [],
+                            syncUses: []
+                        } satisfies AllDeps[string]);
+                        Reflect.set(target, prop, val, rec);
+                        return val;
+                    }
+                }
+                return Reflect.get(target, prop, rec);
+            }
+        });
+    }
+
+    protected async generateModmap(folder: string) {
+        const toRet = {};
+        const modpath = join(this.currentFolder, folder);
+        const validPath = await exists(modpath) && await isDirectory(modpath);
+        if (!validPath) throw new Error("modpath is not valid. got: " + modpath);
+
+        const files = await ProgressBar.forSingleFunc({
+            location: ProgressLocation.Notification,
+            cancellable: true,
+            title: "reading module list"
+        }, () => fs.readdir(modpath));
+        let cancelled = false;
+        const progress = await new ProgressBar(files.length, "loading files", () => {
+            cancelled = true;
+        }).start();
+        const promiseAllFiles: Promise<any>[] = [];
+        for (const file of files) {
+            if (cancelled) {
+                throw new Error("reading files cancelled by user");
+            }
+            try {
+                const filepath = join(modpath, file);
+                if (await isDirectory(filepath)) {
+                    progress.increment();
+                    continue;
+                }
+                const modId = file.match(MODULE_ID_FILE_REGEX)?.[1];
+                if (!modId) {
+                    progress.increment();
+                    continue;
+                }
+                // FIXME: add abort singal
+                promiseAllFiles.push(fs.readFile(filepath, {
+                    encoding: "utf-8",
+                }).then(text => {
+                    progress.increment();
+                    toRet[modId] = text;
+                }));
+            } catch (error) {
+                progress.stop(error);
+                throw error;
+            }
+        }
+        try {
+            await Promise.all(promiseAllFiles);
+        } catch (error) {
+            progress.stop(error);
+            throw error;
+        }
+        return toRet;
+    }
 }
 export class testProgressBar {
     constructor() {

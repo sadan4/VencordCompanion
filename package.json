@@ -63,6 +63,10 @@
             {
                 "command": "vencord-companion.cacheModules",
                 "title": "Cache Modules"
+            },
+            {
+                "command": "vencord-companion.testDeps",
+                "title": "Test Dependencies"
             }
         ],
         "snippets": [

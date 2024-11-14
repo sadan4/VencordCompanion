@@ -5,9 +5,10 @@ import { PatchCodeLensProvider } from "./lenses/PatchCodeLensProvider";
 import PluginDefCodeLensProvider from "./lenses/PluginDefCodeLensProvider";
 import { WebpackCodeLensProvider } from "./lenses/WebpackCodeLensProvider";
 import { DefinitionProvider } from "./lsp";
-import { ModuleCache, testProgressBar } from "./modules/cache";
+import { DepsGenerator, ModuleCache, testProgressBar } from "./modules/cache";
 import { startReporter } from "./reporter";
 import { ExtractSendData, FindData, FindType, PatchData } from "./shared";
+import testfile from "./testdep.txt";
 import { moduleCache, sendToSockets, startWebSocketServer, stopWebSocketServer } from "./webSocketServer";
 export let extensionUri: Uri;
 export let extensionPath: string;
@@ -38,6 +39,12 @@ export function activate(context: ExtensionContext) {
 				const newLocal = Buffer.from(uri.path.substring(1, uri.path.lastIndexOf("/")), "base64url");
 				return newLocal.toString();
 			},
+		}),
+		commands.registerCommand("vencord-companion.testDeps", async () => {
+			const x = await new DepsGenerator({
+				fromDisk: true
+			}).ready();
+			console.log(await x.gererateDeps());
 		}),
 		commands.registerCommand("vencord-companion.cacheModules", async () => {
 			await new ModuleCache().downloadModules();

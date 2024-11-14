@@ -58,8 +58,12 @@ export class DefinitionProvider implements vscode.DefinitionProvider {
         }
     }
 }
+interface ModuleDeps {
+    lazy: string[];
+    sync: string[];
+}
 
-class WebpackAstParser {
+export class WebpackAstParser {
     private text: string;
     private sourceFile: SourceFile;
     /** All vars in the file */
@@ -83,6 +87,31 @@ class WebpackAstParser {
         this.wreq = findWebpackArg(this.sourceFile);
 
         this.uses = this.wreq && this.vars.get(this.wreq);
+    }
+
+    public async getDeps(): Promise<ModuleDeps | null> {
+        if (!this.wreq || !this.uses) return null;
+        /**
+         * things like wreq(moduleid)
+         */
+        const wreqCalls = this.uses.uses.map(x => x.location).map(v => {
+            const p = findParrent<ts.CallExpression>(v, n => ts.isCallExpression(n));
+            if (!p || p.expression !== v) return false;
+            return p.arguments.length === 1 && ts.isNumericLiteral(p.arguments[0]) && p.arguments[0].text;
+        }).filter(x => x !== false);
+
+        const lazyModules = this.uses.uses.map(x => x.location).map(v => {
+            const [, prop] = getLeadingIdentifier(v);
+            if (prop?.text !== "bind") return false;
+            const call = findParrent<ts.CallExpression>(v, n => ts.isCallExpression(n));
+            if(!call) return false;
+            return call.arguments.length === 2 && ts.isNumericLiteral(call.arguments[1]) && call.arguments[1].text;
+        }).filter(x => x !== false);
+
+        return {
+            lazy: lazyModules,
+            sync: wreqCalls
+        };
     }
 
     public async generateDefinitions(
@@ -139,7 +168,12 @@ class WebpackAstParser {
     }
 
     public findExportLocation(exportName: string): vscode.Range {
-        return this.tryFindExportwreq_d(exportName) || this.tryFindExportWreq_t(exportName) || this.tryFindExportsWreq_e(exportName) || zeroRange;
+        return (
+            this.tryFindExportwreq_d(exportName) ||
+            this.tryFindExportWreq_t(exportName) ||
+            this.tryFindExportsWreq_e(exportName) ||
+            zeroRange
+        );
     }
 
     private tryFindExportwreq_d(exportName: string): vscode.Range | undefined {
@@ -166,7 +200,6 @@ class WebpackAstParser {
                 !ts.isFunctionExpression(exportCallAssignment.initializer)
             )
                 return undefined;
-
 
             const exportVar = findReturnIdentifier(exportCallAssignment.initializer);
 
@@ -214,9 +247,13 @@ class WebpackAstParser {
 
         if (!exportAssignment) return undefined;
 
-        const exportObject = findParrent<ts.BinaryExpression | undefined>(exportAssignment.location, ts.isBinaryExpression)?.right;
+        const exportObject = findParrent<ts.BinaryExpression | undefined>(
+            exportAssignment.location,
+            ts.isBinaryExpression
+        )?.right;
 
-        if (!exportObject || !ts.isObjectLiteralExpression(exportObject)) return undefined;
+        if (!exportObject || !ts.isObjectLiteralExpression(exportObject))
+            return undefined;
 
         const exportItem = findObjectLiteralByKey(exportObject, exportName);
 

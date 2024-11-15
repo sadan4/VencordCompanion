@@ -97,14 +97,15 @@ export class BufferedProgressBar extends ProgressBar {
         super(total, message, onCancel);
         this.markers = getPercentMarkers(total);
     }
-    public override increment(): void {
+    public override async increment() {
         if (!this.progress) throw new Error("Progress not started");
         this.count++;
         if (this.markers.some(v => this.count === v))
-            this.progress.report({
-                increment: 100 / this.markers.length,
-                message: this.makeTitle()
-            });
+            await new Promise(res => setTimeout(res, 0));
+        this.progress.report({
+            increment: 100 / this.total,
+            message: this.makeTitle()
+        });
         if (this.count === this.total) this.resolve();
     }
 }

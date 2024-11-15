@@ -1,9 +1,10 @@
 import { commands, Uri, workspace } from "vscode";
 import { RawData, WebSocket, WebSocketServer } from "ws";
 
-import format from "./format";
-import { handleAfterRecive } from "./reporter";
-import { ExtraceRecieveData, outputChannel } from "./shared";
+import format from "../format";
+import { handleAfterRecive } from "../reporter";
+import { ExtraceRecieveData, outputChannel } from "../shared";
+import { OutgoingMessage } from "./types/send";
 
 export let wss: WebSocketServer | undefined;
 
@@ -18,7 +19,7 @@ let nonceCounter = 8485;
 const defaultOpts: SendToSocketsOpts = {
     timeout: 5000
 };
-export function sendAndGetData<T = any>(data: { type: string, data: unknown; }, opts?: SendToSocketsOpts) {
+export function sendAndGetData<T = any>(data: OutgoingMessage, opts?: SendToSocketsOpts) {
     const { timeout } = opts ?? defaultOpts;
     return new Promise<T>((res, rej) => {
         setTimeout(rej.bind(null, "Timed Out"), timeout);
@@ -31,7 +32,7 @@ interface SendToSocketsOpts {
      */
     timeout: number;
 }
-export async function sendToSockets(data: { type: string, data: unknown; }, dataCb?: (data: any) => void, opts?: SendToSocketsOpts) {
+export async function sendToSockets(data: OutgoingMessage, dataCb?: (data: any) => void, opts?: SendToSocketsOpts) {
     const { timeout } = opts ?? defaultOpts;
     if (sockets.size === 0) {
         throw new Error("No Discord Clients Connected! Make sure you have Discord open, and have the DevCompanion plugin enabled (see README for more info!)");

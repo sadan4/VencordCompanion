@@ -6,8 +6,8 @@ import * as vscode from "vscode";
 
 import { extensionPath, extensionUri } from "./extension";
 import format from "./format";
+import { mkStringUri, sendToSockets } from "./server/webSocketServer";
 import { EvaledPatch, ReporterData, WebviewMessage } from "./types";
-import { mkStringUri, sendToSockets } from "./webSocketServer";
 
 type Patch = { patch: EvaledPatch };
 type PluginName = { pluginName: string };

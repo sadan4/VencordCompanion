@@ -1,7 +1,7 @@
 import { ShellExecution, tasks, window } from "vscode";
 
+import { sendToSockets } from "./server/webSocketServer";
 import { ReporterData } from "./types";
-import { sendToSockets } from "./webSocketServer";
 import { ReporterPanel } from "./webview";
 // 1. rebuild with reporter
 // 2. send reload command

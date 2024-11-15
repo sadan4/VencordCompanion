@@ -5,11 +5,11 @@ import { PatchCodeLensProvider } from "./lenses/PatchCodeLensProvider";
 import PluginDefCodeLensProvider from "./lenses/PluginDefCodeLensProvider";
 import { WebpackCodeLensProvider } from "./lenses/WebpackCodeLensProvider";
 import { DefinitionProvider } from "./lsp";
-import { DepsGenerator, ModuleCache, testProgressBar } from "./modules/cache";
+import { ModuleCache, ModuleDepManager, testProgressBar } from "./modules/cache";
 import { startReporter } from "./reporter";
+import { moduleCache, sendToSockets, startWebSocketServer, stopWebSocketServer } from "./server/webSocketServer";
 import { ExtractSendData, FindData, FindType, PatchData } from "./shared";
 import testfile from "./testdep.txt";
-import { moduleCache, sendToSockets, startWebSocketServer, stopWebSocketServer } from "./webSocketServer";
 export let extensionUri: Uri;
 export let extensionPath: string;
 export function activate(context: ExtensionContext) {
@@ -41,10 +41,22 @@ export function activate(context: ExtensionContext) {
 			},
 		}),
 		commands.registerCommand("vencord-companion.testDeps", async () => {
-			const x = await new DepsGenerator({
-				fromDisk: true
-			}).ready();
-			console.log(await x.gererateDeps());
+			const currentDoc = window.activeTextEditor?.document.getText();
+			if(!currentDoc) {
+				return window.showErrorMessage("No active document");
+			}
+			const moduleId = currentDoc.match(/^\/\/WebpackModule(\d+)/)?.[1];
+			if(!moduleId) {
+				return window.showErrorMessage("not a webpack module");
+			}
+			if(!ModuleDepManager.hasModDeps()) {
+				await ModuleDepManager.initModDeps({
+					fromDisk: true
+				});
+			}
+			const data = ModuleDepManager.getModDeps(moduleId);
+			console.log(`Deps for module: ${moduleId}\n`);
+			console.log(data);
 		}),
 		commands.registerCommand("vencord-companion.cacheModules", async () => {
 			await new ModuleCache().downloadModules();

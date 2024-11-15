@@ -4,7 +4,7 @@ import { ProgressLocation, window, workspace } from "vscode";
 
 import format from "../format";
 import { WebpackAstParser } from "../lsp";
-import { formatModule, sendAndGetData } from "../webSocketServer";
+import { formatModule, sendAndGetData } from "../server/webSocketServer";
 import { BufferedProgressBar, exists, getCurrentFolder, isDirectory, ProgressBar, SecTo } from "./util";
 export class ModuleCache {
     folder: string;
@@ -66,7 +66,7 @@ export class ModuleCache {
             }
             try {
                 modmap[id] = await format(formatModule(text, id));
-                progress.increment();
+                await progress.increment();
             } catch (error) {
                 console.log("error");
                 throw error;
@@ -141,11 +141,26 @@ type AllDeps = Record<string, {
 /**
  * **YOU MUST CALL {@link ready} IF YOU PASS A FOLDER**
 **/
-export class DepsGenerator {
+export class ModuleDepManager {
+    private static modCache: AllDeps | null = null;
     modmap!: Record<string, string>;
     private readyPromise;
     currentFolder: string;
 
+    public static getModDeps(moduleid: string) {
+        if(this.hasModDeps()) {
+            return this.modCache![moduleid];
+        }
+        throw new Error("Module Deps not initialized");
+    }
+    public static hasModDeps() {
+        return !!this.modCache;
+    }
+
+    // FIXME: setting to start caching when a webpack module is opened / when the vencord workspace is opened
+    public static async initModDeps(opts: DepsGeneratorOpts) {
+        this.modCache = await (await new this(opts).ready()).gererateDeps();
+    }
     constructor(opts: DepsGeneratorOpts) {
         this.currentFolder = getCurrentFolder()!;
         if (this.currentFolder == null)
@@ -165,9 +180,9 @@ export class DepsGenerator {
 
     public async gererateDeps() {
         // FIXME: horror
-        const toRet: AllDeps = DepsGenerator.makeDepsMap();
+        const toRet: AllDeps = ModuleDepManager.makeDepsMap();
         let cancelled = false;
-        const progress = await new ProgressBar(Object.entries(this.modmap).length, "Loading Module", () => {
+        const progress = await new BufferedProgressBar(Object.entries(this.modmap).length, "Parsing Modules", () => {
             cancelled = true;
         }).start();
         for (const [id, text] of Object.entries(this.modmap)) {
@@ -182,7 +197,7 @@ export class DepsGenerator {
                 for (const lazyDep of deps?.lazy ?? []) {
                     toRet[lazyDep].lazyUses.push(id);
                 }
-                progress.increment();
+                await progress.increment();
             } catch (e) {
                 progress.stop(e);
                 throw e;
@@ -225,7 +240,7 @@ export class DepsGenerator {
         const progress = await new ProgressBar(files.length, "loading files", () => {
             cancelled = true;
         }).start();
-        const promiseAllFiles: Promise<any>[] = [];
+
         for (const file of files) {
             if (cancelled) {
                 throw new Error("reading files cancelled by user");
@@ -241,23 +256,16 @@ export class DepsGenerator {
                     progress.increment();
                     continue;
                 }
+                progress.increment();
                 // FIXME: add abort singal
-                promiseAllFiles.push(fs.readFile(filepath, {
+                const text = await fs.readFile(filepath, {
                     encoding: "utf-8",
-                }).then(text => {
-                    progress.increment();
-                    toRet[modId] = text;
-                }));
+                });
+                toRet[modId] = text;
             } catch (error) {
                 progress.stop(error);
                 throw error;
             }
-        }
-        try {
-            await Promise.all(promiseAllFiles);
-        } catch (error) {
-            progress.stop(error);
-            throw error;
         }
         return toRet;
     }

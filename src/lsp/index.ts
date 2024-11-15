@@ -14,7 +14,7 @@ import {
 } from "typescript";
 import * as vscode from "vscode";
 
-import { formatModule, mkStringUri, sendAndGetData } from "../webSocketServer";
+import { formatModule, mkStringUri, sendAndGetData } from "../server/webSocketServer";
 import {
     findObjectLiteralByKey,
     findParrent,
@@ -91,22 +91,30 @@ export class WebpackAstParser {
 
     public async getDeps(): Promise<ModuleDeps | null> {
         if (!this.wreq || !this.uses) return null;
+
+        // flatmaps because .map(...).filter(x => x !== false) isnt a valid typeguard
         /**
          * things like wreq(moduleid)
          */
-        const wreqCalls = this.uses.uses.map(x => x.location).map(v => {
+        const wreqCalls = this.uses.uses.map(x => x.location).flatMap(v => {
             const p = findParrent<ts.CallExpression>(v, n => ts.isCallExpression(n));
-            if (!p || p.expression !== v) return false;
-            return p.arguments.length === 1 && ts.isNumericLiteral(p.arguments[0]) && p.arguments[0].text;
-        }).filter(x => x !== false);
+            if (!p || p.expression !== v) return [];
 
-        const lazyModules = this.uses.uses.map(x => x.location).map(v => {
+            if (p.arguments.length === 1 && ts.isNumericLiteral(p.arguments[0]))
+                return p.arguments[0].text;
+            return [];
+        });
+
+        const lazyModules = this.uses.uses.map(x => x.location).flatMap(v => {
             const [, prop] = getLeadingIdentifier(v);
-            if (prop?.text !== "bind") return false;
+            if (prop?.text !== "bind") return [];
             const call = findParrent<ts.CallExpression>(v, n => ts.isCallExpression(n));
-            if(!call) return false;
-            return call.arguments.length === 2 && ts.isNumericLiteral(call.arguments[1]) && call.arguments[1].text;
-        }).filter(x => x !== false);
+            if (!call) return [];
+
+            if (call.arguments.length === 2 && ts.isNumericLiteral(call.arguments[1]))
+                return call.arguments[1].text;
+            return [];
+        });
 
         return {
             lazy: lazyModules,
@@ -151,7 +159,7 @@ export class WebpackAstParser {
         const moduleId = getModuleId(dec, exportName);
 
         if (!moduleId) return;
-        const res = await sendAndGetData<{ data: string }>({
+        const res = await sendAndGetData<{ data: string; }>({
             type: "rawId",
             data: {
                 id: moduleId,

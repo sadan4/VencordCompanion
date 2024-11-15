@@ -35,7 +35,7 @@ export function getNumberAndColumnFromPos(text: string, pos: number) {
         return { lineNumber: 1, column: 1 };
     }
 
-    const index = binarySearch(lineInfos, (info) => {
+    const index = binarySearch(lineInfos, info => {
         if (pos < info.pos) {
             return -1;
         }
@@ -59,7 +59,7 @@ function binarySearch<T>(
   ) {
     let top = items.length - 1;
     let bottom = 0;
-  
+
     while (bottom <= top) {
       const mid = Math.floor((top + bottom) / 2);
       const comparisonResult = compareTo(items[mid]);
@@ -71,6 +71,6 @@ function binarySearch<T>(
         bottom = mid + 1;
       }
     }
-  
+
     return -1;
   }

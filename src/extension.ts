@@ -93,7 +93,7 @@ export function activate(context: ExtensionContext) {
 					return vscWindow.showErrorMessage("No Module ID provided");
 				try {
 					await sendToSockets({
-						type: "search",
+						type: "diff",
 						data: {
 							extractType: "id",
 							idOrSearch: +modId
@@ -106,7 +106,7 @@ export function activate(context: ExtensionContext) {
 
 
 		}),
-		commands.registerCommand("vencord-companion.diffModuleSearch", async (args: string, findType: FindType) => {
+		commands.registerCommand("vencord-companion.diffModuleSearch", async (args: string, findType: "string" | "regex") => {
 			if (args)
 				return sendToSockets({
 					type: "diff",

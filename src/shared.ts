@@ -43,8 +43,4 @@ export interface FindData {
     type: string;
     args: Array<StringNode | FunctionNode>;
 }
-export enum FindType {
-    STRING,
-    REGEX
-}
 

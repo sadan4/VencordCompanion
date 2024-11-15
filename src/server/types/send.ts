@@ -78,6 +78,7 @@ export type DiffPatch = {
 
 export type Reload = {
     type: "reload";
+    data: null;
 };
 
 export type ExtractModule = {
@@ -115,6 +116,7 @@ export type TestFind = {
 
 export type AllModules = {
     type: "allModules";
+    data: null;
 };
 
 export type RawContent = {

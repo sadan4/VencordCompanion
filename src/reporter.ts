@@ -28,7 +28,7 @@ export async function startReporter() {
         await new Promise(r => setTimeout(r, 1000));
         await sendToSockets({
             type: "reload",
-            data: undefined
+            data: null
         });
     } catch (e) {
         window.showErrorMessage(String(e));
@@ -43,11 +43,11 @@ export async function handleAfterRecive(data: ReporterData) {
         ensureOnlyTask();
 
         await tasks.executeTask(task);
-        // cant find a way to await the vscode task finish
+        // FIXME: cant find a way to await the vscode task finish
         await new Promise(r => setTimeout(r, 1000));
         await sendToSockets({
             type: "reload",
-            data: undefined
+            data: null
         });
         ReporterPanel.createOrShow(data);
     } catch (error) {

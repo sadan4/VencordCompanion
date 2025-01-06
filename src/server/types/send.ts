@@ -1,3 +1,4 @@
+// should be the same types as ./src/plugins/devCompanion.dev/types/recieve.ts in vencord
 export type SearchData =
     | {
         extractType: "id";
@@ -52,16 +53,37 @@ export type FindData = {
     type: AnyFindType;
     args: FindNode[];
 };
-export type OutgoingMessage = DisablePlugin | RawId | DiffPatch | Reload | ExtractModule | TestPatch | TestFind | AllModules | RawContent;
-export type FullOutgoingMessage = OutgoingMessage & { nonce: number; };
+export type IReplacement = {
+    match: StringNode | RegexNode;
+    replace: StringNode | FunctionNode;
+};
+export type IFindType = (
+    | {
+        findType: "string";
+        find: string;
+    }
+    | {
+        findType: "regex";
+        /**
+         * stringified regex
+         */
+        find: string;
+    }
+);
+export type PatchData = IFindType & {
+    replacement: IReplacement[];
+};
+export type DisablePluginData = {
+    enabled: boolean;
+    pluginName: string;
+};
 
-// SECTION - valid payloads
+export type OutgoingMessage = DisablePlugin | RawId | DiffPatch | Reload | ExtractModule | TestPatch | TestFind | AllModules;
+export type FullOutgoingMessage = OutgoingMessage & { nonce: number; };
+// #region valid payloads
 export type DisablePlugin = {
     type: "disable";
-    data: {
-        enabled: boolean;
-        pluginName: string;
-    };
+    data: DisablePluginData;
 };
 
 export type RawId = {
@@ -82,31 +104,14 @@ export type Reload = {
 };
 
 export type ExtractModule = {
-    type: "extractModule";
+    type: "extract";
     // FIXME: update client code so you can just pass FindData here
     data: FindOrSearchData;
 };
 
 export type TestPatch = {
     type: "testPatch";
-    data: (
-        | {
-            findType: "string";
-            find: string;
-        }
-        | {
-            findType: "regex";
-            /**
-             * stringified regex
-             */
-            find: string;
-        }
-    ) & {
-        replacement: {
-            match: StringNode | RegexNode;
-            replace: StringNode | RegexNode;
-        }[];
-    };
+    data: PatchData;
 };
 
 export type TestFind = {
@@ -118,12 +123,7 @@ export type AllModules = {
     type: "allModules";
     data: null;
 };
-
-export type RawContent = {
-    type: "rawContent";
-    data: FindOrSearchData;
-};
-// !SECTION
+// #endregion
 
 type _PrefixKeys<
     T extends Record<string, any>,

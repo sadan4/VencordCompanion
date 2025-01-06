@@ -63,6 +63,7 @@ interface ModuleDeps {
     sync: string[];
 }
 
+// FIXME: rewrite to use module cache
 export class WebpackAstParser {
     private text: string;
     private sourceFile: SourceFile;

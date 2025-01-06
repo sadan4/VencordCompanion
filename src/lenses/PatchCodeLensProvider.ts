@@ -1,16 +1,17 @@
+
 import { ArrayLiteralExpression, createSourceFile, Expression, IntersectionTypeNode, isArrayLiteralExpression, isCallExpression, isExportAssignment, isIdentifier, isIntersectionTypeNode, isObjectLiteralExpression, isPropertyAssignment, isRegularExpressionLiteral, isStringLiteral, isTypeReferenceNode, isVariableDeclaration, isVariableStatement, Node, ObjectLiteralExpression, ScriptTarget, TypeReferenceNode } from "typescript";
 import { CodeLens, CodeLensProvider, Range, TextDocument } from "vscode";
 
-import { FindType, PatchData } from "../shared";
+import { IFindType, IReplacement, PatchData, TestPatch } from "../server/types/send";
 import { hasName, isNotNull, tryParseFunction, tryParseRegularExpressionLiteral, tryParseStringLiteral } from "./helpers";
 
-function parseFind(patch: ObjectLiteralExpression) {
+function parseFind(patch: ObjectLiteralExpression): IFindType | null {
     const find = patch.properties.find(p => hasName(p, "find"));
     if (!find || !isPropertyAssignment(find)) return null;
     if (!(isStringLiteral(find.initializer) || isRegularExpressionLiteral(find.initializer))) return null;
 
     return {
-        findType: isStringLiteral(find.initializer) ? FindType.STRING : FindType.REGEX,
+        findType: isStringLiteral(find.initializer) ? "string" : "regex",
         find: find.initializer.text
     };
 }
@@ -23,7 +24,7 @@ function parseReplace(document: TextDocument, node: Expression) {
     return tryParseStringLiteral(node) ?? tryParseFunction(document, node);
 }
 
-function parseReplacement(document: TextDocument, patch: ObjectLiteralExpression) {
+function parseReplacement(document: TextDocument, patch: ObjectLiteralExpression): IReplacement[] | null {
     const replacementObj = patch.properties.find(p => hasName(p, "replacement"));
 
     if (!replacementObj || !isPropertyAssignment(replacementObj)) return null;
@@ -54,6 +55,7 @@ function parseReplacement(document: TextDocument, patch: ObjectLiteralExpression
     return replacementValues.length > 0 ? replacementValues : null;
 }
 
+// FIXME: remove any
 function parsePatch(document: TextDocument, patch: ObjectLiteralExpression): PatchData | null {
     const find = parseFind(patch);
     const replacement = parseReplacement(document, patch);

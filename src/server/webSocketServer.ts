@@ -3,7 +3,9 @@ import { RawData, WebSocket, WebSocketServer } from "ws";
 
 import format from "../format";
 import { handleAfterRecive } from "../reporter";
-import { ExtraceRecieveData, outputChannel } from "../shared";
+import { outputChannel } from "../shared";
+import { Discriminate, Receive, Send } from "./types";
+import { FullIncomingMessage } from "./types/recieve";
 import { OutgoingMessage } from "./types/send";
 
 export let wss: WebSocketServer | undefined;
@@ -19,14 +21,17 @@ let nonceCounter = 8485;
 const defaultOpts: SendToSocketsOpts = {
     timeout: 5000
 };
-export function sendAndGetData<T = any>(data: OutgoingMessage, opts?: SendToSocketsOpts) {
+
+
+// there is no autocomplete for this, https://github.com/microsoft/TypeScript/issues/52898
+export function sendAndGetData<T extends Receive.IncomingMessage["type"]>(data: OutgoingMessage, opts?: SendToSocketsOpts): Promise<Discriminate<Receive.IncomingMessage, T>> {
     const { timeout } = opts ?? defaultOpts;
-    return new Promise<T>((res, rej) => {
+    return new Promise((res, rej) => {
         setTimeout(rej.bind(null, "Timed Out"), timeout);
         sendToSockets(data, res, opts).catch(rej);
     });
 }
-interface SendToSocketsOpts {
+export interface SendToSocketsOpts {
     /**
      * in ms, defaults to 5000
      */
@@ -120,42 +125,38 @@ export function startWebSocketServer() {
 
         sock.on("message", async msg => {
             try {
-                const rec = JSON.parse(msg.toString());
+                const rec: FullIncomingMessage = JSON.parse(msg.toString());
                 switch (rec.type) {
                     case "report": {
                         handleAfterRecive(rec.data);
                         break;
                     }
-                    // used to send data back to the sendAndGetData
-                    case "ret": {
-                        break;
-                    }
                     case "diff": {
-                        const { data, moduleNumber } = rec;
-                        const sourceUri = mkStringUri(await format(formatModule(data.source, moduleNumber)));
-                        const patchedUri = mkStringUri(await format(formatModule(data.patched, moduleNumber)));
-                        commands.executeCommand("vscode.diff", sourceUri, patchedUri, "Patch Diff: " + moduleNumber);
+                        const m = rec.data;
+                        const sourceUri = mkStringUri(await format(formatModule(m.source, m.moduleNumber)));
+                        const patchedUri = mkStringUri(await format(formatModule(m.patched, m.moduleNumber)));
+                        commands.executeCommand("vscode.diff", sourceUri, patchedUri, "Patch Diff: " + m.moduleNumber);
                         break;
                     }
                     case "extract": {
-                        const data: ExtraceRecieveData = rec;
-                        if (data.data) {
-                            data.data = formatModule(data.data, data.moduleNumber, data.find);
-                        }
+                        const m = rec.data;
+                        // const data: ExtraceRecieveData = rec;
+                        if (!m.module) break;
+                        const moduleText = formatModule(m.module, m.moduleNumber, m.find);
                         workspace.openTextDocument({
-                            content: await format(data.data || "//ERROR: NO DATA RECIVED\n//This module may be lazy loaded"),
+                            content: await format(moduleText || "//ERROR: NO DATA RECIVED\n//This module may be lazy loaded"),
                             language: "javascript"
                         })
                             .then(e => {
                                 commands.executeCommand("vscode.open", e.uri);
-                            }
-                            );
+                            });
                         break;
                     }
                     case "moduleList": {
+                        const m = rec.data;
                         // should be something like ["123", "58913"]
                         moduleCache.length = 0;
-                        moduleCache.push(...rec.data);
+                        moduleCache.push(...m.modules);
                         break;
                     }
                 }

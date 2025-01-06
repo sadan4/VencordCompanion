@@ -89,11 +89,10 @@ export class ModuleCache {
             }
             progress.increment();
             try {
-                var { data: text } = await sendAndGetData({
-                    type: "rawContent",
+                var { data: text } = await sendAndGetData<"rawId">({
+                    type: "rawId",
                     data: {
-                        extractType: "id",
-                        idOrSearch: +id
+                        id: +id
                     }
                 });
             } catch (error) {
@@ -108,14 +107,14 @@ export class ModuleCache {
     }
 
     private async getModuleIDs() {
-        const allModules = await sendAndGetData({
+        const allModules = await sendAndGetData<"moduleList">({
             type: "allModules",
             data: null
         }, {
             timeout: 120 * SecTo.MS
         });
         console.log(allModules);
-        return allModules.data as string[];
+        return allModules.data.modules;
     }
 
 }

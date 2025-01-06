@@ -1,6 +1,8 @@
 import { createSourceFile, isCallExpression, isExportAssignment, isIdentifier, isObjectLiteralExpression, isPropertyAssignment, isStringLiteral, Node, ObjectLiteralExpression, ScriptTarget, StringLiteral } from "typescript";
 import { CodeLens, CodeLensProvider, ProviderResult, Range, TextDocument } from "vscode";
 
+import { DisablePluginData } from "../server/types/send";
+
 enum ParseResult {
     INVALID,
     NOT_FOUND
@@ -71,7 +73,7 @@ export default class implements CodeLensProvider {
                 arguments: [{
                     pluginName: patchesArray.pluginName,
                     enabled: false
-                }]
+                } satisfies DisablePluginData]
             }));
             lenses.push(new CodeLens(range, {
                 title: "Enable Plugin",
@@ -79,7 +81,7 @@ export default class implements CodeLensProvider {
                 arguments: [{
                     pluginName: patchesArray.pluginName,
                     enabled: true
-                }]
+                } satisfies DisablePluginData]
             }));
         }
         return lenses;

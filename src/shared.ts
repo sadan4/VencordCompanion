@@ -30,17 +30,3 @@ export interface ExtraceRecieveData {
     data: string,
     find?: boolean
 }
-export interface PatchData {
-    findType: FindType;
-    find: string | null;
-    replacement: {
-        match: StringNode | RegexNode | null;
-        replace: StringNode | FunctionNode;
-    }[];
-}
-
-export interface FindData {
-    type: string;
-    args: Array<StringNode | FunctionNode>;
-}
-

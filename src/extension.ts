@@ -8,8 +8,9 @@ import { DefinitionProvider } from "./lsp";
 import { ModuleCache, ModuleDepManager, testProgressBar } from "./modules/cache";
 import { startReporter } from "./reporter";
 import { moduleCache, sendToSockets, startWebSocketServer, stopWebSocketServer } from "./server/webSocketServer";
-import { ExtractSendData, FindData, FindType, PatchData } from "./shared";
+import { ExtractSendData } from "./shared";
 import testfile from "./testdep.txt";
+import { DisablePluginData, FindData, PatchData } from "./server/types/send";
 export let extensionUri: Uri;
 export let extensionPath: string;
 export function activate(context: ExtensionContext) {
@@ -40,16 +41,21 @@ export function activate(context: ExtensionContext) {
 				return newLocal.toString();
 			},
 		}),
+		commands.registerCommand("vencord-companion.initDeps", async () => {
+			await ModuleDepManager.initModDeps({
+				fromDisk: true
+			});
+		}),
 		commands.registerCommand("vencord-companion.testDeps", async () => {
 			const currentDoc = window.activeTextEditor?.document.getText();
-			if(!currentDoc) {
+			if (!currentDoc) {
 				return window.showErrorMessage("No active document");
 			}
 			const moduleId = currentDoc.match(/^\/\/WebpackModule(\d+)/)?.[1];
-			if(!moduleId) {
+			if (!moduleId) {
 				return window.showErrorMessage("not a webpack module");
 			}
-			if(!ModuleDepManager.hasModDeps()) {
+			if (!ModuleDepManager.hasModDeps()) {
 				await ModuleDepManager.initModDeps({
 					fromDisk: true
 				});
@@ -124,7 +130,7 @@ export function activate(context: ExtensionContext) {
 					type: "diff",
 					data: {
 						extractType: "search",
-						findType: FindType.STRING,
+						findType: "string",
 						idOrSearch: input
 					}
 				});
@@ -136,8 +142,8 @@ export function activate(context: ExtensionContext) {
 			type: string,
 			data: {
 				args: string[],
-				type: string
-			}
+				type: string;
+			};
 		}) => {
 			if (!args)
 				return vscWindow.showErrorMessage("No Data Provided");
@@ -186,7 +192,7 @@ export function activate(context: ExtensionContext) {
 						data: {
 							extractType: "id",
 							idOrSearch: +modId
-						} as ExtractSendData,
+						},
 					});
 				} catch (error) {
 					vscWindow.showErrorMessage(String(error));
@@ -194,7 +200,7 @@ export function activate(context: ExtensionContext) {
 			});
 
 		}),
-		commands.registerCommand("vencord-companion.extractSearch", async (args: string, findType: FindType) => {
+		commands.registerCommand("vencord-companion.extractSearch", async (args: string, findType: "string" | "regex") => {
 			if (args)
 				return sendToSockets({
 					type: "extract",
@@ -212,7 +218,7 @@ export function activate(context: ExtensionContext) {
 					type: "extract",
 					data: {
 						extractType: "search",
-						findType: FindType.STRING,
+						findType: "string",
 						idOrSearch: input
 					}
 				});
@@ -220,7 +226,7 @@ export function activate(context: ExtensionContext) {
 				vscWindow.showErrorMessage(String(error));
 			}
 		}),
-		commands.registerCommand("vencord-companion.disablePlugin", async data => {
+		commands.registerCommand("vencord-companion.disablePlugin", async (data: DisablePluginData) => {
 			try {
 				if (!data) throw new Error("No args passed.");
 				await sendToSockets({
@@ -242,7 +248,10 @@ export function activate(context: ExtensionContext) {
 
 		commands.registerCommand("vencord-companion.testFind", async (find: FindData) => {
 			try {
-				await sendToSockets({ type: "testFind", data: find });
+				await sendToSockets({
+					type: "testFind",
+					data: find,
+				});
 				vscWindow.showInformationMessage("Find OK!");
 			} catch (err) {
 				vscWindow.showErrorMessage("Find bad: " + String(err));

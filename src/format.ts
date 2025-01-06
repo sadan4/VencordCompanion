@@ -3,7 +3,7 @@ import babel from "prettier/plugins/babel";
 // @ts-ignore for some fucking reason, the d.ts file shows no exports when the mjs file clearly has them
 import estree from "prettier/plugins/estree";
 import { format } from "prettier/standalone";
-
+import { commands } from "vscode";
 export default async function (text: string) {
     return await format(text, {
         parser: "babel",

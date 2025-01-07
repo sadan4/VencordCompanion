@@ -22,7 +22,6 @@ import {
     findWebpackArg,
     getLeadingIdentifier,
     getModuleId,
-    isWreq_d,
     makeRange,
     zeroRange,
 } from "./util";
@@ -30,11 +29,26 @@ import ts = require("typescript");
 import format from "../format";
 import exp = require("constants");
 import { lchown } from "fs";
+import { ModuleCache, ModuleDepManager } from "modules/cache";
 
 type Definitions = Promise<
     vscode.Definition | vscode.LocationLink[] | null | undefined
 >;
+type References = Promise<vscode.Location[] | null | undefined>;
+export class ReferenceProvider implements vscode.ReferenceProvider {
+    async provideReferences(document: vscode.TextDocument, position: vscode.Position, context: vscode.ReferenceContext, token: vscode.CancellationToken): References {
+        if (!await ModuleCache.hasCache()) {
+            vscode.window.showErrorMessage("No Module Cache found, please download modules first");
+            return;
+        }
+        if (!ModuleDepManager.hasModDeps()) {
+            await ModuleDepManager.initModDeps({
+                fromDisk: true
+            });
+        }
+    }
 
+}
 export class DefinitionProvider implements vscode.DefinitionProvider {
     async provideDefinition(
         document: vscode.TextDocument,
@@ -62,6 +76,9 @@ interface ModuleDeps {
     lazy: string[];
     sync: string[];
 }
+interface ExportMap {
+    [exposedName: string]: Identifier;
+}
 
 // FIXME: rewrite to use module cache
 export class WebpackAstParser {
@@ -73,6 +90,7 @@ export class WebpackAstParser {
     private wreq: Identifier | undefined;
     /** where {@link WebpackAstParser.wreq this.wreq} is used*/
     private uses: VariableInfo | undefined;
+    thisId: string | null;
 
     public constructor(text: string) {
         this.text = text;
@@ -83,11 +101,21 @@ export class WebpackAstParser {
             true,
             ScriptKind.JS
         );
+
+        this.thisId = WebpackAstParser.getModuleId(this.text);
         this.vars = collectVariableUsage(this.sourceFile);
 
         this.wreq = findWebpackArg(this.sourceFile);
 
         this.uses = this.wreq && this.vars.get(this.wreq);
+    }
+
+    private static getModuleId(mod: string): string | null {
+        if (mod.startsWith("//WebpackModule")) {
+            const [, id] = mod.match(/^\/\/WebpackModule(\d+)\n/) ?? [];
+            return id || null;
+        }
+        return null;
     }
 
     public async getDeps(): Promise<ModuleDeps | null> {
@@ -175,6 +203,29 @@ export class WebpackAstParser {
             uri: mkStringUri(res.data),
         };
     }
+    private async getExportMap() {
+        return Object.assign({}, this.getExportMapWreq_d() ?? {}, this.getExportMapWreq_t() ?? {}, this.getExportMapWreq_e() ?? {});
+    }
+
+    private getExportMapWreq_t(): ExportMap | undefined {
+    }
+    private getExportMapWreq_e(): ExportMap | undefined {
+        const wreqE = this.findWreq_e();
+
+        if(!wreqE) return;
+
+        const uses = this.vars.get(wreqE);
+    }
+    private getExportMapWreq_d(): ExportMap | undefined {
+        const wreqD = this.findWreq_d();
+        if (!wreqD) return;
+        const [, exports] = wreqD.arguments;
+        return Object.fromEntries(exports.properties.map(x => {
+            if (!ts.isPropertyAssignment(x) || !ts.isFunctionExpression(x.initializer)) return false as const;
+            const ret = findReturnIdentifier(x.initializer);
+            return ret != null ? [x.name.getText(), ret] as const : false as const;
+        }).filter(x => x !== false));
+    }
 
     public findExportLocation(exportName: string): vscode.Range {
         return (
@@ -184,18 +235,23 @@ export class WebpackAstParser {
             zeroRange
         );
     }
-
+    private findWreq_d(): (ts.CallExpression & { arguments: [ts.Identifier, ts.ObjectLiteralExpression, ...any] }) | undefined {
+        if (this.uses) {
+            const maybeWreqD = this.uses.uses.find(use =>
+                getLeadingIdentifier(use.location)[1]?.text === "d"
+            )?.location.parent.parent;
+            if (!maybeWreqD || !ts.isCallExpression(maybeWreqD)) return undefined;
+            if (maybeWreqD.arguments.length !== 2 ||
+                !ts.isIdentifier(maybeWreqD.arguments[0]) ||
+                !ts.isObjectLiteralExpression(maybeWreqD.arguments[1])
+            ) return undefined;
+            return maybeWreqD as any;
+        }
+    }
     private tryFindExportwreq_d(exportName: string): vscode.Range | undefined {
         if (this.uses) {
-            const wreq_dCall = this.uses.uses.find(isWreq_d)?.location.parent.parent;
-            if (!wreq_dCall || !ts.isCallExpression(wreq_dCall)) return undefined;
-
-            if (
-                wreq_dCall.arguments.length !== 2 ||
-                !ts.isIdentifier(wreq_dCall.arguments[0]) ||
-                !ts.isObjectLiteralExpression(wreq_dCall.arguments[1])
-            )
-                return undefined;
+            const wreq_dCall = this.findWreq_d();
+            if (!wreq_dCall) return undefined;
 
             // the a: function(){return b;} of wreq.d
             const exportCallAssignment = findObjectLiteralByKey(
@@ -223,8 +279,11 @@ export class WebpackAstParser {
         }
     }
 
+    private findWreq_t(): Identifier | undefined {
+        return findWebpackArg(this.sourceFile, 1);
+    }
     private tryFindExportWreq_t(exportName: string): vscode.Range | undefined {
-        const wreq_t = findWebpackArg(this.sourceFile, 1);
+        const wreq_t = this.findWreq_t();
 
         if (!wreq_t) return undefined;
 
@@ -239,9 +298,11 @@ export class WebpackAstParser {
 
         return exports ? makeRange(exports.location, this.text) : undefined;
     }
-
+    private findWreq_e(): Identifier | undefined {
+        return findWebpackArg(this.sourceFile, 0);
+    }
     private tryFindExportsWreq_e(exportName: string): vscode.Range | undefined {
-        const wreq_e = findWebpackArg(this.sourceFile, 0);
+        const wreq_e = this.findWreq_e();
 
         if (!wreq_e) return undefined;
 

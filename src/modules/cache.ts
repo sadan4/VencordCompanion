@@ -9,13 +9,18 @@ import { BufferedProgressBar, exists, getCurrentFolder, isDirectory, ProgressBar
 
 class _ModuleCache {
     folder: string;
-    workspaceFolder: string;
-    private modpath: string;
+    get workspaceFolder() {
+        const toRet = getCurrentFolder();
+        if(toRet == null) {
+            throw new Error("You are not in a folder, try opening a file");
+        }
+        return toRet;
+    }
+    private get modpath() {
+        return join(this.workspaceFolder, this.folder);
+    }
     constructor(folder?: string) {
         this.folder = folder || ".modules";
-        this.workspaceFolder = getCurrentFolder()!;
-        if (this.workspaceFolder == null) throw new Error("No folder found, please make sure you are in a workspace");
-        this.modpath = join(this.workspaceFolder, this.folder);
     }
 
     async downloadModules() {
@@ -127,7 +132,7 @@ class _ModuleCache {
             type: "allModules",
             data: null
         }, {
-            timeout: 30 * SecTo.MS
+            timeout: 120 * SecTo.MS
         });
         return allModules.data.modules;
     }

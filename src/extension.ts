@@ -61,7 +61,7 @@ export function activate(context: ExtensionContext) {
 				});
 			}
 			const data = ModuleDepManager.getModDeps(moduleId);
-			window.showInformationMessage(`Deps for module ${moduleId}\nLazyDeps: ${data.lazyUses}\nSyncDeps: ${data.syncUses}`);
+			window.showInformationMessage(`Deps for module ${moduleId}\nLazyDeps: ${data.lazyUses}\nSyncDeps: ${data.syncUses.join(", ")}`);
 		}),
 		commands.registerCommand("vencord-companion.cacheModules", async () => {
 			await ModuleCache.downloadModules();

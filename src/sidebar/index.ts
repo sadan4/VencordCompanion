@@ -6,52 +6,12 @@ import {
     ProviderResult,
     TreeDataProvider,
     TreeItem,
-    TreeItemCollapsibleState,
 } from "vscode";
 
-import RuntimeCommand from "./RuntimeCommand";
-type Promisable<T> = T | Promise<T>;
-export class Item extends TreeItem {
-    parrent: TNode | null = null;
-}
+import { Button, IDynamicNode, Item, Section, Text, TNode } from "./Nodes";
 
-class Button extends Item {
-    constructor(
-        label: string,
-        private readonly action: (...args: any[]) => any
-    ) {
-        super(label, TreeItemCollapsibleState.None);
-    }
-    makeCommand(id: string) {
-        this.command = new RuntimeCommand(
-            `${id}${this.label}`,
-            this.action
-        ).asCommand();
-    }
-}
-interface IDynamicNode {
-    getNode(): Promise<Item>;
-}
-class Text extends Item {
-    constructor(text: string) {
-        super(text, TreeItemCollapsibleState.None);
-    }
-}
-class Section extends Item {
-    public readonly children: TNode[];
-    constructor(
-        label: string,
-        children: TNode[],
-        collapseableState = TreeItemCollapsibleState.Expanded
-    ) {
-        super(label, collapseableState);
-        this.children = children.map(e => {
-            if (e instanceof Item) e.parrent = this;
-            return e;
-        });
-    }
-}
-type TNode = Item | IDynamicNode;
+type Promisable<T> = T | Promise<T>;
+
 export default class treeDataProvider implements TreeDataProvider<TNode> {
     // fucking cursed
     private DynamicNode = (() => {
@@ -80,7 +40,7 @@ export default class treeDataProvider implements TreeDataProvider<TNode> {
                 onConnect(r);
                 return new Section("Module Settings", [
                     (await ModuleCache.hasCache())
-                        ? new Button("Purge Cache", () => ModuleCache.clearCache().then(r))
+                        ? new Button("Purge Cache", () => ModuleCache.clearCache().then(this._onDidChangeTreeData.fire))
                         : new this.DynamicNode(r =>
                             hasConnectons()
                                 ? new Button("Download Modules", () =>
@@ -129,7 +89,6 @@ export default class treeDataProvider implements TreeDataProvider<TNode> {
             return this.getChildren(await Promise.resolve(element.getNode()));
         }
     }
-    private _onDidChangeTreeData: EventEmitter<TNode | void | null | undefined> =
-        new EventEmitter<TNode | null | void | undefined>();
+    private _onDidChangeTreeData: EventEmitter<TNode | void | null> = new EventEmitter();
     onDidChangeTreeData = this._onDidChangeTreeData.event;
 }

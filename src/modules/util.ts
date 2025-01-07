@@ -145,7 +145,7 @@ export function getCurrentFolder() {
 
 export async function exists(path: PathLike) {
     try {
-        return await !!fs.stat(path);
+        return !!(await fs.stat(path));
     } catch {
         return false;
     }

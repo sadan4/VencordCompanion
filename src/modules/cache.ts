@@ -6,14 +6,16 @@ import format from "../format";
 import { WebpackAstParser } from "../lsp";
 import { formatModule, sendAndGetData } from "../server/webSocketServer";
 import { BufferedProgressBar, exists, getCurrentFolder, isDirectory, ProgressBar, SecTo } from "./util";
-export class ModuleCache {
+
+class _ModuleCache {
     folder: string;
     workspaceFolder: string;
-
+    private modpath: string;
     constructor(folder?: string) {
         this.folder = folder || ".modules";
         this.workspaceFolder = getCurrentFolder()!;
         if (this.workspaceFolder == null) throw new Error("No folder found, please make sure you are in a workspace");
+        this.modpath = join(this.workspaceFolder, this.folder);
     }
 
     async downloadModules() {
@@ -27,12 +29,26 @@ export class ModuleCache {
             window.showErrorMessage("Error downloading modules:\n" + String(error));
         }
     }
+
+    async clearCache() {
+        if (!await this.hasCache()) {
+            throw new Error("No cache to clear");
+        }
+        return fs.rm(this.modpath, {
+            recursive: true,
+            force: false,
+        });
+    }
+
+    async hasCache() {
+        return await exists(this.modpath);
+    }
+
     private async writeModules(modmap: Record<string, string>) {
-        const modpath = join(this.workspaceFolder, this.folder);
-        if (!exists(modpath)) {
+        if (await exists(this.modpath)) {
             throw new Error(".modules already exists, please run `vencord-companion.clearCache` first");
         }
-        await fs.mkdir(modpath);
+        await fs.mkdir(this.modpath);
         let canceled = false;
         const progress = await new ProgressBar(Object.entries(modmap).length, "Writing modules", () => {
             canceled = true;
@@ -43,7 +59,7 @@ export class ModuleCache {
             }
             try {
                 // FIXME: check if id has any invalid/malicious characters
-                await fs.writeFile(join(modpath, id + ".js"), text);
+                await fs.writeFile(join(this.modpath, id + ".js"), text);
                 progress.increment();
             } catch (error) {
                 progress.stop(error);
@@ -111,9 +127,8 @@ export class ModuleCache {
             type: "allModules",
             data: null
         }, {
-            timeout: 120 * SecTo.MS
+            timeout: 30 * SecTo.MS
         });
-        console.log(allModules);
         return allModules.data.modules;
     }
 
@@ -121,11 +136,11 @@ export class ModuleCache {
 const MODULE_ID_FILE_REGEX = /(\d+)\.js/;
 type DepsGeneratorOpts =
     | {
-        modmap: Record<string, string>
+        modmap: Record<string, string>;
     }
     | {
         fromDisk: true,
-        folder?: string
+        folder?: string;
     };
 type AllDeps = Record<string, {
     /**
@@ -147,7 +162,7 @@ export class ModuleDepManager {
     currentFolder: string;
 
     public static getModDeps(moduleid: string) {
-        if(this.hasModDeps()) {
+        if (this.hasModDeps()) {
             return this.modCache![moduleid];
         }
         throw new Error("Module Deps not initialized");
@@ -289,3 +304,5 @@ export class testProgressBar {
 
     }
 }
+
+export const ModuleCache = new _ModuleCache(".modules");

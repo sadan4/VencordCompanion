@@ -21,6 +21,9 @@ importers:
         specifier: ^8.12.1
         version: 8.18.0
     devDependencies:
+      '@intrnl/xxhash64':
+        specifier: ^0.1.2
+        version: 0.1.2
       '@stylistic/eslint-plugin':
         specifier: ^2.7.2
         version: 2.7.2(eslint@9.9.1)(typescript@4.9.5)
@@ -51,9 +54,9 @@ importers:
       eslint-plugin-simple-import-sort:
         specifier: ^12.1.1
         version: 12.1.1(eslint@9.9.1)
-      eslint-plugin-unused-imports:
-        specifier: ^4.1.3
-        version: 4.1.3(@typescript-eslint/eslint-plugin@5.62.0(@typescript-eslint/parser@5.62.0(eslint@9.9.1)(typescript@4.9.5))(eslint@9.9.1)(typescript@4.9.5))(eslint@9.9.1)
+      nanoid:
+        specifier: ^5.0.9
+        version: 5.0.9
       typescript-eslint:
         specifier: ^8.3.0
         version: 8.3.0(eslint@9.9.1)(typescript@4.9.5)
@@ -285,6 +288,9 @@ packages:
   '@humanwhocodes/retry@0.3.0':
     resolution: {integrity: sha512-d2CGZR2o7fS6sWB7DG/3a95bGKQyHMACZ5aW8qGkkqQpUoZV6C0X7Pc7l4ZNMZkfNBf4VWNe9E1jRsf0G146Ew==}
     engines: {node: '>=18.18'}
+
+  '@intrnl/xxhash64@0.1.2':
+    resolution: {integrity: sha512-1+lx7j99fdph+uy3EnjQyr39KQZ7LP56+aWOr6finJWpgYpvb7XrhFUqDwnEk/wpPC98nCjAT6RulpW3crWjlg==}
 
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
@@ -726,15 +732,6 @@ packages:
     peerDependencies:
       eslint: '>=5.0.0'
 
-  eslint-plugin-unused-imports@4.1.3:
-    resolution: {integrity: sha512-lqrNZIZjFMUr7P06eoKtQLwyVRibvG7N+LtfKtObYGizAAGrcqLkc3tDx+iAik2z7q0j/XI3ihjupIqxhFabFA==}
-    peerDependencies:
-      '@typescript-eslint/eslint-plugin': ^8.0.0-0 || ^7.0.0 || ^6.0.0 || ^5.0.0
-      eslint: ^9.0.0 || ^8.0.0
-    peerDependenciesMeta:
-      '@typescript-eslint/eslint-plugin':
-        optional: true
-
   eslint-scope@5.1.1:
     resolution: {integrity: sha512-2NxwbF/hZ0KpepYN0cNbo+FN6XoK7GaHlQhgx/hIZl6Va0bF45RQOOwhLIy8lQDbuCiadSLCBnH2CFYquit5bw==}
     engines: {node: '>=8.0.0'}
@@ -1106,6 +1103,11 @@ packages:
 
   mute-stream@0.0.8:
     resolution: {integrity: sha512-nnbWWOkoWyUsTjKrhgD0dcz22mdkSnpYqbEjIm2nhwhuxlSkpywJmBo8h0ZqJdkp73mb90SssHkN4rsRaBAfAA==}
+
+  nanoid@5.0.9:
+    resolution: {integrity: sha512-Aooyr6MXU6HpvvWXKoVoXwKMs/KyVakWwg7xQfv5/S/RIgJMy0Ifa45H9qqYy7pTCszrHzP21Uk4PZq2HpEM8Q==}
+    engines: {node: ^18 || >=20}
+    hasBin: true
 
   napi-build-utils@1.0.2:
     resolution: {integrity: sha512-ONmRUqK7zj7DWX0D9ADe03wbwOBZxNAfF20PlGfCWQcD3+/MakShIHrMqx9YwPTfxDdF1zLeL+RGZiR9kGMLdg==}
@@ -1647,6 +1649,8 @@ snapshots:
   '@humanwhocodes/module-importer@1.0.1': {}
 
   '@humanwhocodes/retry@0.3.0': {}
+
+  '@intrnl/xxhash64@0.1.2': {}
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
@@ -2197,12 +2201,6 @@ snapshots:
     dependencies:
       eslint: 9.9.1
 
-  eslint-plugin-unused-imports@4.1.3(@typescript-eslint/eslint-plugin@5.62.0(@typescript-eslint/parser@5.62.0(eslint@9.9.1)(typescript@4.9.5))(eslint@9.9.1)(typescript@4.9.5))(eslint@9.9.1):
-    dependencies:
-      eslint: 9.9.1
-    optionalDependencies:
-      '@typescript-eslint/eslint-plugin': 5.62.0(@typescript-eslint/parser@5.62.0(eslint@9.9.1)(typescript@4.9.5))(eslint@9.9.1)(typescript@4.9.5)
-
   eslint-scope@5.1.1:
     dependencies:
       esrecurse: 4.3.0
@@ -2605,6 +2603,8 @@ snapshots:
   ms@2.1.3: {}
 
   mute-stream@0.0.8: {}
+
+  nanoid@5.0.9: {}
 
   napi-build-utils@1.0.2:
     optional: true

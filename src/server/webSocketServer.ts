@@ -11,7 +11,17 @@ import { OutgoingMessage } from "./types/send";
 export let wss: WebSocketServer | undefined;
 
 export const sockets = new Set<WebSocket>();
-
+export function hasConnectons() {
+    return sockets.size > 0;
+}
+const onConnectCbs: ((sock: WebSocket) => void)[] = [];
+export function onConnect(cb: (sock: WebSocket) => void) {
+    onConnectCbs.push(cb);
+}
+export function removeOnConnect(cb: (sock: WebSocket) => void) {
+    const index = onConnectCbs.indexOf(cb);
+    if (index !== -1) onConnectCbs.splice(index, 1);
+}
 const enum CloseCode {
     POLICY_VIOLATION = 1008
 }
@@ -21,7 +31,6 @@ let nonceCounter = 8485;
 const defaultOpts: SendToSocketsOpts = {
     timeout: 5000
 };
-
 
 // there is no autocomplete for this, https://github.com/microsoft/TypeScript/issues/52898
 export function sendAndGetData<T extends Receive.IncomingMessage["type"]>(data: OutgoingMessage, opts?: SendToSocketsOpts): Promise<Discriminate<Receive.IncomingMessage, T>> {
@@ -117,6 +126,7 @@ export function startWebSocketServer() {
 
         outputChannel.appendLine(`[WS] New Connection (Origin: ${req.headers.origin || "-"})`);
         sockets.add(sock);
+        onConnectCbs.forEach(async cb => cb(sock));
 
         sock.on("close", () => {
             outputChannel.appendLine("[WS] Connection Closed");

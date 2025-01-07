@@ -160,7 +160,7 @@ export class WebpackAstParser {
         const moduleId = getModuleId(dec, exportName);
 
         if (!moduleId) return;
-        const res = await sendAndGetData<{ data: string; }>({
+        const res = await sendAndGetData<"rawId">({
             type: "rawId",
             data: {
                 id: moduleId,

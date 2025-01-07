@@ -1,7 +1,8 @@
 import { Discriminate } from "@server/types";
 import { DisablePluginData, FindData, OutgoingMessage, PatchData } from "@server/types/send";
 import { moduleCache, sendToSockets, startWebSocketServer, stopWebSocketServer } from "@server/webSocketServer";
-import { commands, ExtensionContext, languages, QuickPickItem, Uri, window as vscWindow, window, workspace } from "vscode";
+import treeDataProvider from "sidebar";
+import { commands, ExtensionContext, extensions, languages, QuickPickItem, Uri, window as vscWindow, window, workspace } from "vscode";
 
 import PartialModuleJumpCodeLensProvider from "./lenses/PartialModuleJumpCodeLensProvider";
 import { PatchCodeLensProvider } from "./lenses/PatchCodeLensProvider";
@@ -16,8 +17,8 @@ export function activate(context: ExtensionContext) {
 	extensionUri = context.extensionUri;
 	extensionPath = context.extensionPath;
 	startWebSocketServer();
-
 	context.subscriptions.push(
+		window.registerTreeDataProvider("vencordSettings", new treeDataProvider()),
 		languages.registerCodeLensProvider(
 			{ pattern: "**/{plugins,userplugins,plugins/_*}/{*.ts,*.tsx,**/index.ts,**/index.tsx}" },
 			new PluginDefCodeLensProvider()
@@ -60,11 +61,10 @@ export function activate(context: ExtensionContext) {
 				});
 			}
 			const data = ModuleDepManager.getModDeps(moduleId);
-			console.log(`Deps for module: ${moduleId}\n`);
-			console.log(data);
+			window.showInformationMessage(`Deps for module ${moduleId}\nLazyDeps: ${data.lazyUses}\nSyncDeps: ${data.syncUses}`);
 		}),
 		commands.registerCommand("vencord-companion.cacheModules", async () => {
-			await new ModuleCache().downloadModules();
+			await ModuleCache.downloadModules();
 		}),
 		commands.registerCommand("vencord-companion.diffModule", async args => {
 			if (args)

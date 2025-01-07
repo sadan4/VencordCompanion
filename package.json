@@ -39,6 +39,40 @@
         "postinstall": "(cd src/webview && pnpm i)"
     },
     "contributes": {
+        "configuration": {
+            "title": "Vencord Companion",
+            "properties": {
+                "vencord-companion.showSidebar": {
+                    "default": false,
+                    "description": "Show the sidebar. This is intened to be used by workspaces in their .vscode/settings.json file, use alwaysShowSidebar instead to override this setting",
+                    "type": "boolean"
+                },
+                "vencord-companion.alwaysShowSidebar": {
+                    "default": false,
+                    "description": "Always show the sidebar",
+                    "type": "boolean"
+                }
+            }
+        },
+        "viewsContainers": {
+            "activitybar": [
+                {
+                    "id": "vencord-companion-panel",
+                    "title": "Companion",
+                    "icon": "assets/oneko.svg"
+                }
+            ]
+        },
+        "views": {
+            "vencord-companion-panel": [
+                {
+                    "id": "vencordSettings",
+                    "name": "Settings",
+                    "when": "config.vencord-companion.showSidebar || config.vencord-companion.alwaysShowSidebar",
+                    "visibility": "visible"
+                }
+            ]
+        },
         "commands": [
             {
                 "command": "vencord-companion.runReporter",
@@ -99,6 +133,7 @@
         "ws": "^8.12.1"
     },
     "devDependencies": {
+        "@intrnl/xxhash64": "^0.1.2",
         "@stylistic/eslint-plugin": "^2.7.2",
         "@types/node": "16.x",
         "@types/vscode": "^1.70.0",
@@ -109,6 +144,7 @@
         "esbuild": "^0.23.1",
         "eslint": "^9.9.1",
         "eslint-plugin-simple-import-sort": "^12.1.1",
+        "nanoid": "^5.0.9",
         "typescript-eslint": "^8.3.0"
     },
     "engines": {

@@ -1,6 +1,6 @@
 import * as fs from "fs/promises";
 import { join } from "path";
-import { ProgressLocation, window, workspace } from "vscode";
+import { ProgressLocation, window } from "vscode";
 
 import format from "../format";
 import { WebpackAstParser } from "../lsp";

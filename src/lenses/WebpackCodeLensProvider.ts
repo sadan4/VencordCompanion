@@ -1,3 +1,5 @@
+import { Discriminate } from "@server/types";
+import { AnyFindType, OutgoingMessage } from "@server/types/send";
 import { createSourceFile, isCallExpression, Node, ScriptTarget } from "typescript";
 import { CodeLens, CodeLensProvider, Range } from "vscode";
 
@@ -27,16 +29,18 @@ export const WebpackCodeLensProvider: CodeLensProvider = {
                 const args = node.arguments.map(a => tryParseStringLiteral(a) ?? tryParseRegularExpressionLiteral(a) ?? tryParseFunction(document, a));
 
                 const range = new Range(document.positionAt(node.getStart()), document.positionAt(node.getEnd()));
+
                 lenses.push(new CodeLens(range, {
                     title: "View Module",
                     command: "vencord-companion.extractFind",
                     arguments: [{
-                        type: "extractFind",
+                        type: "extract",
                         data: {
-                            args: args.filter(isNotNull),
-                            type
+                            extractType: "find",
+                            findType: type as AnyFindType,
+                            findArgs: args.filter(isNotNull)
                         }
-                    }],
+                    } satisfies Discriminate<OutgoingMessage, "extract">],
                     tooltip: "View Module"
                 }));
                 lenses.push(new CodeLens(range, {

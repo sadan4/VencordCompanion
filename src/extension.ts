@@ -1,3 +1,6 @@
+import { Discriminate } from "@server/types";
+import { DisablePluginData, FindData, OutgoingMessage, PatchData } from "@server/types/send";
+import { moduleCache, sendToSockets, startWebSocketServer, stopWebSocketServer } from "@server/webSocketServer";
 import { commands, ExtensionContext, languages, QuickPickItem, Uri, window as vscWindow, window, workspace } from "vscode";
 
 import PartialModuleJumpCodeLensProvider from "./lenses/PartialModuleJumpCodeLensProvider";
@@ -5,12 +8,8 @@ import { PatchCodeLensProvider } from "./lenses/PatchCodeLensProvider";
 import PluginDefCodeLensProvider from "./lenses/PluginDefCodeLensProvider";
 import { WebpackCodeLensProvider } from "./lenses/WebpackCodeLensProvider";
 import { DefinitionProvider } from "./lsp";
-import { ModuleCache, ModuleDepManager, testProgressBar } from "./modules/cache";
+import { ModuleCache, ModuleDepManager } from "./modules/cache";
 import { startReporter } from "./reporter";
-import { moduleCache, sendToSockets, startWebSocketServer, stopWebSocketServer } from "./server/webSocketServer";
-import { ExtractSendData } from "./shared";
-import testfile from "./testdep.txt";
-import { DisablePluginData, FindData, PatchData } from "./server/types/send";
 export let extensionUri: Uri;
 export let extensionPath: string;
 export function activate(context: ExtensionContext) {
@@ -138,23 +137,10 @@ export function activate(context: ExtensionContext) {
 				vscWindow.showErrorMessage(String(error));
 			}
 		}),
-		commands.registerCommand("vencord-companion.extractFind", async (args: {
-			type: string,
-			data: {
-				args: string[],
-				type: string;
-			};
-		}) => {
+		commands.registerCommand("vencord-companion.extractFind", async (args: Discriminate<OutgoingMessage, "extract">) => {
 			if (!args)
 				return vscWindow.showErrorMessage("No Data Provided");
-			sendToSockets({
-				type: "extract",
-				data: {
-					extractType: "find",
-					findType: args.data.type,
-					findArgs: args.data.args
-				}
-			}).catch(e => window.showErrorMessage(String(e)));
+			sendToSockets(args).catch(e => window.showErrorMessage(String(e)));
 		}),
 		commands.registerCommand("vencord-companion.extract", async (args: number) => {
 			if (args)

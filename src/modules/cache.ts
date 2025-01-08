@@ -49,6 +49,15 @@ class _ModuleCache {
         return await exists(this.modpath);
     }
 
+    public async getModuleFromNum(id: number): Promise<string> {
+        if(!await this.hasCache()) {
+            throw new Error("Module cache not found");
+        }
+        return await fs.readFile(join(this.modpath, id + ".js"), {
+            encoding: "utf-8"
+        });
+    }
+
     private async writeModules(modmap: Record<string, string>) {
         if (await exists(this.modpath)) {
             throw new Error(".modules already exists, please run `vencord-companion.clearCache` first");
@@ -196,7 +205,6 @@ export class ModuleDepManager {
         this.readyPromise && await this.readyPromise;
         return this;
     }
-
     public async gererateDeps() {
         // FIXME: horror
         const toRet: AllDeps = ModuleDepManager.makeDepsMap();

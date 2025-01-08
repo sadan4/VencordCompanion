@@ -77,7 +77,8 @@ interface ModuleDeps {
     sync: string[];
 }
 interface ExportMap {
-    [exposedName: string]: Identifier;
+    // string literal is used for css class name exports
+    [exposedName: string]: ts.Identifier | ts.StringLiteral;
 }
 
 // FIXME: rewrite to use module cache
@@ -203,18 +204,56 @@ export class WebpackAstParser {
             uri: mkStringUri(res.data),
         };
     }
-    private async getExportMap() {
+    public getExportMap() {
         return Object.assign({}, this.getExportMapWreq_d() ?? {}, this.getExportMapWreq_t() ?? {}, this.getExportMapWreq_e() ?? {});
     }
 
     private getExportMapWreq_t(): ExportMap | undefined {
+        const wreqT = this.findWreq_t();
+
+        if (!wreqT) return undefined;
+
+        const uses = this.vars.get(wreqT);
+
+        if (!uses) return undefined;
+
+        return Object.fromEntries(uses.uses.map(({ location }) => {
+            const [, exportAssignment] = getLeadingIdentifier(location);
+            const binary = findParrent<ts.BinaryExpression>(location, ts.isBinaryExpression);
+            if (exportAssignment && binary && ts.isIdentifier(binary?.right)) {
+                return [exportAssignment.text, binary.right];
+            }
+            return exportAssignment ? [exportAssignment.text, location] : false;
+        }).filter(x => x !== false));
     }
     private getExportMapWreq_e(): ExportMap | undefined {
         const wreqE = this.findWreq_e();
 
-        if(!wreqE) return;
+        if (!wreqE) return undefined;
 
         const uses = this.vars.get(wreqE);
+
+        if (!uses) return undefined;
+
+        const exportAssignment = uses.uses.find(({ location }) => {
+            const [, moduleProp] = getLeadingIdentifier(location);
+            return moduleProp?.text === "exports";
+        });
+
+        if (!exportAssignment) return undefined;
+
+        const exportObject = findParrent<ts.BinaryExpression | undefined>(
+            exportAssignment.location, ts.isBinaryExpression
+        )?.right;
+
+        if (!exportObject || !ts.isObjectLiteralExpression(exportObject))
+            return undefined;
+
+        return Object.fromEntries(exportObject.properties.map((x): false | [string, ExportMap[string]] => {
+            // wreq.e is used for css class name exports
+            if (!ts.isPropertyAssignment(x) || (!ts.isStringLiteral(x.initializer) && !ts.isIdentifier(x.initializer))) return false;
+            return [x.name.getText(), x.initializer];
+        }).filter(x => x !== false));
     }
     private getExportMapWreq_d(): ExportMap | undefined {
         const wreqD = this.findWreq_d();
@@ -235,7 +274,7 @@ export class WebpackAstParser {
             zeroRange
         );
     }
-    private findWreq_d(): (ts.CallExpression & { arguments: [ts.Identifier, ts.ObjectLiteralExpression, ...any] }) | undefined {
+    private findWreq_d(): (ts.CallExpression & { arguments: [ts.Identifier, ts.ObjectLiteralExpression, ...any]; }) | undefined {
         if (this.uses) {
             const maybeWreqD = this.uses.uses.find(use =>
                 getLeadingIdentifier(use.location)[1]?.text === "d"

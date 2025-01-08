@@ -8,7 +8,7 @@ import PartialModuleJumpCodeLensProvider from "./lenses/PartialModuleJumpCodeLen
 import { PatchCodeLensProvider } from "./lenses/PatchCodeLensProvider";
 import PluginDefCodeLensProvider from "./lenses/PluginDefCodeLensProvider";
 import { WebpackCodeLensProvider } from "./lenses/WebpackCodeLensProvider";
-import { DefinitionProvider } from "./lsp";
+import { DefinitionProvider, WebpackAstParser } from "./lsp";
 import { ModuleCache, ModuleDepManager } from "./modules/cache";
 import { startReporter } from "./reporter";
 export let extensionUri: Uri;
@@ -52,16 +52,17 @@ export function activate(context: ExtensionContext) {
 				return window.showErrorMessage("No active document");
 			}
 			const moduleId = currentDoc.match(/^\/\/WebpackModule(\d+)/)?.[1];
-			if (!moduleId) {
-				return window.showErrorMessage("not a webpack module");
+			if (!moduleId || Number.isNaN(+moduleId)) {
+				return window.showErrorMessage(`not a webpack module, got ${moduleId}`);
 			}
 			if (!ModuleDepManager.hasModDeps()) {
 				await ModuleDepManager.initModDeps({
 					fromDisk: true
 				});
 			}
-			const data = ModuleDepManager.getModDeps(moduleId);
-			window.showInformationMessage(`Deps for module ${moduleId}\nLazyDeps: ${data.lazyUses}\nSyncDeps: ${data.syncUses.join(", ")}`);
+			const a = new WebpackAstParser(await ModuleCache.getModuleFromNum(+moduleId));
+			console.log(a.getExportMap());
+			console.log(ModuleDepManager.getModDeps(moduleId));
 		}),
 		commands.registerCommand("vencord-companion.cacheModules", async () => {
 			await ModuleCache.downloadModules();

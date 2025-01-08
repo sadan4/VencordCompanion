@@ -1,3 +1,4 @@
+import { formatModule, mkStringUri, sendAndGetData } from "@server/webSocketServer";
 import {
     collectVariableUsage,
     getTokenAtPosition,
@@ -14,7 +15,6 @@ import {
 } from "typescript";
 import * as vscode from "vscode";
 
-import { formatModule, mkStringUri, sendAndGetData } from "../server/webSocketServer";
 import {
     findObjectLiteralByKey,
     findParrent,
@@ -45,6 +45,11 @@ export class ReferenceProvider implements vscode.ReferenceProvider {
             await ModuleDepManager.initModDeps({
                 fromDisk: true
             });
+        }
+        try {
+            return await new WebpackAstParser(document.getText()).generateReferences(document, position);
+        } catch (e) {
+            console.error(e);
         }
     }
 
@@ -91,7 +96,7 @@ export class WebpackAstParser {
     private wreq: Identifier | undefined;
     /** where {@link WebpackAstParser.wreq this.wreq} is used*/
     private uses: VariableInfo | undefined;
-    thisId: string | null;
+    private thisId: string | null;
 
     public constructor(text: string) {
         this.text = text;
@@ -119,7 +124,10 @@ export class WebpackAstParser {
         return null;
     }
 
-    public async getDeps(): Promise<ModuleDeps | null> {
+    public async generateReferences(document: vscode.TextDocument, position: vscode.Position): References {
+        throw new Error("Method not implemented.");
+    }
+    public getDeps(): ModuleDeps | null {
         if (!this.wreq || !this.uses) return null;
 
         // flatmaps because .map(...).filter(x => x !== false) isnt a valid typeguard
@@ -204,7 +212,7 @@ export class WebpackAstParser {
             uri: mkStringUri(res.data),
         };
     }
-    public getExportMap() {
+    public getExportMap(): ExportMap {
         return Object.assign({}, this.getExportMapWreq_d() ?? {}, this.getExportMapWreq_t() ?? {}, this.getExportMapWreq_e() ?? {});
     }
 

@@ -173,10 +173,6 @@ export function findExportLocation(
     return;
 }
 
-export function isWreq_d(use: VariableUse): boolean {
-    if (getLeadingIdentifier(use.location)[1]?.text === "d") return true;
-    return false;
-}
 
 /**
  * given an object literal, returns the property assignment for `prop` if it exsists

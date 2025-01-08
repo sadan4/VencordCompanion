@@ -217,7 +217,7 @@ export class ModuleDepManager {
                 throw new Error("canceled by user");
             }
             try {
-                const deps = await new WebpackAstParser(text).getDeps();
+                const deps = new WebpackAstParser(text).getDeps();
                 for (const syncDep of deps?.sync ?? []) {
                     toRet[syncDep].syncUses.push(id);
                 }

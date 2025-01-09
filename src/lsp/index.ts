@@ -315,7 +315,7 @@ export class WebpackAstParser {
                 return [exportAssignment.text, [makeRange(exportAssignment, this.text), makeRange(binary.right, this.text), this.makeRangeFromFuctionDef(binary.right)]];
             }
             return exportAssignment ? [exportAssignment.text, [makeRange(exportAssignment, this.text)]] : false;
-        }).filter(x => x !== false));
+        }).filter(x => x !== false) as any);
     }
     private getExportMapWreq_e(): ExportMap | undefined {
         const wreqE = this.findWreq_e();
@@ -344,7 +344,7 @@ export class WebpackAstParser {
             // wreq.e is used for css class name exports
             if (!isPropertyAssignment(x) || (!isStringLiteral(x.initializer) && !isIdentifier(x.initializer))) return false;
             return [x.name.getText(), [makeRange(x.initializer, this.text)]];
-        }).filter(x => x !== false));
+        }).filter(x => x !== false) as any);
     }
     private getExportMapWreq_d(): ExportMap | undefined {
         const wreqD = this.findWreq_d();
@@ -355,7 +355,7 @@ export class WebpackAstParser {
             let ret: Node| undefined = findReturnIdentifier(x.initializer);
             ret ??= findReturnPropertyAccessExpression(x.initializer);
             return ret != null ? [x.name.getText(), [makeRange(x.name, this.text), isIdentifier(ret) ? this.makeRangeFromFuctionDef(ret) : undefined]] : false as const;
-        }).filter(x => x !== false));
+        }).filter(x => x !== false) as any);
     }
     private makeRangeFromFuctionDef(ret: Identifier): vscode.Range | undefined {
         const uses = this.vars.get(ret)?.uses;

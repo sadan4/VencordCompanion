@@ -1,6 +1,7 @@
 import { PathLike } from "fs";
 import * as fs from "fs/promises";
-import { CancellationToken, Progress, ProgressLocation, ProgressOptions, window, workspace } from "vscode";
+import { resolve } from "path";
+import { CancellationToken, Progress, ProgressLocation, ProgressOptions, Uri, window, workspace } from "vscode";
 
 
 export class ProgressBar {
@@ -138,9 +139,7 @@ function getPercentMarkers(num: number): number[] {
     return points;
 }
 export function getCurrentFolder() {
-    const doc = window.activeTextEditor?.document.uri;
-    if (!doc) return;
-    return workspace.getWorkspaceFolder(doc)?.uri.fsPath;
+    return workspace.workspaceFolders?.[0]?.uri.fsPath;
 }
 
 export async function exists(path: PathLike) {

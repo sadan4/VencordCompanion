@@ -215,6 +215,18 @@ export function findReturnIdentifier(
     return lastStatment.expression;
 }
 
+export function findReturnPropertyAccessExpression(func: FunctionExpression): PropertyAccessExpression | undefined {
+    const lastStatment = func.body.statements.at(-1);
+
+    if (
+        !lastStatment ||
+        !isReturnStatement(lastStatment) ||
+        !lastStatment.expression ||
+        !isPropertyAccessExpression(lastStatment.expression)
+    ) return undefined;
+
+    return lastStatment.expression;
+}
 /**
  *  return a vscode.Range based of node.pos and node.end
  *  @param text the document that node is in

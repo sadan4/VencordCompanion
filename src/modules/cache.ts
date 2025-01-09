@@ -1,6 +1,6 @@
 import * as fs from "fs/promises";
-import { join } from "path";
-import { ProgressLocation, window } from "vscode";
+import { join, normalize, resolve } from "path";
+import { ProgressLocation, Uri, window, workspace } from "vscode";
 
 import format from "../format";
 import { WebpackAstParser } from "../lsp";
@@ -11,7 +11,7 @@ class _ModuleCache {
     folder: string;
     get workspaceFolder() {
         const toRet = getCurrentFolder();
-        if(toRet == null) {
+        if (toRet == null) {
             throw new Error("You are not in a folder, try opening a file");
         }
         return toRet;
@@ -21,6 +21,14 @@ class _ModuleCache {
     }
     constructor(folder?: string) {
         this.folder = folder || ".modules";
+    }
+
+    public getModuleURI(id: string) {
+        return Uri.file(this.getModulePath(id));
+    }
+
+    public getModulePath(id: string): string {
+        return resolve(join(this.modpath, id + ".js"));
     }
 
     async downloadModules() {
@@ -49,8 +57,8 @@ class _ModuleCache {
         return await exists(this.modpath);
     }
 
-    public async getModuleFromNum(id: number): Promise<string> {
-        if(!await this.hasCache()) {
+    public async getModuleFromNum(id: string): Promise<string> {
+        if (!await this.hasCache()) {
             throw new Error("Module cache not found");
         }
         return await fs.readFile(join(this.modpath, id + ".js"), {

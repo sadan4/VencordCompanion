@@ -1,35 +1,49 @@
 import { formatModule, mkStringUri, sendAndGetData } from "@server/webSocketServer";
+import { assert, dir } from "console";
+import { ModuleCache, ModuleDepManager } from "modules/cache";
 import {
     collectVariableUsage,
     getTokenAtPosition,
     VariableInfo,
 } from "tsutils";
 import {
+    BinaryExpression,
+    CallExpression,
     createSourceFile,
     Identifier,
+    isBinaryExpression,
+    isCallExpression,
+    isFunctionDeclaration,
+    isFunctionExpression,
+    isIdentifier,
+    isNumericLiteral,
+    isObjectLiteralExpression,
+    isPropertyAccessExpression,
+    isPropertyAssignment,
+    isStringLiteral,
     isVariableDeclaration,
+    Node,
+    ObjectLiteralExpression,
     ScriptKind,
     ScriptTarget,
     SourceFile,
+    StringLiteral,
     VariableDeclaration,
 } from "typescript";
 import * as vscode from "vscode";
 
+import format from "../format";
 import {
     findObjectLiteralByKey,
     findParrent,
     findReturnIdentifier,
+    findReturnPropertyAccessExpression,
     findWebpackArg,
     getLeadingIdentifier,
     getModuleId,
     makeRange,
     zeroRange,
 } from "./util";
-import ts = require("typescript");
-import format from "../format";
-import exp = require("constants");
-import { lchown } from "fs";
-import { ModuleCache, ModuleDepManager } from "modules/cache";
 
 type Definitions = Promise<
     vscode.Definition | vscode.LocationLink[] | null | undefined
@@ -37,6 +51,7 @@ type Definitions = Promise<
 type References = Promise<vscode.Location[] | null | undefined>;
 export class ReferenceProvider implements vscode.ReferenceProvider {
     async provideReferences(document: vscode.TextDocument, position: vscode.Position, context: vscode.ReferenceContext, token: vscode.CancellationToken): References {
+        const y = require("path");
         if (!await ModuleCache.hasCache()) {
             vscode.window.showErrorMessage("No Module Cache found, please download modules first");
             return;
@@ -82,8 +97,8 @@ interface ModuleDeps {
     sync: string[];
 }
 interface ExportMap {
-    // string literal is used for css class name exports
-    [exposedName: string]: ts.Identifier | ts.StringLiteral;
+    // ranges of code that will count as references to this export
+    [exposedName: string]: (vscode.Range | undefined)[];
 }
 
 // FIXME: rewrite to use module cache
@@ -123,22 +138,27 @@ export class WebpackAstParser {
         }
         return null;
     }
-
-    public async generateReferences(document: vscode.TextDocument, position: vscode.Position): References {
-        throw new Error("Method not implemented.");
-    }
     public getDeps(): ModuleDeps | null {
         if (!this.wreq || !this.uses) return null;
 
+        // check if we're in the cache first
+        if (ModuleDepManager.hasModDeps() && this.thisId) {
+            // FIXME: horror
+            const guh = ModuleDepManager.getModDeps(this.thisId);
+            return {
+                lazy: guh.lazyUses,
+                sync: guh.syncUses
+            };
+        }
         // flatmaps because .map(...).filter(x => x !== false) isnt a valid typeguard
         /**
          * things like wreq(moduleid)
          */
         const wreqCalls = this.uses.uses.map(x => x.location).flatMap(v => {
-            const p = findParrent<ts.CallExpression>(v, n => ts.isCallExpression(n));
+            const p = findParrent<CallExpression>(v, n => isCallExpression(n));
             if (!p || p.expression !== v) return [];
 
-            if (p.arguments.length === 1 && ts.isNumericLiteral(p.arguments[0]))
+            if (p.arguments.length === 1 && isNumericLiteral(p.arguments[0]))
                 return p.arguments[0].text;
             return [];
         });
@@ -146,10 +166,10 @@ export class WebpackAstParser {
         const lazyModules = this.uses.uses.map(x => x.location).flatMap(v => {
             const [, prop] = getLeadingIdentifier(v);
             if (prop?.text !== "bind") return [];
-            const call = findParrent<ts.CallExpression>(v, n => ts.isCallExpression(n));
+            const call = findParrent<CallExpression>(v, n => isCallExpression(n));
             if (!call) return [];
 
-            if (call.arguments.length === 2 && ts.isNumericLiteral(call.arguments[1]))
+            if (call.arguments.length === 2 && isNumericLiteral(call.arguments[1]))
                 return call.arguments[1].text;
             return [];
         });
@@ -212,8 +232,71 @@ export class WebpackAstParser {
             uri: mkStringUri(res.data),
         };
     }
+
+    public async generateReferences(document: vscode.TextDocument, position: vscode.Position): References {
+        if (!this.thisId)
+            throw new Error("Could not find module id of module to search for references of");
+        const moduleExports = this.getExportMap();
+        const where = this.getDeps();
+        const locs: vscode.Location[] = [];
+
+        console.log(moduleExports);
+        for (const [name] of Object.entries(moduleExports).filter(([, v]) => v.some(x => {
+            if(!x) return;
+            console.log(x), console.log(position);
+            return x.contains(position);
+        }))) {
+            console.log("Fond mod");
+            for (const mod of where?.sync ?? []) {
+                const modText = await ModuleCache.getModuleFromNum(mod);
+                if (!modText) continue;
+                const uses = new WebpackAstParser(modText).getUsesOfExport(this.thisId, name);
+                locs.push(...uses.map(x =>
+                    new vscode.Location(ModuleCache.getModuleURI(mod), x)));
+            }
+        }
+        return locs;
+    }
+
     public getExportMap(): ExportMap {
         return Object.assign({}, this.getExportMapWreq_d() ?? {}, this.getExportMapWreq_t() ?? {}, this.getExportMapWreq_e() ?? {});
+    }
+
+    private getUsesOfExport(moduleId: string, exportName: string): vscode.Range[] {
+        if (!this.wreq) throw new Error("Wreq is not used in this file");
+        const uses: vscode.Range[] = [];
+        for (const { location } of this.vars.get(this.wreq)?.uses ?? []) {
+
+            if (!isCallExpression(location.parent)) continue;
+            if (location.parent.arguments[0].getText() !== moduleId) continue;
+
+            const norm = location?.parent?.parent;
+            if (norm && isVariableDeclaration(norm)) {
+                if (!isIdentifier(norm.name)) continue;
+
+                const importUses = this.vars.get(norm.name);
+
+                for (const { location } of importUses?.uses ?? []) {
+                    if (!isPropertyAccessExpression(location.parent)) continue;
+                    if (!isIdentifier(location.parent.name)) continue;
+
+                    if (location.parent.name.getText() !== exportName) continue;
+
+                    uses.push(makeRange(location.parent.name, this.text));
+                }
+                continue;
+            }
+            const direct = location.parent;
+            if (isCallExpression(direct)) {
+                if (!isPropertyAccessExpression(direct.parent)) continue;
+                if (!isIdentifier(direct.parent.name)) continue;
+
+                if (direct.parent.name.text !== exportName) continue;
+
+                uses.push(makeRange(direct.parent.name, this.text));
+            }
+        }
+        return uses;
     }
 
     private getExportMapWreq_t(): ExportMap | undefined {
@@ -225,13 +308,13 @@ export class WebpackAstParser {
 
         if (!uses) return undefined;
 
-        return Object.fromEntries(uses.uses.map(({ location }) => {
+        return Object.fromEntries(uses.uses.map(({ location }): [string, ExportMap[string]] | false => {
             const [, exportAssignment] = getLeadingIdentifier(location);
-            const binary = findParrent<ts.BinaryExpression>(location, ts.isBinaryExpression);
-            if (exportAssignment && binary && ts.isIdentifier(binary?.right)) {
-                return [exportAssignment.text, binary.right];
+            const binary = findParrent<BinaryExpression>(location, isBinaryExpression);
+            if (exportAssignment && binary && isIdentifier(binary?.right)) {
+                return [exportAssignment.text, [makeRange(exportAssignment, this.text), makeRange(binary.right, this.text), this.makeRangeFromFuctionDef(binary.right)]];
             }
-            return exportAssignment ? [exportAssignment.text, location] : false;
+            return exportAssignment ? [exportAssignment.text, [makeRange(exportAssignment, this.text)]] : false;
         }).filter(x => x !== false));
     }
     private getExportMapWreq_e(): ExportMap | undefined {
@@ -250,28 +333,36 @@ export class WebpackAstParser {
 
         if (!exportAssignment) return undefined;
 
-        const exportObject = findParrent<ts.BinaryExpression | undefined>(
-            exportAssignment.location, ts.isBinaryExpression
+        const exportObject = findParrent<BinaryExpression | undefined>(
+            exportAssignment.location, isBinaryExpression
         )?.right;
 
-        if (!exportObject || !ts.isObjectLiteralExpression(exportObject))
+        if (!exportObject || !isObjectLiteralExpression(exportObject))
             return undefined;
 
         return Object.fromEntries(exportObject.properties.map((x): false | [string, ExportMap[string]] => {
             // wreq.e is used for css class name exports
-            if (!ts.isPropertyAssignment(x) || (!ts.isStringLiteral(x.initializer) && !ts.isIdentifier(x.initializer))) return false;
-            return [x.name.getText(), x.initializer];
+            if (!isPropertyAssignment(x) || (!isStringLiteral(x.initializer) && !isIdentifier(x.initializer))) return false;
+            return [x.name.getText(), [makeRange(x.initializer, this.text)]];
         }).filter(x => x !== false));
     }
     private getExportMapWreq_d(): ExportMap | undefined {
         const wreqD = this.findWreq_d();
         if (!wreqD) return;
         const [, exports] = wreqD.arguments;
-        return Object.fromEntries(exports.properties.map(x => {
-            if (!ts.isPropertyAssignment(x) || !ts.isFunctionExpression(x.initializer)) return false as const;
-            const ret = findReturnIdentifier(x.initializer);
-            return ret != null ? [x.name.getText(), ret] as const : false as const;
+        return Object.fromEntries(exports.properties.map((x): false | [string, ExportMap[string]] => {
+            if (!isPropertyAssignment(x) || !isFunctionExpression(x.initializer)) return false as const;
+            let ret: Node| undefined = findReturnIdentifier(x.initializer);
+            ret ??= findReturnPropertyAccessExpression(x.initializer);
+            return ret != null ? [x.name.getText(), [makeRange(x.name, this.text), isIdentifier(ret) ? this.makeRangeFromFuctionDef(ret) : undefined]] : false as const;
         }).filter(x => x !== false));
+    }
+    private makeRangeFromFuctionDef(ret: Identifier): vscode.Range | undefined {
+        const uses = this.vars.get(ret)?.uses;
+        if (!uses) return undefined;
+        const def = uses.find(({ location }) => isFunctionDeclaration(location.parent));
+        if (!def) return undefined;
+        return makeRange(def.location, this.text);
     }
 
     public findExportLocation(exportName: string): vscode.Range {
@@ -282,15 +373,15 @@ export class WebpackAstParser {
             zeroRange
         );
     }
-    private findWreq_d(): (ts.CallExpression & { arguments: [ts.Identifier, ts.ObjectLiteralExpression, ...any]; }) | undefined {
+    private findWreq_d(): (CallExpression & { arguments: [Identifier, ObjectLiteralExpression, ...any]; }) | undefined {
         if (this.uses) {
             const maybeWreqD = this.uses.uses.find(use =>
                 getLeadingIdentifier(use.location)[1]?.text === "d"
             )?.location.parent.parent;
-            if (!maybeWreqD || !ts.isCallExpression(maybeWreqD)) return undefined;
+            if (!maybeWreqD || !isCallExpression(maybeWreqD)) return undefined;
             if (maybeWreqD.arguments.length !== 2 ||
-                !ts.isIdentifier(maybeWreqD.arguments[0]) ||
-                !ts.isObjectLiteralExpression(maybeWreqD.arguments[1])
+                !isIdentifier(maybeWreqD.arguments[0]) ||
+                !isObjectLiteralExpression(maybeWreqD.arguments[1])
             ) return undefined;
             return maybeWreqD as any;
         }
@@ -308,8 +399,8 @@ export class WebpackAstParser {
 
             if (
                 !exportCallAssignment ||
-                !ts.isPropertyAssignment(exportCallAssignment) ||
-                !ts.isFunctionExpression(exportCallAssignment.initializer)
+                !isPropertyAssignment(exportCallAssignment) ||
+                !isFunctionExpression(exportCallAssignment.initializer)
             )
                 return undefined;
 
@@ -364,12 +455,12 @@ export class WebpackAstParser {
 
         if (!exportAssignment) return undefined;
 
-        const exportObject = findParrent<ts.BinaryExpression | undefined>(
+        const exportObject = findParrent<BinaryExpression | undefined>(
             exportAssignment.location,
-            ts.isBinaryExpression
+            isBinaryExpression
         )?.right;
 
-        if (!exportObject || !ts.isObjectLiteralExpression(exportObject))
+        if (!exportObject || !isObjectLiteralExpression(exportObject))
             return undefined;
 
         const exportItem = findObjectLiteralByKey(exportObject, exportName);

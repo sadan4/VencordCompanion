@@ -8,7 +8,7 @@ import PartialModuleJumpCodeLensProvider from "./lenses/PartialModuleJumpCodeLen
 import { PatchCodeLensProvider } from "./lenses/PatchCodeLensProvider";
 import PluginDefCodeLensProvider from "./lenses/PluginDefCodeLensProvider";
 import { WebpackCodeLensProvider } from "./lenses/WebpackCodeLensProvider";
-import { DefinitionProvider, WebpackAstParser } from "./lsp";
+import { DefinitionProvider, ReferenceProvider, WebpackAstParser } from "./lsp";
 import { ModuleCache, ModuleDepManager } from "./modules/cache";
 import { startReporter } from "./reporter";
 export let extensionUri: Uri;
@@ -28,6 +28,7 @@ export function activate(context: ExtensionContext) {
 			new PatchCodeLensProvider()
 		),
 		languages.registerDefinitionProvider({ language: "javascript" }, new DefinitionProvider),
+		languages.registerReferenceProvider({ language: "javascript" }, new ReferenceProvider),
 
 		languages.registerCodeLensProvider({ language: "typescript" }, WebpackCodeLensProvider),
 		languages.registerCodeLensProvider({ language: "typescriptreact" }, WebpackCodeLensProvider),
@@ -60,7 +61,7 @@ export function activate(context: ExtensionContext) {
 					fromDisk: true
 				});
 			}
-			const a = new WebpackAstParser(await ModuleCache.getModuleFromNum(+moduleId));
+			const a = new WebpackAstParser(await ModuleCache.getModuleFromNum(moduleId));
 			console.log(a.getExportMap());
 			console.log(ModuleDepManager.getModDeps(moduleId));
 		}),

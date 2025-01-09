@@ -40,7 +40,7 @@ export default class treeDataProvider implements TreeDataProvider<TNode> {
                 onConnect(r);
                 return new Section("Module Settings", [
                     (await ModuleCache.hasCache())
-                        ? new Button("Purge Cache", () => ModuleCache.clearCache().then(this._onDidChangeTreeData.fire))
+                        ? new Button("Purge Cache", () => ModuleCache.clearCache().then(() => setTimeout(() =>this._onDidChangeTreeData.fire())))
                         : new this.DynamicNode(r =>
                             hasConnectons()
                                 ? new Button("Download Modules", () =>
@@ -55,7 +55,7 @@ export default class treeDataProvider implements TreeDataProvider<TNode> {
     private makeDepSettings(): Section {
         return new Section("Dependency Cache Settings", [
             new this.DynamicNode(async reRender =>
-                await ModuleCache.hasCache() ?
+                await ModuleCache.hasCache() && !ModuleDepManager.hasModDeps() ?
                     ModuleDepManager.hasModDeps()
                         ? new Text("Module Dependencies Loaded")
                         : new Button("Load Module Dependencies", async () => {

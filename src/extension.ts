@@ -1,14 +1,16 @@
 import { Discriminate } from "@server/types";
 import { DisablePluginData, FindData, OutgoingMessage, PatchData } from "@server/types/send";
 import { moduleCache, sendToSockets, startWebSocketServer, stopWebSocketServer } from "@server/webSocketServer";
+import { WebpackAstParser } from "lsp/WebpackAstParser";
 import treeDataProvider from "sidebar";
+import onEditorCb from "vencord/diagnostics";
 import { commands, ExtensionContext, extensions, languages, QuickPickItem, Uri, window as vscWindow, window, workspace } from "vscode";
 
 import PartialModuleJumpCodeLensProvider from "./lenses/PartialModuleJumpCodeLensProvider";
 import { PatchCodeLensProvider } from "./lenses/PatchCodeLensProvider";
 import PluginDefCodeLensProvider from "./lenses/PluginDefCodeLensProvider";
 import { WebpackCodeLensProvider } from "./lenses/WebpackCodeLensProvider";
-import { DefinitionProvider, ReferenceProvider, WebpackAstParser } from "./lsp";
+import { DefinitionProvider, ReferenceProvider } from "./lsp";
 import { ModuleCache, ModuleDepManager } from "./modules/cache";
 import { startReporter } from "./reporter";
 export let extensionUri: Uri;
@@ -19,6 +21,7 @@ export function activate(context: ExtensionContext) {
 	startWebSocketServer();
 	context.subscriptions.push(
 		window.registerTreeDataProvider("vencordSettings", new treeDataProvider()),
+		workspace.onDidChangeTextDocument(onEditorCb),
 		languages.registerCodeLensProvider(
 			{ pattern: "**/{plugins,userplugins,plugins/_*}/{*.ts,*.tsx,**/index.ts,**/index.tsx}" },
 			new PluginDefCodeLensProvider()

@@ -3,7 +3,7 @@ import { join, normalize, resolve } from "path";
 import { ProgressLocation, Uri, window, workspace } from "vscode";
 
 import format from "../format";
-import { WebpackAstParser } from "../lsp";
+import { WebpackAstParser } from "lsp/WebpackAstParser";
 import { formatModule, sendAndGetData } from "../server/webSocketServer";
 import { BufferedProgressBar, exists, getCurrentFolder, isDirectory, ProgressBar, SecTo } from "./util";
 

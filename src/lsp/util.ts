@@ -5,10 +5,12 @@ import {
     VariableUse,
 } from "tsutils";
 import {
+    DefaultKeyword,
     FunctionExpression,
     Identifier,
     isBinaryExpression,
     isCallExpression,
+    isExportAssignment,
     isExpressionStatement,
     isFunctionExpression,
     isIdentifier,
@@ -28,21 +30,40 @@ import {
 import * as vscode from "vscode";
 
 import { getNumberAndColumnFromPos } from "./lineUtil";
-
 export const zeroRange = new vscode.Range(
     new vscode.Position(0, 0),
     new vscode.Position(0, 0)
 );
 
-export function findParrent<T extends Node | undefined = Node>(
-    node: Node,
-    func: ((node: Node) => boolean)
-): T | undefined {
-    while (!func(node)) {
-        if (!node.parent) return undefined;
-        node = node.parent;
-    }
-    return node as T;
+export function isDefaultKeyword(n: Node): n is DefaultKeyword {
+    return n.kind === SyntaxKind.DefaultKeyword;
+}
+type IsNever<T> = [T] extends [never] ? true : false;
+type AssertedType<T extends Function, E = any> = T extends (
+  a: any
+) => a is infer R
+  ? R extends E
+    ? R
+    : never
+  : never;
+export function findParrent<
+  T extends Node = never,
+  F extends Function = never,
+  R extends Node = AssertedType<F, Node>,
+  RorT extends Node = IsNever<T> extends true ? R : T
+>(
+  node: Node,
+  func: IsNever<T> extends true
+    ? F extends (a: Node) => a is RorT
+      ? F
+      : never
+    : (a: any) => a is RorT
+): RorT | undefined {
+  while (!func(node)) {
+    if (!node.parent) return undefined;
+    node = node.parent;
+  }
+  return node;
 }
 
 type NodeFunc = (node: Node) => boolean;
@@ -143,7 +164,7 @@ export function getModuleId(
 ): undefined | number {
     if (!dec) return undefined;
     if (dec.declarations.length !== 1) return undefined;
-    const init = findParrent<VariableDeclaration>(
+    const init = findParrent(
         dec.declarations[0],
         isVariableDeclaration
     )?.initializer;

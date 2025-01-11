@@ -1,7 +1,7 @@
 import { TextDocumentChangeEvent, TextEditor, window } from "vscode";
 
 // const openDocuments: Record<string,
-export default function onEditorCb(e: TextDocumentChangeEvent) {
+export function onEditorCb(e: TextDocumentChangeEvent) {
     if (!e) return;
     if (e.document.languageId !== "typescript"
         && e.document.languageId !== "typescriptreact") return;

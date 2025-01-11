@@ -1,15 +1,16 @@
-import { findParrent, isDefaultKeyword } from "lsp/util";
+import { findParrent, isDefaultKeyword } from "@ast/util";
+
 import { collectVariableUsage, DeclarationDomain, VariableInfo } from "tsutils";
-import { createSourceFile, DefaultKeyword, ExportAssignment, Identifier, isCallExpression, isExportAssignment, isObjectLiteralExpression, ObjectLiteralExpression, ScriptKind, ScriptTarget, SourceFile } from "typescript";
-import { TextDocument, Uri, window, workspace } from "vscode";
+import { createSourceFile, DefaultKeyword, Identifier, isCallExpression, isExportAssignment, isObjectLiteralExpression, ObjectLiteralExpression, ScriptKind, ScriptTarget, SourceFile } from "typescript";
+import { TextDocument, Uri, workspace } from "vscode";
 
 export default class VencordAstParser {
     private text: string;
     private sourceFile: SourceFile;
     vars: Map<Identifier, VariableInfo>;
     constructor(doc: string);
-    constructor(doc: { document: TextDocument });
-    constructor(doc: string | { document: TextDocument }) {
+    constructor(doc: { document: TextDocument; });
+    constructor(doc: string | { document: TextDocument; }) {
         if (typeof doc === "string") {
             this.text = doc;
         } else {
@@ -47,7 +48,7 @@ export default class VencordAstParser {
     public isRootPluginFile(): boolean {
         return !!this.findDefinePlugin();
     }
-    public hasFinds(): boolean {
+    // public hasFinds(): boolean {
 
-    }
+    // }
 }

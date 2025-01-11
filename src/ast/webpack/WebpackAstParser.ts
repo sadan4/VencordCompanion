@@ -1,12 +1,12 @@
-import { formatModule, mkStringUri,sendAndGetData } from "@server/webSocketServer";
-import format from "format";
-import { Definitions, ExportMap,ModuleDeps, References } from "lsp";
-import { ModuleCache,ModuleDepManager } from "modules/cache";
-import { collectVariableUsage, getTokenAtPosition,VariableInfo } from "tsutils";
-import { BinaryExpression, CallExpression, createSourceFile, Identifier, isBinaryExpression, isCallExpression, isFunctionDeclaration, isFunctionExpression, isIdentifier, isNumericLiteral, isObjectLiteralExpression, isPropertyAccessExpression, isPropertyAssignment, isStringLiteral, isVariableDeclaration, Node, ObjectLiteralExpression,ScriptKind, ScriptTarget, SourceFile, VariableDeclaration } from "typescript";
-import * as vscode from "vscode";
+import { findObjectLiteralByKey, findParrent, findReturnIdentifier, findReturnPropertyAccessExpression, findWebpackArg, getLeadingIdentifier, getModuleId, makeRange, zeroRange } from "@ast/util";
+import { ModuleCache, ModuleDepManager } from "@modules/cache";
+import { format } from "@modules/format";
+import { formatModule, mkStringUri, sendAndGetData } from "@server/index";
+import { Definitions, ExportMap, ModuleDeps, References } from "@type/ast";
 
-import { findObjectLiteralByKey,findParrent, findReturnIdentifier, findReturnPropertyAccessExpression, findWebpackArg, getLeadingIdentifier, getModuleId, makeRange, zeroRange } from "./util";
+import { collectVariableUsage, getTokenAtPosition, VariableInfo } from "tsutils";
+import { CallExpression, createSourceFile, Identifier, isBinaryExpression, isCallExpression, isFunctionDeclaration, isFunctionExpression, isIdentifier, isNumericLiteral, isObjectLiteralExpression, isPropertyAccessExpression, isPropertyAssignment, isStringLiteral, isVariableDeclaration, Node, ObjectLiteralExpression, ScriptKind, ScriptTarget, SourceFile } from "typescript";
+import { Location, Position, Range, TextDocument } from "vscode";
 
 // FIXME: rewrite to use module cache
 
@@ -21,8 +21,14 @@ export class WebpackAstParser {
     private uses: VariableInfo | undefined;
     private thisId: string | null;
 
-    public constructor(text: string) {
-        this.text = text;
+    public constructor(text: string | { document: TextDocument; } | TextDocument) {
+        if (typeof text === "string") {
+            this.text = text;
+        } else if ("document" in text) {
+            this.text = text.document.getText();
+        } else {
+            this.text = text.getText();
+        }
         this.sourceFile = createSourceFile(
             "module.js",
             this.text,
@@ -63,7 +69,7 @@ export class WebpackAstParser {
          * things like wreq(moduleid)
          */
         const wreqCalls = this.uses.uses.map(x => x.location).flatMap(v => {
-            const p = findParrent<CallExpression>(v, (n: Node) => isCallExpression(n));
+            const p = findParrent(v, isCallExpression);
             if (!p || p.expression !== v) return [];
 
             if (p.arguments.length === 1 && isNumericLiteral(p.arguments[0]))
@@ -74,7 +80,7 @@ export class WebpackAstParser {
         const lazyModules = this.uses.uses.map(x => x.location).flatMap(v => {
             const [, prop] = getLeadingIdentifier(v);
             if (prop?.text !== "bind") return [];
-            const call = findParrent<CallExpression>(v, n => isCallExpression(n));
+            const call = findParrent(v, isCallExpression);
             if (!call) return [];
 
             if (call.arguments.length === 2 && isNumericLiteral(call.arguments[1]))
@@ -89,8 +95,8 @@ export class WebpackAstParser {
     }
 
     public async generateDefinitions(
-        document: vscode.TextDocument,
-        position: vscode.Position
+        document: TextDocument,
+        position: Position
     ): Definitions {
         if (!this.uses) throw new Error("Wreq isnt used anywhere");
 
@@ -98,7 +104,7 @@ export class WebpackAstParser {
         const modules = new Map(
             [...this.vars.entries()].filter(([k]) => {
                 return this.uses!.uses.some(e => {
-                    const node = findParrent<VariableDeclaration>(
+                    const node = findParrent(
                         e.location,
                         isVariableDeclaration
                     );
@@ -121,7 +127,7 @@ export class WebpackAstParser {
             return v.uses.some(({ location }) => requiredModule === location);
         }) ?? [];
 
-        const moduleId = getModuleId(dec, exportName);
+        const moduleId = getModuleId(dec);
 
         if (!moduleId) return;
         const res = await sendAndGetData<"rawId">({
@@ -140,12 +146,12 @@ export class WebpackAstParser {
         };
     }
 
-    public async generateReferences(document: vscode.TextDocument, position: vscode.Position): References {
+    public async generateReferences(document: TextDocument, position: Position): References {
         if (!this.thisId)
             throw new Error("Could not find module id of module to search for references of");
         const moduleExports = this.getExportMap();
         const where = this.getDeps();
-        const locs: vscode.Location[] = [];
+        const locs: Location[] = [];
 
         console.log(moduleExports);
         for (const [name] of Object.entries(moduleExports).filter(([, v]) => v.some(x => {
@@ -158,7 +164,7 @@ export class WebpackAstParser {
                 const modText = await ModuleCache.getModuleFromNum(mod);
                 if (!modText) continue;
                 const uses = new WebpackAstParser(modText).getUsesOfExport(this.thisId, name);
-                locs.push(...uses.map(x => new vscode.Location(ModuleCache.getModuleURI(mod), x)));
+                locs.push(...uses.map(x => new Location(ModuleCache.getModuleURI(mod), x)));
             }
         }
         return locs;
@@ -168,9 +174,9 @@ export class WebpackAstParser {
         return Object.assign({}, this.getExportMapWreq_d() ?? {}, this.getExportMapWreq_t() ?? {}, this.getExportMapWreq_e() ?? {});
     }
 
-    private getUsesOfExport(moduleId: string, exportName: string): vscode.Range[] {
+    private getUsesOfExport(moduleId: string, exportName: string): Range[] {
         if (!this.wreq) throw new Error("Wreq is not used in this file");
-        const uses: vscode.Range[] = [];
+        const uses: Range[] = [];
         for (const { location } of this.vars.get(this.wreq)?.uses ?? []) {
 
             if (!isCallExpression(location.parent)) continue;
@@ -216,7 +222,7 @@ export class WebpackAstParser {
 
         return Object.fromEntries(uses.uses.map(({ location }): [string, ExportMap[string]] | false => {
             const [, exportAssignment] = getLeadingIdentifier(location);
-            const binary = findParrent<BinaryExpression>(location, isBinaryExpression);
+            const binary = findParrent(location, isBinaryExpression);
             if (exportAssignment && binary && isIdentifier(binary?.right)) {
                 return [exportAssignment.text, [makeRange(exportAssignment, this.text), makeRange(binary.right, this.text), this.makeRangeFromFuctionDef(binary.right)]];
             }
@@ -239,7 +245,7 @@ export class WebpackAstParser {
 
         if (!exportAssignment) return undefined;
 
-        const exportObject = findParrent<BinaryExpression>(
+        const exportObject = findParrent(
             exportAssignment.location, isBinaryExpression
         )?.right;
 
@@ -263,7 +269,7 @@ export class WebpackAstParser {
             return ret != null ? [x.name.getText(), [makeRange(x.name, this.text), isIdentifier(ret) ? this.makeRangeFromFuctionDef(ret) : undefined]] : false as const;
         }).filter(x => x !== false) as any);
     }
-    private makeRangeFromFuctionDef(ret: Identifier): vscode.Range | undefined {
+    private makeRangeFromFuctionDef(ret: Identifier): Range | undefined {
         const uses = this.vars.get(ret)?.uses;
         if (!uses) return undefined;
         const def = uses.find(({ location }) => isFunctionDeclaration(location.parent));
@@ -271,7 +277,7 @@ export class WebpackAstParser {
         return makeRange(def.location, this.text);
     }
 
-    public findExportLocation(exportName: string): vscode.Range {
+    public findExportLocation(exportName: string): Range {
         return (
             this.tryFindExportwreq_d(exportName) ||
             this.tryFindExportWreq_t(exportName) ||
@@ -290,7 +296,7 @@ export class WebpackAstParser {
             return maybeWreqD as any;
         }
     }
-    private tryFindExportwreq_d(exportName: string): vscode.Range | undefined {
+    private tryFindExportwreq_d(exportName: string): Range | undefined {
         if (this.uses) {
             const wreq_dCall = this.findWreq_d();
             if (!wreq_dCall) return undefined;
@@ -321,7 +327,7 @@ export class WebpackAstParser {
     private findWreq_t(): Identifier | undefined {
         return findWebpackArg(this.sourceFile, 1);
     }
-    private tryFindExportWreq_t(exportName: string): vscode.Range | undefined {
+    private tryFindExportWreq_t(exportName: string): Range | undefined {
         const wreq_t = this.findWreq_t();
 
         if (!wreq_t) return undefined;
@@ -340,7 +346,7 @@ export class WebpackAstParser {
     private findWreq_e(): Identifier | undefined {
         return findWebpackArg(this.sourceFile, 0);
     }
-    private tryFindExportsWreq_e(exportName: string): vscode.Range | undefined {
+    private tryFindExportsWreq_e(exportName: string): Range | undefined {
         const wreq_e = this.findWreq_e();
 
         if (!wreq_e) return undefined;
@@ -356,7 +362,7 @@ export class WebpackAstParser {
 
         if (!exportAssignment) return undefined;
 
-        const exportObject = findParrent<BinaryExpression>(
+        const exportObject = findParrent(
             exportAssignment.location,
             isBinaryExpression
         )?.right;

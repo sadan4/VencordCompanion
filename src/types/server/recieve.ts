@@ -5,7 +5,7 @@
  */
 
 // should be the same types as src/server/types/recieve.ts in the companion
-import { ReporterData as IReporterData } from "../../types";
+import { ReporterData as IReporterData } from "../reporter";
 export type ReporterData = IReporterData;
 
 export type IncomingMessage = (Report | DiffModule | ExtractModule | ModuleList | RawId) & Base;

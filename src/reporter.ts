@@ -1,8 +1,9 @@
-import { ShellExecution, tasks, window } from "vscode";
+import { sendToSockets } from "@server";
+import { ReporterData } from "@type/reporter";
 
-import { sendToSockets } from "./server/webSocketServer";
-import { ReporterData } from "./types";
 import { ReporterPanel } from "./webview";
+
+import { ShellExecution, tasks, window } from "vscode";
 // 1. rebuild with reporter
 // 2. send reload command
 // 3. await results back from vencord

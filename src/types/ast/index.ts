@@ -1,6 +1,21 @@
-import { Node } from "typescript";
+import { TestFind } from "@type/server";
+
+import { Identifier, Node } from "typescript";
 import { Definition, Location, LocationLink, Range } from "vscode";
 
+export type FindUse = {
+    range: Range;
+    use: TestFind
+};
+
+export type Import = {
+    default: boolean;
+    source: string;
+    from: string | {
+        orig: Identifier;
+        as: Identifier;
+    }
+};
 
 export interface ExportMap {
     // ranges of code that will count as references to this export

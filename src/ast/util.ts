@@ -1,4 +1,4 @@
-import { AssertedType, CBAssertion, FunctionNode, RegexNode, StringNode } from "@type/ast";
+import { AssertedType, CBAssertion, FunctionNode, Import, RegexNode, StringNode } from "@type/ast";
 
 import { getNumberAndColumnFromPos } from "./lineUtil";
 
@@ -22,6 +22,9 @@ import {
     isExpressionStatement,
     isFunctionExpression,
     isIdentifier,
+    isImportClause,
+    isImportDeclaration,
+    isImportSpecifier,
     isNumericLiteral,
     isPropertyAccessExpression,
     isRegularExpressionLiteral,
@@ -41,6 +44,29 @@ import {
 } from "typescript";
 import { Position, Range, TextDocument } from "vscode";
 
+export * from "@ast/lineUtil";
+
+export function debounce<F extends (...args: any) => any>(func: F, delay = 300): (...args: Parameters<F>) => undefined {
+    let timeout: NodeJS.Timeout;
+    return function (...args: Parameters<F>): undefined {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func(...args), delay);
+    };
+}
+
+export function debounceAsync<F extends (...args: any) => Promise<any>>(func: F, delay = 300): (...args: Parameters<F>) => void {
+    // for some godforsaken reason it errors here if its let, but not a few lines up
+    var timeout: NodeJS.Timeout;
+    let running = false;
+    return function (...args: Parameters<F>): undefined {
+        if (running) return;
+        running = true;
+        clearTimeout(timeout);
+        setTimeout(() => func(...args).finally(() => running = false), delay);
+        return;
+    };
+}
+
 export function isWebpackModule(text: string | TextDocument | { document: TextDocument; }) {
     if (typeof text === "string") void 0;
     else if ("document" in text) text = text.document.getText();
@@ -49,7 +75,6 @@ export function isWebpackModule(text: string | TextDocument | { document: TextDo
     return text.startsWith("//WebpackModule") || text.substring(0, 100).includes("//OPEN FULL MODULE:");
 }
 
-export * from "@ast/lineUtil";
 
 export function hasName(node: NamedDeclaration, name: string) {
     return node.name && isIdentifier(node.name) && node.name.text === name;
@@ -300,4 +325,28 @@ export function makeRange(node: Node, text: string): Range {
 export function makeLocation(pos: number, text: string): Position {
     const loc = getNumberAndColumnFromPos(text, pos);
     return new Position(loc.lineNumber - 1, loc.column - 1);
+}
+
+export function isInImportStatment(x: Node): boolean {
+    return findParrent(x, isImportDeclaration) != null;
+}
+
+export function getImportSource(x: Identifier): string {
+    const clause = findParrent(x, isImportDeclaration);
+    if(!clause) throw new Error("x is not in an import statment");
+    return clause.moduleSpecifier.getText();
+}
+
+export function isDefaultImport(x: Identifier): boolean {
+    return isImportClause(x.parent);
+}
+
+export function getImportName(x: Identifier): Import["from"] {
+    if(isImportClause(x.parent)) return x.getText();
+    const specifier = findParrent(x, isImportSpecifier);
+    if(!specifier) throw new Error("x is not in an import statment");
+    return specifier.propertyName ? {
+        orig: specifier.propertyName,
+        as: specifier.name
+    } : specifier.name.getText();
 }

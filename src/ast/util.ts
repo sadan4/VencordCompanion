@@ -1,12 +1,22 @@
+import { AssertedType, CBAssertion, FunctionNode, RegexNode, StringNode } from "@type/ast";
+
+import { getNumberAndColumnFromPos } from "./lineUtil";
+
+import { basename } from "path/posix";
+
 import {
-    collectVariableUsage,
     isSyntaxList,
     VariableInfo,
-    VariableUse,
 } from "tsutils";
 import {
+    CompilerOptions,
+    createPrinter,
+    DefaultKeyword,
+    EmitHint,
+    findConfigFile,
     FunctionExpression,
     Identifier,
+    isArrowFunction,
     isBinaryExpression,
     isCallExpression,
     isExpressionStatement,
@@ -14,84 +24,152 @@ import {
     isIdentifier,
     isNumericLiteral,
     isPropertyAccessExpression,
+    isRegularExpressionLiteral,
     isReturnStatement,
+    isStringLiteral,
     isVariableDeclaration,
+    NamedDeclaration,
     Node,
+    ObjectLiteralElementLike,
     ObjectLiteralExpression,
+    parseJsonConfigFileContent,
     PropertyAccessExpression,
-    PropertyAssignment,
-    SourceFile,
+    readConfigFile,
     SyntaxKind,
-    transform,
-    VariableDeclaration,
+    sys,
+    transpileModule,
 } from "typescript";
-import * as vscode from "vscode";
+import { Position, Range, TextDocument } from "vscode";
 
-import { getNumberAndColumnFromPos } from "./lineUtil";
+export function isWebpackModule(text: string | TextDocument | { document: TextDocument; }) {
+    if (typeof text === "string") void 0;
+    else if ("document" in text) text = text.document.getText();
+    else text = text.getText();
 
-export const zeroRange = new vscode.Range(
-    new vscode.Position(0, 0),
-    new vscode.Position(0, 0)
+    return text.startsWith("//WebpackModule") || text.substring(0, 100).includes("//OPEN FULL MODULE:");
+}
+
+export * from "@ast/lineUtil";
+
+export function hasName(node: NamedDeclaration, name: string) {
+    return node.name && isIdentifier(node.name) && node.name.text === name;
+}
+
+export function isNotNull<T>(value: T): value is Exclude<T, null | undefined> {
+    return value != null;
+}
+
+export function tryParseFunction(document: TextDocument, node: Node): FunctionNode | null {
+    if (!isArrowFunction(node) && !isFunctionExpression(node))
+        return null;
+
+    const code = createPrinter().printNode(EmitHint.Expression, node, node.getSourceFile());
+
+    let compilerOptions: CompilerOptions = {};
+
+    const tsConfigPath = findConfigFile(document.fileName, sys.fileExists);
+    if (tsConfigPath) {
+        const configFile = readConfigFile(tsConfigPath, sys.readFile);
+        compilerOptions = parseJsonConfigFileContent(configFile.config, sys, basename(tsConfigPath)).options;
+    }
+
+    const res = transpileModule(code, { compilerOptions });
+    if (res.diagnostics && res.diagnostics.length > 0)
+        return null;
+
+    return {
+        type: "function",
+        value: res.outputText
+    };
+}
+
+export function tryParseStringLiteral(node: Node): StringNode | null {
+    if (!isStringLiteral(node)) return null;
+
+    return {
+        type: "string",
+        value: node.text
+    };
+}
+
+export function tryParseRegularExpressionLiteral(node: Node): RegexNode | null {
+    if (!isRegularExpressionLiteral(node))
+        return null;
+
+    const m = node.text.match(/^\/(.+)\/(.*?)$/);
+    return m && {
+        type: "regex",
+        value: {
+            pattern: m[1],
+            flags: m[2]
+        }
+    };
+}
+
+
+export const zeroRange = new Range(
+    new Position(0, 0),
+    new Position(0, 0)
 );
 
-export function findParrent<T extends Node | undefined = Node>(
-    node: Node,
-    func: ((node: Node) => boolean)
-): T | undefined {
+export function isDefaultKeyword(n: Node): n is DefaultKeyword {
+    return n.kind === SyntaxKind.DefaultKeyword;
+}
+
+/**
+ * first parent
+ */
+export const findParrent: CBAssertion = (node, func) => {
     while (!func(node)) {
         if (!node.parent) return undefined;
         node = node.parent;
     }
-    return node as T;
-}
+    return node;
+};
 
-type NodeFunc = (node: Node) => boolean;
-
+// FIXME: try simplifying this
 /**
  * @param node the node to start from
  * @param func a function to check if the parrent matches
  */
-export function lastParrent<T extends Node = Node>(
-    node: Node,
-    func: NodeFunc
-): T | undefined {
+export const lastParrent: CBAssertion = (node, func) => {
     if (!node.parent) return undefined;
     while (func(node.parent)) {
-        if (!node.parent) return node as T;
+        if (!node.parent) break;
         node = node.parent;
     }
-    return node as T;
-}
+    return func(node) ? node : undefined;
+};
 
-export function lastChild<T extends Node = Node>(
-    node: Node | undefined,
-    func: NodeFunc
-): T | undefined {
+export const lastChild: CBAssertion<undefined> = (node, func) => {
     if (!node) return undefined;
     const c = node.getChildren();
     if (c.length === 0) {
-        if (func(node)) return node as T;
+        if (func(node)) return node;
         return undefined;
     }
     if (c.length === 1) {
         if (func(c[0])) return lastChild(c[0], func);
-        if (func(node)) return node as T;
+        if (func(node)) return node;
         return undefined;
     }
     const x = one(c, func);
     if (x) {
         return lastChild(x, func);
     }
-    if (func(node)) return node as T;
+    if (func(node)) return node;
     return undefined;
-}
+};
+
 // FIXME: this seems really stupid
-function one<T>(arr: Array<T>, func: (t: T) => boolean): T | undefined {
-    const filter = arr.filter(func);
+function one<T, F extends (t: T) => t is T, R extends T = AssertedType<F, T>>(
+    arr: readonly T[],
+    func: F extends (t: T) => t is R ? F : never
+): R | undefined {
+    const filter = arr.filter<R>(func);
     return (filter.length === 1 || undefined) && filter[0];
 }
 // i fucking hate jsdoc
-// FIXME: type the return for this
 /**
  * given an access chain like `one.b.three.d` \@*returns* — `[one?, b?]`
  *
@@ -100,13 +178,12 @@ function one<T>(arr: Array<T>, func: (t: T) => boolean): T | undefined {
  */
 export function getLeadingIdentifier(
     node: Node | undefined
-): [Identifier | undefined, Identifier | undefined] {
+): readonly [Identifier, undefined] | readonly [Identifier, Identifier] | readonly [undefined, undefined] {
     if (!node) return [node, undefined];
-    const { expression: module, name: wpExport } =
-        lastChild<PropertyAccessExpression>(
-            lastParrent(node, isPropertyAccessExpression),
-            isPropertyAccessExpression
-        ) ?? {};
+    const { expression: module, name: wpExport } = (() => {
+        const lastP = lastParrent(node, isPropertyAccessExpression);
+        return (lastP && lastChild(lastP, isPropertyAccessExpression));
+    })() ?? {};
     if (!module || !isIdentifier(module)) return [undefined, undefined];
     return [
         module,
@@ -137,13 +214,10 @@ export function findWebpackArg(
     }
 }
 
-export function getModuleId(
-    dec: VariableInfo | undefined,
-    wpExport: Identifier | undefined
-): undefined | number {
+export function getModuleId(dec: VariableInfo | undefined): number | undefined {
     if (!dec) return undefined;
     if (dec.declarations.length !== 1) return undefined;
-    const init = findParrent<VariableDeclaration>(
+    const init = findParrent(
         dec.declarations[0],
         isVariableDeclaration
     )?.initializer;
@@ -151,28 +225,8 @@ export function getModuleId(
     if (init.arguments.length !== 1 || !isNumericLiteral(init.arguments[0]))
         return undefined;
     const num = +init.arguments[0].text;
-    // window.showInformationMessage(`${num}\n${wpExport?.text || "No export found"}`);
     return num;
 }
-
-export type Definitions = vscode.ProviderResult<
-    vscode.Definition | vscode.DefinitionLink[]
->;
-
-export function findExportLocation(
-    exportFile: SourceFile,
-    wpExportName: string
-): vscode.Range | undefined {
-    const vars = collectVariableUsage(exportFile);
-    const wreq = findWebpackArg(exportFile);
-    if (!wreq) {
-        console.error(new Error("could not find wreq"));
-        return;
-    }
-    console.log(vars.get(wreq));
-    return;
-}
-
 
 /**
  * given an object literal, returns the property assignment for `prop` if it exsists
@@ -187,7 +241,7 @@ export function findExportLocation(
 export function findObjectLiteralByKey(
     object: ObjectLiteralExpression,
     prop: string
-) {
+): ObjectLiteralElementLike | undefined {
     return object.properties.find(x => x.name?.getText() === prop);
 }
 /**
@@ -231,8 +285,8 @@ export function findReturnPropertyAccessExpression(func: FunctionExpression): Pr
  *  return a vscode.Range based of node.pos and node.end
  *  @param text the document that node is in
  */
-export function makeRange(node: Node, text: string): vscode.Range {
-    return new vscode.Range(
+export function makeRange(node: Node, text: string): Range {
+    return new Range(
         makeLocation(node.pos, text),
         makeLocation(node.end, text)
     );
@@ -243,7 +297,7 @@ export function makeRange(node: Node, text: string): vscode.Range {
  *  @param pos absolute offset
  *  @param text the document to take the offset from
  */
-export function makeLocation(pos: number, text: string): vscode.Position {
+export function makeLocation(pos: number, text: string): Position {
     const loc = getNumberAndColumnFromPos(text, pos);
-    return new vscode.Position(loc.lineNumber - 1, loc.column - 1);
+    return new Position(loc.lineNumber - 1, loc.column - 1);
 }

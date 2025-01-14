@@ -1,9 +1,9 @@
 // @ts-check
 
 import stylistic from "@stylistic/eslint-plugin";
+
 import simpleImportSort from "eslint-plugin-simple-import-sort";
 import tseslint from "typescript-eslint";
-
 export default tseslint.config(
     { ignores: ["dist", "src/webview"] },
     {
@@ -75,7 +75,15 @@ export default tseslint.config(
             "prefer-spread": "error",
 
             // Plugin Rules
-            "simple-import-sort/imports": "error",
+            "simple-import-sort/imports": ["error", {
+                groups: [
+                    ["^@.+$"],
+                    ["^\\./(?=.*/)(?!/?$)", "^\\.(?!/?$)", "^\\./?$", "^\\.\\.(?!/?$)", "^\\.\\./?$"],
+                    [
+                        "^(assert|buffer|child_process|cluster|console|constants|crypto|dgram|dns|domain|events|fs|http|https|module|net|os|path|punycode|querystring|readline|repl|stream|string_decoder|sys|timers|tls|tty|url|util|vm|zlib|freelist|v8|process|async_hooks|http2|perf_hooks)(/.*|$)"
+                    ],
+                ]
+            }],
             "simple-import-sort/exports": "error",
         }
     }

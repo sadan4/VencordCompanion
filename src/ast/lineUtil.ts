@@ -1,5 +1,6 @@
+// MIT
 // https://github.com/dsherret/ts-ast-viewer/blob/main/src/utils/createLineNumberAndColumns.ts
-export interface LineNumberAndColumn {
+interface LineNumberAndColumn {
     pos: number;
     number: number;
     length: number;

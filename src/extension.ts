@@ -1,4 +1,4 @@
-import { onEditorCb } from "@ast/vencord/diagnostics";
+import { onEditCallback, onOpenCallback, updateDiagnostics } from "@ast/vencord/diagnostics";
 import { PatchCodeLensProvider, PluginDefCodeLensProvider, WebpackCodeLensProvider } from "@ast/vencord/lenses";
 import { WebpackAstParser } from "@ast/webpack";
 import { PartialModuleJumpCodeLensProvider } from "@ast/webpack/lenses";
@@ -22,7 +22,8 @@ export function activate(context: ExtensionContext) {
 	startWebSocketServer();
 	context.subscriptions.push(
 		window.registerTreeDataProvider("vencordSettings", new treeDataProvider()),
-		workspace.onDidChangeTextDocument(onEditorCb),
+		workspace.onDidChangeTextDocument(onEditCallback),
+		workspace.onDidOpenTextDocument(onOpenCallback),
 		languages.registerCodeLensProvider(
 			{ pattern: "**/{plugins,userplugins,plugins/_*}/{*.ts,*.tsx,**/index.ts,**/index.tsx}" },
 			new PluginDefCodeLensProvider()
@@ -250,6 +251,9 @@ export function activate(context: ExtensionContext) {
 			}
 		}),
 	);
+	if(window.activeTextEditor) {
+		onOpenCallback(window.activeTextEditor.document);
+	}
 }
 
 export function deactivate() {

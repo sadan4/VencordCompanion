@@ -1,4 +1,5 @@
 import { AssertedType, CBAssertion, FunctionNode, Import, RegexNode, StringNode } from "@type/ast";
+import { IFindType, IReplacement, PatchData } from "@type/server";
 
 import { getNumberAndColumnFromPos } from "./lineUtil";
 
@@ -13,9 +14,11 @@ import {
     createPrinter,
     DefaultKeyword,
     EmitHint,
+    Expression,
     findConfigFile,
     FunctionExpression,
     Identifier,
+    isArrayLiteralExpression,
     isArrowFunction,
     isBinaryExpression,
     isCallExpression,
@@ -26,7 +29,9 @@ import {
     isImportDeclaration,
     isImportSpecifier,
     isNumericLiteral,
+    isObjectLiteralExpression,
     isPropertyAccessExpression,
+    isPropertyAssignment,
     isRegularExpressionLiteral,
     isReturnStatement,
     isStringLiteral,
@@ -43,6 +48,68 @@ import {
     transpileModule,
 } from "typescript";
 import { Position, Range, TextDocument } from "vscode";
+
+function parseFind(patch: ObjectLiteralExpression): IFindType | null {
+    const find = patch.properties.find(p => hasName(p, "find"));
+    if (!find || !isPropertyAssignment(find)) return null;
+    if (!(isStringLiteral(find.initializer) || isRegularExpressionLiteral(find.initializer))) return null;
+
+    return {
+        findType: isStringLiteral(find.initializer) ? "string" : "regex",
+        find: find.initializer.text
+    };
+}
+
+function parseMatch(node: Expression) {
+    return tryParseStringLiteral(node) ?? tryParseRegularExpressionLiteral(node);
+}
+
+function parseReplace(document: TextDocument, node: Expression) {
+    return tryParseStringLiteral(node) ?? tryParseFunction(document, node);
+}
+
+function parseReplacement(document: TextDocument, patch: ObjectLiteralExpression): IReplacement[] | null {
+    const replacementObj = patch.properties.find(p => hasName(p, "replacement"));
+
+    if (!replacementObj || !isPropertyAssignment(replacementObj)) return null;
+
+    const replacement = replacementObj.initializer;
+
+    const replacements = isArrayLiteralExpression(replacement) ? replacement.elements : [replacement];
+    if (!replacements.every(isObjectLiteralExpression)) return null;
+
+    const replacementValues = (replacements as ObjectLiteralExpression[]).map((r: ObjectLiteralExpression) => {
+        const match = r.properties.find(p => hasName(p, "match"));
+        const replace = r.properties.find(p => hasName(p, "replace"));
+
+        if (!replace || !isPropertyAssignment(replace) || !match || !isPropertyAssignment(match)) return null;
+
+        const matchValue = parseMatch(match.initializer);
+        if (!matchValue) return null;
+
+        const replaceValue = parseReplace(document, replace.initializer);
+        if (replaceValue == null) return null;
+
+        return {
+            match: matchValue,
+            replace: replaceValue
+        };
+    }).filter(isNotNull);
+
+    return replacementValues.length > 0 ? replacementValues : null;
+}
+
+export function parsePatch(document: TextDocument, patch: ObjectLiteralExpression): PatchData | null {
+    const find = parseFind(patch);
+    const replacement = parseReplacement(document, patch);
+
+    if (!replacement || !find) return null;
+
+    return {
+        ...find,
+        replacement
+    };
+}
 
 export * from "@ast/lineUtil";
 
@@ -185,7 +252,6 @@ export const lastChild: CBAssertion<undefined> = (node, func) => {
     if (func(node)) return node;
     return undefined;
 };
-
 // FIXME: this seems really stupid
 function one<T, F extends (t: T) => t is T, R extends T = AssertedType<F, T>>(
     arr: readonly T[],
@@ -333,20 +399,21 @@ export function isInImportStatment(x: Node): boolean {
 
 export function getImportSource(x: Identifier): string {
     const clause = findParrent(x, isImportDeclaration);
-    if(!clause) throw new Error("x is not in an import statment");
-    return clause.moduleSpecifier.getText();
+    if (!clause) throw new Error("x is not in an import statment");
+    // getText returns with quotes, but the prop text does not have them ????
+    return clause.moduleSpecifier.getText().slice(1, -1);
 }
 
 export function isDefaultImport(x: Identifier): boolean {
     return isImportClause(x.parent);
 }
 
-export function getImportName(x: Identifier): Import["from"] {
-    if(isImportClause(x.parent)) return x.getText();
+export function getImportName(x: Identifier): Pick<Import, "orig" | "as"> {
+    if (isImportClause(x.parent)) return { as: x };
     const specifier = findParrent(x, isImportSpecifier);
-    if(!specifier) throw new Error("x is not in an import statment");
-    return specifier.propertyName ? {
+    if (!specifier) throw new Error("x is not in an import statment");
+    return {
         orig: specifier.propertyName,
         as: specifier.name
-    } : specifier.name.getText();
+    };
 }

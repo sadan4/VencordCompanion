@@ -1,5 +1,4 @@
-import { hasName, isNotNull, tryParseFunction, tryParseRegularExpressionLiteral, tryParseStringLiteral } from "@ast/util";
-import { IFindType, IReplacement, PatchData } from "@type/server";
+import { hasName, parsePatch } from "@ast/util";
 
 import {
   ArrayLiteralExpression,
@@ -13,80 +12,14 @@ import {
   isIntersectionTypeNode,
   isObjectLiteralExpression,
   isPropertyAssignment,
-  isRegularExpressionLiteral,
-  isStringLiteral,
   isTypeReferenceNode,
   isVariableDeclaration,
   isVariableStatement,
   Node,
-  ObjectLiteralExpression,
   ScriptTarget,
   TypeReferenceNode,
 } from "typescript";
 import { CodeLens, CodeLensProvider, Range, TextDocument } from "vscode";
-
-function parseFind(patch: ObjectLiteralExpression): IFindType | null {
-    const find = patch.properties.find(p => hasName(p, "find"));
-    if (!find || !isPropertyAssignment(find)) return null;
-    if (!(isStringLiteral(find.initializer) || isRegularExpressionLiteral(find.initializer))) return null;
-
-    return {
-        findType: isStringLiteral(find.initializer) ? "string" : "regex",
-        find: find.initializer.text
-    };
-}
-
-function parseMatch(node: Expression) {
-    return tryParseStringLiteral(node) ?? tryParseRegularExpressionLiteral(node);
-}
-
-function parseReplace(document: TextDocument, node: Expression) {
-    return tryParseStringLiteral(node) ?? tryParseFunction(document, node);
-}
-
-function parseReplacement(document: TextDocument, patch: ObjectLiteralExpression): IReplacement[] | null {
-    const replacementObj = patch.properties.find(p => hasName(p, "replacement"));
-
-    if (!replacementObj || !isPropertyAssignment(replacementObj)) return null;
-
-    const replacement = replacementObj.initializer;
-
-    const replacements = isArrayLiteralExpression(replacement) ? replacement.elements : [replacement];
-    if (!replacements.every(isObjectLiteralExpression)) return null;
-
-    const replacementValues = (replacements as ObjectLiteralExpression[]).map((r: ObjectLiteralExpression) => {
-        const match = r.properties.find(p => hasName(p, "match"));
-        const replace = r.properties.find(p => hasName(p, "replace"));
-
-        if (!replace || !isPropertyAssignment(replace) || !match || !isPropertyAssignment(match)) return null;
-
-        const matchValue = parseMatch(match.initializer);
-        if (!matchValue) return null;
-
-        const replaceValue = parseReplace(document, replace.initializer);
-        if (replaceValue == null) return null;
-
-        return {
-            match: matchValue,
-            replace: replaceValue
-        };
-    }).filter(isNotNull);
-
-    return replacementValues.length > 0 ? replacementValues : null;
-}
-
-// FIXME: remove any
-function parsePatch(document: TextDocument, patch: ObjectLiteralExpression): PatchData | null {
-    const find = parseFind(patch);
-    const replacement = parseReplacement(document, patch);
-
-    if (!replacement || !find) return null;
-
-    return {
-        ...find,
-        replacement
-    };
-}
 
 const enum ParseResult {
     NOT_FOUND,

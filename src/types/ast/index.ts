@@ -1,7 +1,11 @@
 import { TestFind } from "@type/server";
 
-import { Identifier, Node } from "typescript";
+import { Identifier, ModuleExportName, Node } from "typescript";
 import { Definition, Location, LocationLink, Range } from "vscode";
+
+export type WithParent<N, P> = N & {
+    parent: P;
+};
 
 export type FindUse = {
     range: Range;
@@ -11,10 +15,8 @@ export type FindUse = {
 export type Import = {
     default: boolean;
     source: string;
-    from: string | {
-        orig: Identifier;
-        as: Identifier;
-    }
+    orig?: ModuleExportName;
+    as: Identifier;
 };
 
 export interface ExportMap {

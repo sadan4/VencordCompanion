@@ -1,10 +1,34 @@
-import { findParrent, getImportName, getImportSource, isDefaultImport, isDefaultKeyword, isInImportStatment, isNotNull, makeRange, tryParseFunction, tryParseRegularExpressionLiteral, tryParseStringLiteral } from "@ast/util";
-import { FindUse, Import } from "@type/ast";
-import { TestFind } from "@type/server";
+import {
+    findObjectLiteralByKey,
+    getImportName,
+    getImportSource,
+    isDefaultImport,
+    isInImportStatment,
+    isNotNull,
+    makeRange,
+    parsePatch,
+    tryParseFunction,
+    tryParseRegularExpressionLiteral,
+    tryParseStringLiteral,
+} from "@ast/util";
+import { FindUse, Import, WithParent } from "@type/ast";
+import { PatchData, TestFind } from "@type/server";
 
 import { collectVariableUsage, DeclarationDomain, VariableInfo } from "tsutils";
-import { CallExpression, createSourceFile, DefaultKeyword, Identifier, isCallExpression, isExportAssignment, isObjectLiteralExpression, ObjectLiteralExpression, ScriptKind, ScriptTarget, SourceFile } from "typescript";
-import { TextDocument, Uri, workspace } from "vscode";
+import {
+    CallExpression,
+    createSourceFile,
+    Identifier,
+    isArrayLiteralExpression,
+    isCallExpression,
+    isObjectLiteralExpression,
+    isPropertyAssignment,
+    ObjectLiteralExpression,
+    ScriptKind,
+    ScriptTarget,
+    SourceFile,
+} from "typescript";
+import { Location, Range, TextDocument, Uri, workspace } from "vscode";
 export class VencordAstParser {
     private doc: TextDocument;
     private text: string;
@@ -25,28 +49,39 @@ export class VencordAstParser {
         return new VencordAstParser({ document: await workspace.openTextDocument(uri) });
     }
     private findDefinePlugin(): ObjectLiteralExpression | undefined {
-        const allVars = [...this.vars.keys()];
-
-        // FIXME: allow for renaming of the definePlugin import
-        const definePluginIdnet = allVars.find(v =>
-            v.getText() === "definePlugin" && this.vars.get(v)!.domain === DeclarationDomain.Import);
-
-        if (!definePluginIdnet) return;
-
-        const useInDefault = this.vars.get(definePluginIdnet)!.uses.find(({ location }) => {
-            const maybeExport = findParrent(location, isExportAssignment);
-            if (!maybeExport) return;
-
-            const maybeDefault = maybeExport.getChildren()[1];
-            return maybeDefault && isDefaultKeyword(maybeDefault);
-        })?.location as DefaultKeyword | undefined;
-
-        if (!useInDefault || !isCallExpression(useInDefault.parent)) return;
-
-        const firstArg = useInDefault.parent.arguments[0];
-
-        return firstArg && isObjectLiteralExpression(firstArg) ? firstArg : undefined;
+        const define = [...this.imports.values()].find(x => {
+            if (!x.default) return;
+            if (x.source !== "@utils/types") return;
+            return true;
+        });
+        if (!define) return;
+        const uses = this.vars.get(define.as)?.uses;
+        if (!uses) return;
+        const definePlugin = uses.find(({ location }) => {
+            if (!isCallExpression(location.parent)) return;
+            return location.parent.arguments.length === 1 && isObjectLiteralExpression(location.parent.arguments[0]);
+        });
+        return (definePlugin?.location.parent as CallExpression).arguments[0] as ObjectLiteralExpression;
     }
+
+    public getPatches(): (PatchData & { range: Range; })[] {
+        const definePlugin = this.findDefinePlugin();
+        if (!definePlugin) return [];
+        const patchesProp = findObjectLiteralByKey(definePlugin, "patches");
+        if (!patchesProp || !isPropertyAssignment(patchesProp) || !isArrayLiteralExpression(patchesProp.initializer)) return [];
+        return patchesProp.initializer.elements
+            .filter(isObjectLiteralExpression)
+            .map(x => {
+                const res = parsePatch(this.doc, x);
+                if (!res) return null;
+                return {
+                    ...res,
+                    range: makeRange(x.getChildAt(1), this.text)
+                };
+            })
+            .filter(x => x !== null);
+    }
+
     public isRootPluginFile(): boolean {
         return !!this.findDefinePlugin();
     }
@@ -76,14 +111,23 @@ export class VencordAstParser {
         if (this.findUsesCache) return this.findUsesCache;
         return (this.findUsesCache = this._getFindUses());
     }
-    private _getFindUses(): (Identifier & { parent: CallExpression })[] {
-        return [...this.imports.entries()].flatMap(([k, v]) => {
+    private _getFindUses(): WithParent<Identifier, CallExpression>[] {
+        const imports = [...this.imports.entries()].flatMap(([k, v]) => {
             if (v.source !== "@webpack") return [];
-            if (!isCallExpression(k.parent)) return [];
-            const origName = ((typeof v.from === "string" && v.from) || (v.from as Exclude<typeof v.from, string>).orig.getText());
+            const origName = (v.orig ?? v.as).getText();
             if (!origName.startsWith("find")) return [];
-            return k as Identifier & { parent: CallExpression };
+            return k;
         });
+        const toRet: WithParent<Identifier, CallExpression>[] = [];
+        for (const i of imports) {
+            const uses = this.vars.get(i)?.uses;
+            if (!uses) continue;
+            for (const { location } of uses) {
+                if (!isCallExpression(location.parent)) continue;
+                toRet.push(location as WithParent<Identifier, CallExpression>);
+            }
+        }
+        return toRet;
     }
     /**
      * returns the string of the import location if it was
@@ -91,7 +135,7 @@ export class VencordAstParser {
     private isIdentifierImported(i: Identifier): Import | undefined {
         const { declarations, domain } = this.vars.get(i) ?? {};
         if (!declarations || declarations.length === 0) return;
-        if (domain !== DeclarationDomain.Import) return;
+        if (!(domain! & DeclarationDomain.Import)) return;
         const source = declarations.flatMap(x => {
             if (!isInImportStatment(x)) return [];
             return x;
@@ -100,7 +144,7 @@ export class VencordAstParser {
         const [importIdent] = source;
         return {
             default: isDefaultImport(importIdent),
-            from: getImportName(importIdent),
+            ...getImportName(importIdent),
             source: getImportSource(importIdent),
         };
     }

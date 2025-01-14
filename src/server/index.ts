@@ -1,8 +1,10 @@
+import { reloadDiagnostics } from "@ast/vencord/diagnostics";
 import { format } from "@modules/format";
 import { Discriminate, FullIncomingMessage, IncomingMessage, OutgoingMessage } from "@type/server";
 
 import { handleAfterRecive } from "../reporter";
 import { outputChannel } from "../shared";
+
 import { commands, Uri, workspace } from "vscode";
 import { RawData, WebSocket, WebSocketServer } from "ws";
 
@@ -20,6 +22,9 @@ export function removeOnConnect(cb: (sock: WebSocket) => void) {
     const index = onConnectCbs.indexOf(cb);
     if (index !== -1) onConnectCbs.splice(index, 1);
 }
+
+onConnectCbs.push(reloadDiagnostics);
+
 const enum CloseCode {
     POLICY_VIOLATION = 1008
 }

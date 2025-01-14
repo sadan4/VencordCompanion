@@ -1,6 +1,23 @@
-import { Node } from "typescript";
+import { TestFind } from "@type/server";
+
+import { Identifier, ModuleExportName, Node } from "typescript";
 import { Definition, Location, LocationLink, Range } from "vscode";
 
+export type WithParent<N, P> = N & {
+    parent: P;
+};
+
+export type FindUse = {
+    range: Range;
+    use: TestFind
+};
+
+export type Import = {
+    default: boolean;
+    source: string;
+    orig?: ModuleExportName;
+    as: Identifier;
+};
 
 export interface ExportMap {
     // ranges of code that will count as references to this export

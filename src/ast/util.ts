@@ -252,6 +252,7 @@ export const lastChild: CBAssertion<undefined> = (node, func) => {
     if (func(node)) return node;
     return undefined;
 };
+
 // FIXME: this seems really stupid
 function one<T, F extends (t: T) => t is T, R extends T = AssertedType<F, T>>(
     arr: readonly T[],
@@ -260,6 +261,7 @@ function one<T, F extends (t: T) => t is T, R extends T = AssertedType<F, T>>(
     const filter = arr.filter<R>(func);
     return (filter.length === 1 || undefined) && filter[0];
 }
+
 // i fucking hate jsdoc
 /**
  * given an access chain like `one.b.three.d` \@*returns* — `[one?, b?]`
@@ -335,6 +337,7 @@ export function findObjectLiteralByKey(
 ): ObjectLiteralElementLike | undefined {
     return object.properties.find(x => x.name?.getText() === prop);
 }
+
 /**
  * given a function like this, returns the identifier for x
  * @example function(){
@@ -372,6 +375,7 @@ export function findReturnPropertyAccessExpression(func: FunctionExpression): Pr
 
     return lastStatment.expression;
 }
+
 /**
  *  return a vscode.Range based of node.pos and node.end
  *  @param text the document that node is in

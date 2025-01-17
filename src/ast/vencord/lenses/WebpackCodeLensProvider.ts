@@ -1,9 +1,8 @@
-import { Discriminate } from "@server/types";
-import { AnyFindType, OutgoingMessage } from "@server/types/send";
+import { isNotNull, tryParseFunction, tryParseRegularExpressionLiteral, tryParseStringLiteral } from "@ast/util";
+import { AnyFindType, Discriminate, OutgoingMessage } from "@type/server";
+
 import { createSourceFile, isCallExpression, Node, ScriptTarget } from "typescript";
 import { CodeLens, CodeLensProvider, Range } from "vscode";
-
-import { isNotNull, tryParseFunction, tryParseRegularExpressionLiteral, tryParseStringLiteral } from "./helpers";
 
 const vencordWebpackImportRegex = /import \{(.+?)\} from ['`"]@webpack(\/.+?)?['`"]/;
 

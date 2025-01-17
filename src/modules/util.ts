@@ -1,7 +1,7 @@
 import { PathLike } from "fs";
-import * as fs from "fs/promises";
-import { resolve } from "path";
-import { CancellationToken, Progress, ProgressLocation, ProgressOptions, Uri, window, workspace } from "vscode";
+import { stat } from "fs/promises";
+
+import { CancellationToken, Progress, ProgressLocation, ProgressOptions, window, workspace } from "vscode";
 
 
 export class ProgressBar {
@@ -144,7 +144,7 @@ export function getCurrentFolder() {
 
 export async function exists(path: PathLike) {
     try {
-        return !!(await fs.stat(path));
+        return !!(await stat(path));
     } catch {
         return false;
     }
@@ -157,5 +157,5 @@ export async function exists(path: PathLike) {
  * use {@link exists} to check if it exists
  */
 export async function isDirectory(path: PathLike) {
-    return (await fs.stat(path)).isDirectory();
+    return (await stat(path)).isDirectory();
 }

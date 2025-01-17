@@ -1,7 +1,19 @@
-import { createSourceFile, isCallExpression, isExportAssignment, isIdentifier, isObjectLiteralExpression, isPropertyAssignment, isStringLiteral, Node, ObjectLiteralExpression, ScriptTarget, StringLiteral } from "typescript";
-import { CodeLens, CodeLensProvider, ProviderResult, Range, TextDocument } from "vscode";
+import { DisablePluginData } from "@type/server";
 
-import { DisablePluginData } from "../server/types/send";
+import {
+  createSourceFile,
+  isCallExpression,
+  isExportAssignment,
+  isIdentifier,
+  isObjectLiteralExpression,
+  isPropertyAssignment,
+  isStringLiteral,
+  Node,
+  ObjectLiteralExpression,
+  ScriptTarget,
+  StringLiteral,
+} from "typescript";
+import { CodeLens, CodeLensProvider, ProviderResult, Range, TextDocument } from "vscode";
 
 enum ParseResult {
     INVALID,
@@ -50,7 +62,7 @@ function parsePossiblePatches(node: Node): {
     };
 }
 
-export default class implements CodeLensProvider {
+export class PluginDefCodeLensProvider implements CodeLensProvider {
     check(text: string) {
         return text.includes("definePlugin") && text.includes("name:");
     }

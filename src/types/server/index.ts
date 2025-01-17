@@ -1,7 +1,7 @@
-import { OutgoingMessage } from "./send";
 
-export * as Receive from "./recieve";
-export * as Send from "./send";
+export * from "./recieve";
+export * from "./send";
+
 export type Discriminate<
     U extends { [P in D]: string },
     K extends U[D],

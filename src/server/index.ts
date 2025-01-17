@@ -1,12 +1,12 @@
-import { commands, Uri, workspace } from "vscode";
-import { RawData, WebSocket, WebSocketServer } from "ws";
+import { reloadDiagnostics } from "@ast/vencord/diagnostics";
+import { format } from "@modules/format";
+import { Discriminate, FullIncomingMessage, IncomingMessage, OutgoingMessage } from "@type/server";
 
-import format from "../format";
 import { handleAfterRecive } from "../reporter";
 import { outputChannel } from "../shared";
-import { Discriminate, Receive, Send } from "./types";
-import { FullIncomingMessage } from "./types/recieve";
-import { OutgoingMessage } from "./types/send";
+
+import { commands, Uri, workspace } from "vscode";
+import { RawData, WebSocket, WebSocketServer } from "ws";
 
 export let wss: WebSocketServer | undefined;
 
@@ -22,6 +22,9 @@ export function removeOnConnect(cb: (sock: WebSocket) => void) {
     const index = onConnectCbs.indexOf(cb);
     if (index !== -1) onConnectCbs.splice(index, 1);
 }
+
+onConnectCbs.push(reloadDiagnostics);
+
 const enum CloseCode {
     POLICY_VIOLATION = 1008
 }
@@ -33,7 +36,7 @@ const defaultOpts: SendToSocketsOpts = {
 };
 
 // there is no autocomplete for this, https://github.com/microsoft/TypeScript/issues/52898
-export function sendAndGetData<T extends Receive.IncomingMessage["type"]>(data: OutgoingMessage, opts?: SendToSocketsOpts): Promise<Discriminate<Receive.IncomingMessage, T>> {
+export function sendAndGetData<T extends IncomingMessage["type"]>(data: OutgoingMessage, opts?: SendToSocketsOpts): Promise<Discriminate<IncomingMessage, T>> {
     const { timeout } = opts ?? defaultOpts;
     return new Promise((res, rej) => {
         setTimeout(rej.bind(null, "Timed Out"), timeout);

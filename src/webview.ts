@@ -1,17 +1,17 @@
 /**
  * Manages react webview panels
  */
-import path = require("path");
-import * as vscode from "vscode";
+import { format } from "@modules/format";
+import { mkStringUri, sendToSockets } from "@server";
+import { EvaledPatch, ReporterData, WebviewMessage } from "@type/reporter";
 
 import { extensionPath, extensionUri } from "./extension";
-import format from "./format";
-import { mkStringUri, sendToSockets } from "./server/webSocketServer";
-import { EvaledPatch, ReporterData, WebviewMessage } from "./types";
 
-type Patch = { patch: EvaledPatch };
-type PluginName = { pluginName: string };
-type Diff = { oldModule: string, newModule: string };
+import { commands,Disposable, Uri, ViewColumn, WebviewPanel, window } from "vscode";
+
+type Patch = { patch: EvaledPatch; };
+type PluginName = { pluginName: string; };
+type Diff = { oldModule: string, newModule: string; };
 // TODO: add persistant state
 export class ReporterPanel {
     /**
@@ -21,13 +21,13 @@ export class ReporterPanel {
 
     private static readonly viewType = "vencordReporter";
 
-    private readonly _panel: vscode.WebviewPanel;
-    private readonly _extensionUri: vscode.Uri;
+    private readonly _panel: WebviewPanel;
+    private readonly _extensionUri: Uri;
     private readonly _extensionPath: string;
-    private _disposables: vscode.Disposable[] = [];
+    private _disposables: Disposable[] = [];
 
     public static createOrShow(data: ReporterData) {
-        const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
+        const column = window.activeTextEditor ? window.activeTextEditor.viewColumn : undefined;
 
         // If we already have a panel, show it.
         // Otherwise, create a new panel.
@@ -35,22 +35,22 @@ export class ReporterPanel {
         if (ReporterPanel.currentPanel && !data) {
             ReporterPanel.currentPanel._panel.reveal(column);
         } else {
-            ReporterPanel.currentPanel = new ReporterPanel(extensionUri, column || vscode.ViewColumn.One, data);
+            ReporterPanel.currentPanel = new ReporterPanel(extensionUri, column || ViewColumn.One, data);
         }
     }
 
-    private constructor(extensionUri: vscode.Uri, column: vscode.ViewColumn, data: ReporterData) {
+    private constructor(extensionUri: Uri, column: ViewColumn, data: ReporterData) {
         this._extensionUri = extensionUri;
         this._extensionPath = extensionPath;
 
         // Create and show a new webview panel
-        this._panel = vscode.window.createWebviewPanel(ReporterPanel.viewType, "Vencord Reporter", column, {
+        this._panel = window.createWebviewPanel(ReporterPanel.viewType, "Vencord Reporter", column, {
             // Enable javascript in the webview
             enableScripts: true,
 
             // And restric the webview to only loading content from our extension's `media` directory.
             localResourceRoots: [
-                vscode.Uri.joinPath(extensionUri, "dist/webview")
+                Uri.joinPath(extensionUri, "dist/webview")
             ]
         });
 
@@ -66,7 +66,7 @@ export class ReporterPanel {
             try {
                 switch (message.type) {
                     case "disable": {
-                        const { pluginName, enabled }: PluginName & { enabled: boolean } = message.data;
+                        const { pluginName, enabled }: PluginName & { enabled: boolean; } = message.data;
                         // DISABLE PLUGIN
                         await sendToSockets({
                             type: "disable",
@@ -82,12 +82,12 @@ export class ReporterPanel {
                         // any attempt to get this to open without user interaction is a complete shitshow
                         // just use the builtin fuzzy finder and the patch find
                         // while there might be more than one find, the user can deal with that
-                        vscode.commands.executeCommand("workbench.action.quickOpen", "%" + patch.find);
+                        commands.executeCommand("workbench.action.quickOpen", "%" + patch.find);
                         break;
                     }
                     case "extract": {
                         const { patch }: Patch = message.data;
-                        vscode.commands.executeCommand("vencord-companion.extract", +patch.id);
+                        commands.executeCommand("vencord-companion.extract", +patch.id);
                         break;
                     }
                     case "diff": {
@@ -101,16 +101,16 @@ export class ReporterPanel {
                             sourceUri = mkStringUri(oldModule);
                             patchedUri = mkStringUri(newModule);
                         }
-                        vscode.commands.executeCommand("vscode.diff", sourceUri, patchedUri, "Patch Diff: " + id);
+                        commands.executeCommand("vscode.diff", sourceUri, patchedUri, "Patch Diff: " + id);
                         break;
                     }
                     default: {
-                        vscode.window.showErrorMessage("Unknown message type from webview, got : " + message.type);
+                        window.showErrorMessage("Unknown message type from webview, got : " + message.type);
                         break;
                     }
                 }
             } catch (error) {
-                vscode.window.showErrorMessage(String(error));
+                window.showErrorMessage(String(error));
             }
         }, null, this._disposables);
     }
@@ -130,9 +130,9 @@ export class ReporterPanel {
     }
 
     private _getHtmlForWebview(data: ReporterData) {
-        const scriptPathOnDisk = vscode.Uri.joinPath(this._extensionUri, "dist/webview/index.js");
+        const scriptPathOnDisk = Uri.joinPath(this._extensionUri, "dist/webview/index.js");
         const scriptUri = this._panel.webview.asWebviewUri(scriptPathOnDisk);
-        const stylePathOnDisk = vscode.Uri.joinPath(this._extensionUri, "dist/webview/index.css");
+        const stylePathOnDisk = Uri.joinPath(this._extensionUri, "dist/webview/index.css");
         const styleUri = this._panel.webview.asWebviewUri(stylePathOnDisk);
 
         // Use a nonce to whitelist which scripts can be run
@@ -149,7 +149,7 @@ export class ReporterPanel {
                 <link rel="stylesheet" type="text/css" href="${styleUri}">
                 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${this._panel.webview.cspSource} https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src ${this._panel.webview.cspSource} https:; script-src 'nonce-${nonce}';">
 
-                <base href="${this._panel.webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, "dist/webview"))}/">
+                <base href="${this._panel.webview.asWebviewUri(Uri.joinPath(this._extensionUri, "dist/webview"))}/">
             </head>
 
             <body>

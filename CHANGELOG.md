@@ -24,3 +24,7 @@
 # 0.2.0
 
 TODO: write notes
+
+# 0.2.1
+
+Added diagnostics for patches and finds

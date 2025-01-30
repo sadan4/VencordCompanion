@@ -28,3 +28,7 @@ TODO: write notes
 # 0.2.1
 
 Added diagnostics for patches and finds
+
+# 0.2.2
+
+Minor bugfixes for new bundler settings

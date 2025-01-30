@@ -1,7 +1,9 @@
 import { TestFind } from "@type/server";
 
-import { Identifier, ModuleExportName, Node } from "typescript";
+import { ArrowFunction, FunctionExpression, Identifier, ModuleExportName, Node } from "typescript";
 import { Definition, Location, LocationLink, Range } from "vscode";
+
+export type AnyFunction = FunctionExpression | ArrowFunction;
 
 export type WithParent<N, P> = N & {
     parent: P;

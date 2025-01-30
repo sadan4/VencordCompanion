@@ -1,4 +1,4 @@
-import { AssertedType, CBAssertion, FunctionNode, Import, RegexNode, StringNode } from "@type/ast";
+import { AnyFunction, AssertedType, CBAssertion, FunctionNode, Import, RegexNode, StringNode } from "@type/ast";
 import { IFindType, IReplacement, PatchData } from "@type/server";
 
 import { getNumberAndColumnFromPos } from "./lineUtil";
@@ -10,6 +10,8 @@ import {
     VariableInfo,
 } from "tsutils";
 import {
+    ArrowFunction,
+    Block,
     CompilerOptions,
     createPrinter,
     DefaultKeyword,
@@ -21,6 +23,7 @@ import {
     isArrayLiteralExpression,
     isArrowFunction,
     isBinaryExpression,
+    isBlock,
     isCallExpression,
     isExpressionStatement,
     isFunctionExpression,
@@ -348,9 +351,15 @@ export function findObjectLiteralByKey(
  * @returns the return identifier, if any
  */
 export function findReturnIdentifier(
-    func: FunctionExpression
+    func: AnyFunction
 ): Identifier | undefined {
-    const lastStatment = func.body.statements.at(-1);
+    if(isBlock(func.body)) return _findReturnIdentifier(func.body);
+    if(isIdentifier(func.body)) return func.body;
+}
+function _findReturnIdentifier(
+    func: Block
+): Identifier | undefined {
+    const lastStatment = func.statements.at(-1);
 
     if (
         !lastStatment ||
@@ -363,8 +372,13 @@ export function findReturnIdentifier(
     return lastStatment.expression;
 }
 
-export function findReturnPropertyAccessExpression(func: FunctionExpression): PropertyAccessExpression | undefined {
-    const lastStatment = func.body.statements.at(-1);
+export function findReturnPropertyAccessExpression(func: AnyFunction): PropertyAccessExpression | undefined {
+    if(isBlock(func.body)) return _findReturnPropertyAccessExpression(func.body);
+    if(isPropertyAccessExpression(func.body)) return func.body;
+}
+
+export function _findReturnPropertyAccessExpression(func: Block): PropertyAccessExpression | undefined {
+    const lastStatment = func.statements.at(-1);
 
     if (
         !lastStatment ||

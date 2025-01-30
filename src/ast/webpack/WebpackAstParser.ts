@@ -5,7 +5,7 @@ import { formatModule, mkStringUri, sendAndGetData } from "@server/index";
 import { Definitions, ExportMap, ModuleDeps, References } from "@type/ast";
 
 import { collectVariableUsage, getTokenAtPosition, VariableInfo } from "tsutils";
-import { CallExpression, createSourceFile, Identifier, isBinaryExpression, isCallExpression, isFunctionDeclaration, isFunctionExpression, isIdentifier, isNumericLiteral, isObjectLiteralExpression, isPropertyAccessExpression, isPropertyAssignment, isStringLiteral, isVariableDeclaration, Node, ObjectLiteralExpression, ScriptKind, ScriptTarget, SourceFile } from "typescript";
+import { CallExpression, createSourceFile, Identifier, isArrowFunction, isBinaryExpression, isCallExpression, isFunctionDeclaration, isFunctionExpression, isIdentifier, isNumericLiteral, isObjectLiteralExpression, isPropertyAccessExpression, isPropertyAssignment, isStringLiteral, isVariableDeclaration, Node, ObjectLiteralExpression, ScriptKind, ScriptTarget, SourceFile } from "typescript";
 import { Location, Position, Range, TextDocument } from "vscode";
 
 // FIXME: rewrite to use module cache
@@ -263,7 +263,7 @@ export class WebpackAstParser {
         if (!wreqD) return;
         const [, exports] = wreqD.arguments;
         return Object.fromEntries(exports.properties.map((x): false | [string, ExportMap[string]] => {
-            if (!isPropertyAssignment(x) || !isFunctionExpression(x.initializer)) return false as const;
+            if (!isPropertyAssignment(x) || !(isArrowFunction(x.initializer) || isFunctionExpression(x.initializer))) return false as const;
             let ret: Node | undefined = findReturnIdentifier(x.initializer);
             ret ??= findReturnPropertyAccessExpression(x.initializer);
             return ret != null ? [x.name.getText(), [makeRange(x.name, this.text), isIdentifier(ret) ? this.makeRangeFromFuctionDef(ret) : undefined]] : false as const;
@@ -309,18 +309,25 @@ export class WebpackAstParser {
 
             if (!exportCallAssignment ||
                 !isPropertyAssignment(exportCallAssignment) ||
-                !isFunctionExpression(exportCallAssignment.initializer))
+                !(isFunctionExpression(exportCallAssignment.initializer)
+                    || isArrowFunction(exportCallAssignment.initializer)))
                 return undefined;
 
             const exportVar = findReturnIdentifier(exportCallAssignment.initializer);
+            if (exportVar) {
 
-            const [exportDec] = [...this.vars.entries()].find(([, v]) => {
-                return v.uses.some(use => use.location === exportVar);
-            }) ?? [];
+                const [exportDec] = [...this.vars.entries()].find(([, v]) => {
+                    return v.uses.some(use => use.location === exportVar);
+                }) ?? [];
 
-            if (!exportDec) return undefined;
+                if (!exportDec) return undefined;
 
-            return makeRange(exportDec, this.text);
+                return makeRange(exportDec, this.text);
+            }
+            const reExport = findReturnPropertyAccessExpression(exportCallAssignment.initializer);
+            if (reExport) {
+                return makeRange(reExport.name, this.text);
+            }
         }
     }
 

@@ -11,7 +11,7 @@ import {
     tryParseRegularExpressionLiteral,
     tryParseStringLiteral,
 } from "@ast/util";
-import { FindUse, Import, WithParent } from "@type/ast";
+import { FindUse, Import, SourcePatch, WithParent } from "@type/ast";
 import { PatchData, TestFind } from "@type/server";
 
 import { collectVariableUsage, DeclarationDomain, VariableInfo } from "tsutils";
@@ -66,7 +66,7 @@ export class VencordAstParser {
         return (definePlugin?.location.parent as CallExpression).arguments[0] as ObjectLiteralExpression;
     }
 
-    public getPatches(): (PatchData & { range: Range; origIndex: number; })[] {
+    public getPatches(): SourcePatch[] {
         const definePlugin = this.findDefinePlugin();
         if (!definePlugin) return [];
         const patchesProp = findObjectLiteralByKey(definePlugin, "patches");

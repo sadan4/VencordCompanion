@@ -66,19 +66,20 @@ export class VencordAstParser {
         return (definePlugin?.location.parent as CallExpression).arguments[0] as ObjectLiteralExpression;
     }
 
-    public getPatches(): (PatchData & { range: Range; })[] {
+    public getPatches(): (PatchData & { range: Range; origIndex: number; })[] {
         const definePlugin = this.findDefinePlugin();
         if (!definePlugin) return [];
         const patchesProp = findObjectLiteralByKey(definePlugin, "patches");
         if (!patchesProp || !isPropertyAssignment(patchesProp) || !isArrayLiteralExpression(patchesProp.initializer)) return [];
         return patchesProp.initializer.elements
-            .filter(isObjectLiteralExpression)
-            .map(x => {
+            .map((x, origIndex) => {
+                if(!isObjectLiteralExpression(x)) return null;
                 const res = parsePatch(this.doc, x);
                 if (!res) return null;
                 return {
                     ...res,
-                    range: makeRange(x.getChildAt(1), this.text)
+                    range: makeRange(x.getChildAt(1), this.text),
+                    origIndex
                 };
             })
             .filter(x => x !== null);

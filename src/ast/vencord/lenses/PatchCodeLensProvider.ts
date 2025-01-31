@@ -1,5 +1,5 @@
 
-import { VencordAstParser } from "../VencordAstParser";
+import { VencordAstParser } from "@ast/vencord";
 
 import { CodeLens, CodeLensProvider, TextDocument } from "vscode";
 

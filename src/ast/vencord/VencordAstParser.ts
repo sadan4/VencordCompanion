@@ -37,9 +37,11 @@ export class VencordAstParser {
     private imports: Map<Identifier, Import>;
     private findCache?: FindUse[];
     private findUsesCache?: ReturnType<typeof this._getFindUses>;
+    constructor(doc: TextDocument);
     constructor(doc: { document: TextDocument; });
-    constructor(doc: { document: TextDocument; }) {
-        this.doc = doc.document;
+    constructor(doc: { document: TextDocument; } | TextDocument) {
+
+        this.doc = "document" in doc ? doc.document : doc;
         this.text = this.doc.getText();
         this.sourceFile = createSourceFile("plugin.tsx", this.text, ScriptTarget.ES2020, true, ScriptKind.TSX);
         this.vars = collectVariableUsage(this.sourceFile);

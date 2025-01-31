@@ -1,11 +1,42 @@
-import { findObjectLiteralByKey, findParrent, findReturnIdentifier, findReturnPropertyAccessExpression, findWebpackArg, getLeadingIdentifier, getModuleId, makeRange, zeroRange } from "@ast/util";
+import {
+    findObjectLiteralByKey,
+    findParrent,
+    findReturnIdentifier,
+    findReturnPropertyAccessExpression,
+    findWebpackArg,
+    getLeadingIdentifier,
+    getModuleId,
+    makeRange,
+    zeroRange
+} from "@ast/util";
 import { ModuleCache, ModuleDepManager } from "@modules/cache";
 import { format } from "@modules/format";
 import { formatModule, mkStringUri, sendAndGetData } from "@server/index";
 import { Definitions, ExportMap, ModuleDeps, References } from "@type/ast";
 
 import { collectVariableUsage, getTokenAtPosition, VariableInfo } from "tsutils";
-import { CallExpression, createSourceFile, Identifier, isArrowFunction, isBinaryExpression, isCallExpression, isFunctionDeclaration, isFunctionExpression, isIdentifier, isNumericLiteral, isObjectLiteralExpression, isPropertyAccessExpression, isPropertyAssignment, isStringLiteral, isVariableDeclaration, Node, ObjectLiteralExpression, ScriptKind, ScriptTarget, SourceFile } from "typescript";
+import {
+  CallExpression,
+  createSourceFile,
+  Identifier,
+  isArrowFunction,
+  isBinaryExpression,
+  isCallExpression,
+  isFunctionDeclaration,
+  isFunctionExpression,
+  isIdentifier,
+  isNumericLiteral,
+  isObjectLiteralExpression,
+  isPropertyAccessExpression,
+  isPropertyAssignment,
+  isStringLiteral,
+  isVariableDeclaration,
+  Node,
+  ObjectLiteralExpression,
+  ScriptKind,
+  ScriptTarget,
+  SourceFile,
+} from "typescript";
 import { Location, Position, Range, TextDocument } from "vscode";
 
 // FIXME: rewrite to use module cache

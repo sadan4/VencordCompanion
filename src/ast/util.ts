@@ -10,7 +10,6 @@ import {
     VariableInfo,
 } from "tsutils";
 import {
-    ArrowFunction,
     Block,
     CompilerOptions,
     createPrinter,
@@ -18,7 +17,6 @@ import {
     EmitHint,
     Expression,
     findConfigFile,
-    FunctionExpression,
     Identifier,
     isArrayLiteralExpression,
     isArrowFunction,

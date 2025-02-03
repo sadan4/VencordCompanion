@@ -93,18 +93,6 @@
             {
                 "command": "vencord-companion.extractSearch",
                 "title": "Extract With Search"
-            },
-            {
-                "command": "vencord-companion.cacheModules",
-                "title": "Cache Modules"
-            },
-            {
-                "command": "vencord-companion.testDeps",
-                "title": "Test Dependencies"
-            },
-            {
-                "command": "vencord-companion.initDeps",
-                "title": "init deps"
             }
         ],
         "snippets": [

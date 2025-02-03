@@ -1,8 +1,8 @@
 import { reloadDiagnostics } from "@ast/vencord/diagnostics";
 import { format } from "@modules/format";
-import { Discriminate, FullIncomingMessage, IncomingMessage, OutgoingMessage } from "@type/server";
+import { Base, DiffModule, Discriminate, ExtractModuleR, FullIncomingMessage, IncomingMessage, ModuleList, OutgoingMessage } from "@type/server";
 
-import { handleAfterRecive } from "../reporter";
+import { handleReporterData } from "../reporter";
 import { outputChannel } from "../shared";
 
 import { commands, Uri, workspace } from "vscode";
@@ -34,9 +34,8 @@ let nonceCounter = 8485;
 const defaultOpts: SendToSocketsOpts = {
     timeout: 5000
 };
-
 // there is no autocomplete for this, https://github.com/microsoft/TypeScript/issues/52898
-export function sendAndGetData<T extends IncomingMessage["type"]>(data: OutgoingMessage, opts?: SendToSocketsOpts): Promise<Discriminate<IncomingMessage, T>> {
+export function sendAndGetData<T extends IncomingMessage["type"] = never>(data: OutgoingMessage, opts?: SendToSocketsOpts): Promise<[T] extends [never] ? Base & { ok: true; } : Discriminate<IncomingMessage, T>> {
     const { timeout } = opts ?? defaultOpts;
     return new Promise((res, rej) => {
         setTimeout(rej.bind(null, "Timed Out"), timeout);
@@ -62,7 +61,7 @@ export async function sendToSockets(data: OutgoingMessage, dataCb?: (data: any) 
         const onMessage = (data: RawData) => {
             const msg = data.toString("utf-8");
             try {
-                var parsed = JSON.parse(msg);
+                var parsed: FullIncomingMessage = JSON.parse(msg);
             } catch (err) {
                 return reject("Got Invalid Response: " + msg);
             }
@@ -141,30 +140,10 @@ export function startWebSocketServer() {
                 const rec: FullIncomingMessage = JSON.parse(msg.toString());
                 switch (rec.type) {
                     case "report": {
-                        handleAfterRecive(rec.data);
+                        handleReporterData(rec.data);
                         break;
                     }
-                    case "diff": {
-                        const m = rec.data;
-                        const sourceUri = mkStringUri(await format(formatModule(m.source, m.moduleNumber)));
-                        const patchedUri = mkStringUri(await format(formatModule(m.patched, m.moduleNumber)));
-                        commands.executeCommand("vscode.diff", sourceUri, patchedUri, "Patch Diff: " + m.moduleNumber);
-                        break;
-                    }
-                    case "extract": {
-                        const m = rec.data;
-                        // const data: ExtraceRecieveData = rec;
-                        if (!m.module) break;
-                        const moduleText = formatModule(m.module, m.moduleNumber, m.find);
-                        workspace.openTextDocument({
-                            content: await format(moduleText || "//ERROR: NO DATA RECIVED\n//This module may be lazy loaded"),
-                            language: "javascript"
-                        })
-                            .then(e => {
-                                commands.executeCommand("vscode.open", e.uri);
-                            });
-                        break;
-                    }
+                    // even if this is sent, we always want to update our internal list
                     case "moduleList": {
                         const m = rec.data;
                         // should be something like ["123", "58913"]
@@ -207,7 +186,19 @@ export function startWebSocketServer() {
         outputChannel.appendLine("[WS] Closed");
     });
 }
-
+export async function handleDiffPayload({ data }: DiffModule) {
+    const sourceUri = mkStringUri(await format(formatModule(data.source, data.moduleNumber)));
+    const patchedUri = mkStringUri(await format(formatModule(data.patched, data.moduleNumber)));
+    commands.executeCommand("vscode.diff", sourceUri, patchedUri, "Patch Diff: " + data.moduleNumber);
+}
+export async function handleExtractPayload({ data }: ExtractModuleR): Promise<void> {
+    if (!data.module) return;
+    const moduleText = formatModule(data.module, data.moduleNumber, data.find);
+    workspace.openTextDocument({
+        content: await format(moduleText || "//ERROR: NO DATA RECIVED\n//This module may be lazy loaded"),
+        language: "javascript"
+    }).then(e => commands.executeCommand("vscode.open", e.uri));
+}
 export function stopWebSocketServer() {
     wss?.close();
     wss = undefined;

@@ -37,7 +37,7 @@ export async function startReporter() {
         running = !running;
     }
 }
-export async function handleAfterRecive(data: ReporterData) {
+export async function handleReporterData(data: ReporterData) {
     running = false;
     try {
         const task = await getNormalBuildTask();

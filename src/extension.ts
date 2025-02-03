@@ -5,7 +5,7 @@ import { PartialModuleJumpCodeLensProvider } from "@ast/webpack/lenses";
 import { DefinitionProvider, ReferenceProvider } from "@ast/webpack/lsp";
 import { ModuleCache, ModuleDepManager } from "@modules/cache";
 import { PatchHelper } from "@modules/PatchHelper";
-import { moduleCache, sendToSockets, startWebSocketServer, stopWebSocketServer } from "@server";
+import { handleDiffPayload, handleExtractPayload, moduleCache, sendAndGetData, sendToSockets, startWebSocketServer, stopWebSocketServer } from "@server";
 import { treeDataProvider } from "@sidebar";
 import { Discriminate } from "@type/server";
 import { DisablePluginData, FindData, OutgoingMessage, PatchData } from "@type/server/send";
@@ -41,9 +41,7 @@ export function activate(context: ExtensionContext) {
 		languages.registerCodeLensProvider({ language: "typescript" }, WebpackCodeLensProvider),
 		languages.registerCodeLensProvider({ language: "typescriptreact" }, WebpackCodeLensProvider),
 		languages.registerCodeLensProvider({ language: "javascript" }, new PartialModuleJumpCodeLensProvider),
-
-		commands.registerCommand("vencord-companion.runReporter", startReporter),
-		workspace.registerTextDocumentContentProvider("vencord-patchhelper", PatchHelper)
+		workspace.registerTextDocumentContentProvider("vencord-patchhelper", PatchHelper),
 		workspace.registerTextDocumentContentProvider("vencord-companion", {
 			async provideTextDocumentContent(uri) {
 				// FIXME: full uri shows up in title bar
@@ -51,41 +49,24 @@ export function activate(context: ExtensionContext) {
 				return newLocal.toString();
 			},
 		}),
-		commands.registerCommand("vencord-companion.initDeps", async () => {
-			await ModuleDepManager.initModDeps({
-				fromDisk: true
-			});
-		}),
-		commands.registerCommand("vencord-companion.testDeps", async () => {
-			const currentDoc = window.activeTextEditor?.document.getText();
-			if (!currentDoc) {
-				return window.showErrorMessage("No active document");
-			}
-			const moduleId = currentDoc.match(/^\/\/WebpackModule(\d+)/)?.[1];
-			if (!moduleId || Number.isNaN(+moduleId)) {
-				return window.showErrorMessage(`not a webpack module, got ${moduleId}`);
-			}
-			if (!ModuleDepManager.hasModDeps()) {
-				await ModuleDepManager.initModDeps({
-					fromDisk: true
-				});
-			}
-			const a = new WebpackAstParser(await ModuleCache.getModuleFromNum(moduleId));
-			console.log(a.getExportMap());
-			console.log(ModuleDepManager.getModDeps(moduleId));
-		}),
-		commands.registerCommand("vencord-companion.cacheModules", async () => {
-			await ModuleCache.downloadModules();
-		}),
+		commands.registerCommand("vencord-companion.runReporter", startReporter),
 		commands.registerCommand("vencord-companion.diffModule", async args => {
-			if (args)
-				return sendToSockets({
-					type: "diff",
-					data: {
-						extractType: "id",
-						idOrSearch: args
-					}
-				}).catch(e => window.showErrorMessage(String(e)));
+			if (args) {
+				try {
+					const r = await sendAndGetData<"diff">({
+						type: "diff",
+						data: {
+							extractType: "id",
+							idOrSearch: args
+						}
+					});
+					handleDiffPayload(r);
+					return;
+				} catch (e) {
+					window.showErrorMessage(String(e));
+				}
+			}
+			// FIXME: refactor to generic quicpick class with these features
 			const quickPick = window.createQuickPick();
 			quickPick.placeholder = "module ID";
 			quickPick.canSelectMany = false;
@@ -108,13 +89,14 @@ export function activate(context: ExtensionContext) {
 				if (!modId || isNaN(+modId))
 					return vscWindow.showErrorMessage("No Module ID provided");
 				try {
-					await sendToSockets({
+					const r = await sendAndGetData<"diff">({
 						type: "diff",
 						data: {
 							extractType: "id",
 							idOrSearch: +modId
 						},
 					});
+					handleDiffPayload(r);
 				} catch (error) {
 					vscWindow.showErrorMessage(String(error));
 				}
@@ -123,20 +105,26 @@ export function activate(context: ExtensionContext) {
 
 		}),
 		commands.registerCommand("vencord-companion.diffModuleSearch", async (args: string, findType: "string" | "regex") => {
-			if (args)
-				return sendToSockets({
-					type: "diff",
-					data: {
-						extractType: "search",
-						findType,
-						idOrSearch: args
-					}
-				}).catch(e => window.showErrorMessage(String(e)));
+			if (args) {
+				try {
+					const r = await sendAndGetData<"diff">({
+						type: "diff",
+						data: {
+							extractType: "search",
+							findType,
+							idOrSearch: args
+						}
+					});
+					handleDiffPayload(r);
+				} catch (e) {
+					window.showErrorMessage(String(e));
+				}
+			}
 			const input = await window.showInputBox();
 			if (!input)
 				return window.showErrorMessage("No Input Provided");
 			try {
-				await sendToSockets({
+				const r = await sendAndGetData<"diff">({
 					type: "diff",
 					data: {
 						extractType: "search",
@@ -144,6 +132,7 @@ export function activate(context: ExtensionContext) {
 						idOrSearch: input
 					}
 				});
+				handleDiffPayload(r);
 			} catch (error) {
 				vscWindow.showErrorMessage(String(error));
 			}
@@ -151,17 +140,28 @@ export function activate(context: ExtensionContext) {
 		commands.registerCommand("vencord-companion.extractFind", async (args: Discriminate<OutgoingMessage, "extract">) => {
 			if (!args)
 				return vscWindow.showErrorMessage("No Data Provided");
-			sendToSockets(args).catch(e => window.showErrorMessage(String(e)));
+			try {
+				const r = await sendAndGetData<"extract">(args);
+				handleExtractPayload(r);
+			} catch (e) {
+				vscWindow.showErrorMessage(String(e));
+			}
 		}),
 		commands.registerCommand("vencord-companion.extract", async (args: number) => {
-			if (args)
-				return sendToSockets({
-					type: "extract",
-					data: {
-						extractType: "id",
-						idOrSearch: args
-					}
-				}).catch(e => window.showErrorMessage(String(e)));
+			if (args) {
+				try {
+					const r = await sendAndGetData<"extract">({
+						type: "extract",
+						data: {
+							extractType: "id",
+							idOrSearch: args
+						}
+					});
+					handleExtractPayload(r);
+				} catch (e) {
+					window.showErrorMessage(String(e));
+				}
+			}
 			const quickPick = window.createQuickPick();
 			quickPick.placeholder = "module ID";
 			quickPick.canSelectMany = false;
@@ -184,13 +184,14 @@ export function activate(context: ExtensionContext) {
 				if (!modId || isNaN(+modId))
 					return vscWindow.showErrorMessage("No Module ID provided");
 				try {
-					await sendToSockets({
+					const r = await sendAndGetData<"extract">({
 						type: "extract",
 						data: {
 							extractType: "id",
 							idOrSearch: +modId
 						},
 					});
+					handleExtractPayload(r);
 				} catch (error) {
 					vscWindow.showErrorMessage(String(error));
 				}
@@ -199,19 +200,26 @@ export function activate(context: ExtensionContext) {
 		}),
 		commands.registerCommand("vencord-companion.extractSearch", async (args: string, findType: "string" | "regex") => {
 			if (args)
-				return sendToSockets({
-					type: "extract",
-					data: {
-						extractType: "search",
-						findType,
-						idOrSearch: args
+				{
+					try {
+						const r = await sendAndGetData<"extract">({
+							type: "extract",
+							data: {
+								extractType: "search",
+								findType,
+								idOrSearch: args
+							}
+						});
+						handleExtractPayload(r);
+					} catch (e) {
+						window.showErrorMessage(String(e));
 					}
-				}).catch(e => window.showErrorMessage(String(e)));
+				}
 			const input = await window.showInputBox();
 			if (!input)
 				return window.showErrorMessage("No Input Provided");
 			try {
-				await sendToSockets({
+				const r = await sendAndGetData<"extract">({
 					type: "extract",
 					data: {
 						extractType: "search",
@@ -219,14 +227,15 @@ export function activate(context: ExtensionContext) {
 						idOrSearch: input
 					}
 				});
-			} catch (error) {
-				vscWindow.showErrorMessage(String(error));
+				handleExtractPayload(r);
+			} catch (e) {
+				vscWindow.showErrorMessage(String(e));
 			}
 		}),
 		commands.registerCommand("vencord-companion.disablePlugin", async (data: DisablePluginData) => {
 			try {
 				if (!data) throw new Error("No args passed.");
-				await sendToSockets({
+				await sendAndGetData({
 					type: "disable",
 					data
 				});
@@ -236,7 +245,10 @@ export function activate(context: ExtensionContext) {
 		}),
 		commands.registerCommand("vencord-companion.testPatch", async (patch: PatchData) => {
 			try {
-				await sendToSockets({ type: "testPatch", data: patch });
+				await sendAndGetData({
+					type: "testPatch",
+					data: patch,
+				});
 				vscWindow.showInformationMessage("Patch OK!");
 			} catch (err) {
 				vscWindow.showErrorMessage("Patch failed: " + String(err));
@@ -245,7 +257,7 @@ export function activate(context: ExtensionContext) {
 
 		commands.registerCommand("vencord-companion.testFind", async (find: FindData) => {
 			try {
-				await sendToSockets({
+				await sendAndGetData({
 					type: "testFind",
 					data: find,
 				});
@@ -255,7 +267,7 @@ export function activate(context: ExtensionContext) {
 			}
 		}),
 	);
-	if(window.activeTextEditor) {
+	if (window.activeTextEditor) {
 		onOpenCallback(window.activeTextEditor.document);
 	}
 }

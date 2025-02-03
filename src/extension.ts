@@ -4,6 +4,7 @@ import { WebpackAstParser } from "@ast/webpack";
 import { PartialModuleJumpCodeLensProvider } from "@ast/webpack/lenses";
 import { DefinitionProvider, ReferenceProvider } from "@ast/webpack/lsp";
 import { ModuleCache, ModuleDepManager } from "@modules/cache";
+import { PatchHelper } from "@modules/PatchHelper";
 import { moduleCache, sendToSockets, startWebSocketServer, stopWebSocketServer } from "@server";
 import { treeDataProvider } from "@sidebar";
 import { Discriminate } from "@type/server";
@@ -24,6 +25,8 @@ export function activate(context: ExtensionContext) {
 		window.registerTreeDataProvider("vencordSettings", new treeDataProvider()),
 		workspace.onDidChangeTextDocument(onEditCallback),
 		workspace.onDidOpenTextDocument(onOpenCallback),
+		workspace.onDidCloseTextDocument(PatchHelper.closeDocument),
+		workspace.onDidChangeTextDocument(PatchHelper.changeDocument),
 		languages.registerCodeLensProvider(
 			{ pattern: "**/{plugins,userplugins,plugins/_*}/{*.ts,*.tsx,**/index.ts,**/index.tsx}" },
 			new PluginDefCodeLensProvider()
@@ -40,6 +43,7 @@ export function activate(context: ExtensionContext) {
 		languages.registerCodeLensProvider({ language: "javascript" }, new PartialModuleJumpCodeLensProvider),
 
 		commands.registerCommand("vencord-companion.runReporter", startReporter),
+		workspace.registerTextDocumentContentProvider("vencord-patchhelper", PatchHelper)
 		workspace.registerTextDocumentContentProvider("vencord-companion", {
 			async provideTextDocumentContent(uri) {
 				// FIXME: full uri shows up in title bar

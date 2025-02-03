@@ -65,13 +65,14 @@ export class VencordAstParser {
         });
         return (definePlugin?.location.parent as CallExpression).arguments[0] as ObjectLiteralExpression;
     }
-
+    private patches?: ReturnType<typeof this.getPatches>;
     public getPatches(): SourcePatch[] {
+        if(this.patches) return this.patches;
         const definePlugin = this.findDefinePlugin();
         if (!definePlugin) return [];
         const patchesProp = findObjectLiteralByKey(definePlugin, "patches");
         if (!patchesProp || !isPropertyAssignment(patchesProp) || !isArrayLiteralExpression(patchesProp.initializer)) return [];
-        return patchesProp.initializer.elements
+        return (this.patches = patchesProp.initializer.elements
             .map((x, origIndex) => {
                 if(!isObjectLiteralExpression(x)) return null;
                 const res = parsePatch(this.doc, x);
@@ -82,7 +83,7 @@ export class VencordAstParser {
                     origIndex
                 };
             })
-            .filter(x => x !== null);
+            .filter(x => x !== null));
     }
 
     public isRootPluginFile(): boolean {

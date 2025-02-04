@@ -159,3 +159,5 @@ export async function exists(path: PathLike) {
 export async function isDirectory(path: PathLike) {
     return (await stat(path)).isDirectory();
 }
+
+

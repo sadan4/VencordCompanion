@@ -30,6 +30,12 @@ export class PatchCodeLensProvider implements CodeLensProvider {
                 arguments: [data],
                 tooltip: "Test Patch"
             }));
+            lenses.push(new CodeLens(range, {
+                title: "Open in Patch Helper",
+                tooltip: "Opens the patch in patch helper, if another patch from this file is aready open, it will be replaced",
+                command: "vencord-companion.openPatchHelper",
+                arguments: [document, data]
+            }));
         }
         return lenses;
     }

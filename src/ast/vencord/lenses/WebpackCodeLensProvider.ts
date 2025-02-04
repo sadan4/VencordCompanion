@@ -37,7 +37,7 @@ export const WebpackCodeLensProvider: CodeLensProvider = {
                         data: {
                             extractType: "find",
                             findType: type as AnyFindType,
-                            findArgs: args.filter(isNotNull)
+                            findArgs: args.filter(isNotNull),
                         }
                     } satisfies Discriminate<OutgoingMessage, "extract">],
                     tooltip: "View Module"

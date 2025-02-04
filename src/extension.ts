@@ -1,18 +1,17 @@
-import { onEditCallback, onOpenCallback, updateDiagnostics } from "@ast/vencord/diagnostics";
+import { onEditCallback, onOpenCallback } from "@ast/vencord/diagnostics";
 import { PatchCodeLensProvider, PluginDefCodeLensProvider, WebpackCodeLensProvider } from "@ast/vencord/lenses";
-import { WebpackAstParser } from "@ast/webpack";
 import { PartialModuleJumpCodeLensProvider } from "@ast/webpack/lenses";
 import { DefinitionProvider, ReferenceProvider } from "@ast/webpack/lsp";
-import { ModuleCache, ModuleDepManager } from "@modules/cache";
 import { PatchHelper } from "@modules/PatchHelper";
-import { handleDiffPayload, handleExtractPayload, moduleCache, sendAndGetData, sendToSockets, startWebSocketServer, stopWebSocketServer } from "@server";
+import { handleDiffPayload, handleExtractPayload, moduleCache, sendAndGetData, startWebSocketServer, stopWebSocketServer } from "@server";
 import { treeDataProvider } from "@sidebar";
+import { SourcePatch } from "@type/ast";
 import { Discriminate } from "@type/server";
 import { DisablePluginData, FindData, OutgoingMessage, PatchData } from "@type/server/send";
 
 import { startReporter } from "./reporter";
 
-import { commands, ExtensionContext, languages, QuickPickItem, Uri, window as vscWindow, window, workspace } from "vscode";
+import { commands, ExtensionContext, languages, QuickPickItem, TextDocument, Uri, window as vscWindow, window, workspace } from "vscode";
 
 export let extensionUri: Uri;
 export let extensionPath: string;
@@ -25,8 +24,10 @@ export function activate(context: ExtensionContext) {
 		window.registerTreeDataProvider("vencordSettings", new treeDataProvider()),
 		workspace.onDidChangeTextDocument(onEditCallback),
 		workspace.onDidOpenTextDocument(onOpenCallback),
-		workspace.onDidCloseTextDocument(PatchHelper.closeDocument),
+		workspace.onDidCloseTextDocument(PatchHelper.onCloseDocument),
 		workspace.onDidChangeTextDocument(PatchHelper.changeDocument),
+		window.onDidChangeActiveTextEditor(PatchHelper.changeActiveEditor),
+		window.tabGroups.onDidChangeTabs(PatchHelper.onTabClose),
 		languages.registerCodeLensProvider(
 			{ pattern: "**/{plugins,userplugins,plugins/_*}/{*.ts,*.tsx,**/index.ts,**/index.tsx}" },
 			new PluginDefCodeLensProvider()
@@ -48,6 +49,13 @@ export function activate(context: ExtensionContext) {
 				const newLocal = Buffer.from(uri.path.substring(1, uri.path.lastIndexOf("/")), "base64url");
 				return newLocal.toString();
 			},
+		}),
+		commands.registerCommand("vencord-companion.openPatchHelper", async (doc: TextDocument, patch: SourcePatch) => {
+			if (!doc) {
+				return window.showErrorMessage("Could not find soruce document");
+			}
+			const helper = await PatchHelper.create(doc, patch);
+			helper.openModuleWindow();
 		}),
 		commands.registerCommand("vencord-companion.runReporter", startReporter),
 		commands.registerCommand("vencord-companion.diffModule", async args => {
@@ -154,7 +162,8 @@ export function activate(context: ExtensionContext) {
 						type: "extract",
 						data: {
 							extractType: "id",
-							idOrSearch: args
+							idOrSearch: args,
+							usePatched: null
 						}
 					});
 					handleExtractPayload(r);
@@ -188,7 +197,8 @@ export function activate(context: ExtensionContext) {
 						type: "extract",
 						data: {
 							extractType: "id",
-							idOrSearch: +modId
+							idOrSearch: +modId,
+							usePatched: null
 						},
 					});
 					handleExtractPayload(r);
@@ -199,22 +209,22 @@ export function activate(context: ExtensionContext) {
 
 		}),
 		commands.registerCommand("vencord-companion.extractSearch", async (args: string, findType: "string" | "regex") => {
-			if (args)
-				{
-					try {
-						const r = await sendAndGetData<"extract">({
-							type: "extract",
-							data: {
-								extractType: "search",
-								findType,
-								idOrSearch: args
-							}
-						});
-						handleExtractPayload(r);
-					} catch (e) {
-						window.showErrorMessage(String(e));
-					}
+			if (args) {
+				try {
+					const r = await sendAndGetData<"extract">({
+						type: "extract",
+						data: {
+							extractType: "search",
+							findType,
+							idOrSearch: args,
+							usePatched: null
+						}
+					});
+					handleExtractPayload(r);
+				} catch (e) {
+					window.showErrorMessage(String(e));
 				}
+			}
 			const input = await window.showInputBox();
 			if (!input)
 				return window.showErrorMessage("No Input Provided");
@@ -224,7 +234,8 @@ export function activate(context: ExtensionContext) {
 					data: {
 						extractType: "search",
 						findType: "string",
-						idOrSearch: input
+						idOrSearch: input,
+						usePatched: null
 					}
 				});
 				handleExtractPayload(r);

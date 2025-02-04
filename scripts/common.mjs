@@ -12,7 +12,7 @@ export const commonOpts = {
     bundle: true,
     external: ["vscode"],
     platform: "node",
-    sourcemap: "linked",
+    sourcemap: "inline",
     logLevel: "info",
     outfile: "dist/extension.js"
 }

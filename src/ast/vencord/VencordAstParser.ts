@@ -23,6 +23,7 @@ import {
     isCallExpression,
     isObjectLiteralExpression,
     isPropertyAssignment,
+    isStringLiteral,
     ObjectLiteralExpression,
     ScriptKind,
     ScriptTarget,
@@ -64,6 +65,14 @@ export class VencordAstParser {
             return location.parent.arguments.length === 1 && isObjectLiteralExpression(location.parent.arguments[0]);
         });
         return (definePlugin?.location.parent as CallExpression).arguments[0] as ObjectLiteralExpression;
+    }
+    // TODO: work on files in the plugin folder but not the root plugin file
+    public getPluginName(): string | null {
+        const definePlugin = this.findDefinePlugin();
+        if (!definePlugin) return null;
+        const nameProp = findObjectLiteralByKey(definePlugin, "name");
+        if (!nameProp || !isPropertyAssignment(nameProp) || !isStringLiteral(nameProp.initializer)) return null;
+        return nameProp.initializer.text;
     }
     private patches?: ReturnType<typeof this.getPatches>;
     public getPatches(): SourcePatch[] {

@@ -96,7 +96,8 @@ export class ReporterPanel {
                                 type: "extract",
                                 data: {
                                     extractType: "id",
-                                    idOrSearch: Number(patch.id)
+                                    idOrSearch: Number(patch.id),
+                                    usePatched: null
                                 }
                             });
                             handleExtractPayload(r);

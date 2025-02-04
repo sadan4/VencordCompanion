@@ -32,3 +32,7 @@ Added diagnostics for patches and finds
 # 0.2.2
 
 Minor bugfixes for new bundler settings
+
+# 0.2.3
+
+Added a live patch helper, make sure to update the plugin as well, as things will break without it

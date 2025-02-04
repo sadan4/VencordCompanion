@@ -1,4 +1,4 @@
-import { TestFind } from "@type/server";
+import { PatchData, TestFind } from "@type/server";
 
 import { ArrowFunction, FunctionExpression, Identifier, ModuleExportName, Node } from "typescript";
 import { Definition, Location, LocationLink, Range } from "vscode";
@@ -8,7 +8,10 @@ export type AnyFunction = FunctionExpression | ArrowFunction;
 export type WithParent<N, P> = N & {
     parent: P;
 };
-
+/**
+ * a parsed patch, as it appears in a source file
+ */
+export type SourcePatch = (PatchData & { range: Range; origIndex: number; });
 export type FindUse = {
     range: Range;
     use: TestFind

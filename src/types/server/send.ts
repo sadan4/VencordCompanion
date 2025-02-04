@@ -21,7 +21,9 @@ export type SearchData =
     );
 
 export type FindOrSearchData =
-    | SearchData
+    | (SearchData & {
+        usePatched: boolean | null;
+    })
     | ({
         extractType: "find";
     } & _PrefixKeys<_CapitalizeKeys<FindData>, "find">);
@@ -60,6 +62,9 @@ export type IReplacement = {
 export type IFindType = (
     | {
         findType: "string";
+        /**
+         * the find string
+         */
         find: string;
     }
     | {

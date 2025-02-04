@@ -2,12 +2,12 @@
  * Manages react webview panels
  */
 import { format } from "@modules/format";
-import { mkStringUri, sendToSockets } from "@server";
+import { handleDiffPayload, handleExtractPayload, mkStringUri, sendAndGetData, sendToSockets } from "@server";
 import { EvaledPatch, ReporterData, WebviewMessage } from "@type/reporter";
 
 import { extensionPath, extensionUri } from "./extension";
 
-import { commands,Disposable, Uri, ViewColumn, WebviewPanel, window } from "vscode";
+import { commands, Disposable, Uri, ViewColumn, WebviewPanel, window } from "vscode";
 
 type Patch = { patch: EvaledPatch; };
 type PluginName = { pluginName: string; };
@@ -68,7 +68,7 @@ export class ReporterPanel {
                     case "disable": {
                         const { pluginName, enabled }: PluginName & { enabled: boolean; } = message.data;
                         // DISABLE PLUGIN
-                        await sendToSockets({
+                        await sendAndGetData({
                             type: "disable",
                             data: {
                                 pluginName,
@@ -87,7 +87,23 @@ export class ReporterPanel {
                     }
                     case "extract": {
                         const { patch }: Patch = message.data;
-                        commands.executeCommand("vencord-companion.extract", +patch.id);
+                        if (Number.isNaN(Number(patch.id))) {
+                            window.showErrorMessage("Module ID is not a number");
+                            return;
+                        }
+                        try {
+                            const r = await sendAndGetData<"extract">({
+                                type: "extract",
+                                data: {
+                                    extractType: "id",
+                                    idOrSearch: Number(patch.id),
+                                    usePatched: null
+                                }
+                            });
+                            handleExtractPayload(r);
+                        } catch (e) {
+                            window.showErrorMessage(String(e));
+                        }
                         break;
                     }
                     case "diff": {

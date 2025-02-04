@@ -10,7 +10,6 @@ import {
     VariableInfo,
 } from "tsutils";
 import {
-    ArrowFunction,
     Block,
     CompilerOptions,
     createPrinter,
@@ -18,7 +17,6 @@ import {
     EmitHint,
     Expression,
     findConfigFile,
-    FunctionExpression,
     Identifier,
     isArrayLiteralExpression,
     isArrowFunction,
@@ -46,6 +44,7 @@ import {
     parseJsonConfigFileContent,
     PropertyAccessExpression,
     readConfigFile,
+    ReadonlyTextRange,
     SyntaxKind,
     sys,
     transpileModule,
@@ -394,7 +393,7 @@ export function _findReturnPropertyAccessExpression(func: Block): PropertyAccess
  *  return a vscode.Range based of node.pos and node.end
  *  @param text the document that node is in
  */
-export function makeRange(node: Node, text: string): Range {
+export function makeRange(node: ReadonlyTextRange, text: string): Range {
     return new Range(
         makeLocation(node.pos, text),
         makeLocation(node.end, text)

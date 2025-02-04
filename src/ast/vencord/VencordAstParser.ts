@@ -11,7 +11,7 @@ import {
     tryParseRegularExpressionLiteral,
     tryParseStringLiteral,
 } from "@ast/util";
-import { FindUse, Import, WithParent } from "@type/ast";
+import { FindUse, Import, SourcePatch, WithParent } from "@type/ast";
 import { PatchData, TestFind } from "@type/server";
 
 import { collectVariableUsage, DeclarationDomain, VariableInfo } from "tsutils";
@@ -23,6 +23,7 @@ import {
     isCallExpression,
     isObjectLiteralExpression,
     isPropertyAssignment,
+    isStringLiteral,
     ObjectLiteralExpression,
     ScriptKind,
     ScriptTarget,
@@ -37,9 +38,11 @@ export class VencordAstParser {
     private imports: Map<Identifier, Import>;
     private findCache?: FindUse[];
     private findUsesCache?: ReturnType<typeof this._getFindUses>;
+    constructor(doc: TextDocument);
     constructor(doc: { document: TextDocument; });
-    constructor(doc: { document: TextDocument; }) {
-        this.doc = doc.document;
+    constructor(doc: { document: TextDocument; } | TextDocument) {
+
+        this.doc = "document" in doc ? doc.document : doc;
         this.text = this.doc.getText();
         this.sourceFile = createSourceFile("plugin.tsx", this.text, ScriptTarget.ES2020, true, ScriptKind.TSX);
         this.vars = collectVariableUsage(this.sourceFile);
@@ -63,23 +66,33 @@ export class VencordAstParser {
         });
         return (definePlugin?.location.parent as CallExpression).arguments[0] as ObjectLiteralExpression;
     }
-
-    public getPatches(): (PatchData & { range: Range; })[] {
+    // TODO: work on files in the plugin folder but not the root plugin file
+    public getPluginName(): string | null {
+        const definePlugin = this.findDefinePlugin();
+        if (!definePlugin) return null;
+        const nameProp = findObjectLiteralByKey(definePlugin, "name");
+        if (!nameProp || !isPropertyAssignment(nameProp) || !isStringLiteral(nameProp.initializer)) return null;
+        return nameProp.initializer.text;
+    }
+    private patches?: ReturnType<typeof this.getPatches>;
+    public getPatches(): SourcePatch[] {
+        if(this.patches) return this.patches;
         const definePlugin = this.findDefinePlugin();
         if (!definePlugin) return [];
         const patchesProp = findObjectLiteralByKey(definePlugin, "patches");
         if (!patchesProp || !isPropertyAssignment(patchesProp) || !isArrayLiteralExpression(patchesProp.initializer)) return [];
-        return patchesProp.initializer.elements
-            .filter(isObjectLiteralExpression)
-            .map(x => {
+        return (this.patches = patchesProp.initializer.elements
+            .map((x, origIndex) => {
+                if(!isObjectLiteralExpression(x)) return null;
                 const res = parsePatch(this.doc, x);
                 if (!res) return null;
                 return {
                     ...res,
-                    range: makeRange(x.getChildAt(1), this.text)
+                    range: makeRange(x.getChildAt(1), this.text),
+                    origIndex
                 };
             })
-            .filter(x => x !== null);
+            .filter(x => x !== null));
     }
 
     public isRootPluginFile(): boolean {

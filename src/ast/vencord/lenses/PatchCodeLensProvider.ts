@@ -1,141 +1,42 @@
-import { hasName, parsePatch } from "@ast/util";
 
-import {
-  ArrayLiteralExpression,
-  createSourceFile,
-  Expression,
-  IntersectionTypeNode,
-  isArrayLiteralExpression,
-  isCallExpression,
-  isExportAssignment,
-  isIdentifier,
-  isIntersectionTypeNode,
-  isObjectLiteralExpression,
-  isPropertyAssignment,
-  isTypeReferenceNode,
-  isVariableDeclaration,
-  isVariableStatement,
-  Node,
-  ScriptTarget,
-  TypeReferenceNode,
-} from "typescript";
-import { CodeLens, CodeLensProvider, Range, TextDocument } from "vscode";
+import { VencordAstParser } from "@ast/vencord";
 
-const enum ParseResult {
-    NOT_FOUND,
-    INVALID
-}
-
-
-const recursivelyFindType = (node: TypeReferenceNode | IntersectionTypeNode, typeName: string): TypeReferenceNode | undefined => {
-    if (!isIntersectionTypeNode(node) && isTypeReferenceNode(node)) {
-        if (isIdentifier(node.typeName) && node.typeName.text === typeName) return node;
-        else return;
-    }
-
-    for (const type of node.types) {
-        if (isTypeReferenceNode(type) && type.typeArguments) {
-            for (const typeArg of type.typeArguments) {
-                if (isTypeReferenceNode(typeArg) || isIntersectionTypeNode(typeArg)) {
-                    const result = recursivelyFindType(typeArg, typeName);
-                    if (result) return result;
-                }
-            }
-        }
-        if (isTypeReferenceNode(type) && isIdentifier(type.typeName) && type.typeName.text === typeName) {
-            return type;
-        } else if (isIntersectionTypeNode(type)) {
-            const t = recursivelyFindType(type, typeName);
-            if (t) return t;
-        }
-    }
-};
-
-
-function parsePossiblePatches(node: Node): ArrayLiteralExpression | ParseResult {
-    let pluginObj: Expression | undefined = undefined;
-
-    if (isVariableStatement(node)) {
-        for (const decl of node.declarationList.declarations) {
-            if (isVariableDeclaration(decl) && decl.type && decl.initializer && isObjectLiteralExpression(decl.initializer)) {
-                if (isTypeReferenceNode(decl.type) || isIntersectionTypeNode(decl.type)) {
-                    const type = recursivelyFindType(decl.type, "PluginDef");
-                    if (type) {
-                        pluginObj = decl.initializer;
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
-    if (!pluginObj) {
-        if (!isExportAssignment(node) || !isCallExpression(node.expression)) return ParseResult.NOT_FOUND;
-
-        const callExpr = node.expression;
-        if (!isIdentifier(callExpr.expression) || callExpr.expression.text !== "definePlugin") return ParseResult.NOT_FOUND;
-
-        pluginObj = node.expression.arguments[0];
-    }
-
-    if (!isObjectLiteralExpression(pluginObj)) return ParseResult.INVALID;
-
-    const patchesObj = pluginObj.properties.find(p => hasName(p, "patches"));
-    if (!patchesObj) return ParseResult.INVALID;
-
-    const patchesArray = isPropertyAssignment(patchesObj) ? patchesObj.initializer : patchesObj;
-
-    return isArrayLiteralExpression(patchesArray) ? patchesArray : ParseResult.INVALID;
-}
+import { CodeLens, CodeLensProvider, TextDocument } from "vscode";
 
 export class PatchCodeLensProvider implements CodeLensProvider {
-    check(text: string) {
-        return text.includes("definePlugin") && text.includes("patches:");
-    }
-
     provideCodeLenses(document: TextDocument) {
-        const text = document.getText();
+        const lenses: CodeLens[] = [];
 
-        if (!this.check(text)) return [];
+        const file = new VencordAstParser(document);
 
-        const file = createSourceFile(document.fileName, text, ScriptTarget.Latest);
-        const children = file.getChildAt(0).getChildren();
+        const patches = file.getPatches();
 
-        for (const node of children) {
-            const patchesArray = parsePossiblePatches(node);
-            if (patchesArray === ParseResult.NOT_FOUND) continue;
-            if (patchesArray === ParseResult.INVALID) return [];
-
-            const lenses = [] as CodeLens[];
-            for (const patch of patchesArray.elements) {
-                if (!isObjectLiteralExpression(patch)) continue;
-
-                const data = parsePatch(document, patch);
-                if (!data) continue;
-
-                const range = new Range(document.positionAt(patch.properties.pos), document.positionAt(patch.properties.end));
-                lenses.push(new CodeLens(range, {
-                    title: "View Module",
-                    command: "vencord-companion.extractSearch",
-                    arguments: [data.find, data.findType],
-                    tooltip: "View Module"
-                }));
-                lenses.push(new CodeLens(range, {
-                    title: "Diff Module",
-                    command: "vencord-companion.diffModuleSearch",
-                    arguments: [data.find, data.findType],
-                    tooltip: "Diff Module"
-                }));
-                lenses.push(new CodeLens(range, {
-                    title: "Test Patch",
-                    command: "vencord-companion.testPatch",
-                    arguments: [data],
-                    tooltip: "Test Patch"
-                }));
-            }
-            return lenses;
+        for (const { range, ...data } of patches) {
+            lenses.push(new CodeLens(range, {
+                title: "View Module",
+                command: "vencord-companion.extractSearch",
+                arguments: [data.find, data.findType],
+                tooltip: "View Module"
+            }));
+            lenses.push(new CodeLens(range, {
+                title: "Diff Module",
+                command: "vencord-companion.diffModuleSearch",
+                arguments: [data.find, data.findType],
+                tooltip: "Diff Module"
+            }));
+            lenses.push(new CodeLens(range, {
+                title: "Test Patch",
+                command: "vencord-companion.testPatch",
+                arguments: [data],
+                tooltip: "Test Patch"
+            }));
+            lenses.push(new CodeLens(range, {
+                title: "Open in Patch Helper",
+                tooltip: "Opens the patch in patch helper, if another patch from this file is aready open, it will be replaced",
+                command: "vencord-companion.openPatchHelper",
+                arguments: [document, data]
+            }));
         }
-
-        return [];
+        return lenses;
     }
 }

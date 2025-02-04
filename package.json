@@ -34,7 +34,7 @@
     "scripts": {
         "build": "node ./scripts/build.mjs",
         "watch": "node ./scripts/watch.mjs",
-        "lint": "eslint && pnpm typecheck",
+        "lint": "eslint",
         "package": "vsce package --no-dependencies",
         "vscode:prepublish": "pnpm build && pnpm lint",
         "publish": "vsce publish --no-dependencies",

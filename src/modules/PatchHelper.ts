@@ -1,3 +1,4 @@
+import { makeRange } from "@ast/util";
 import { VencordAstParser } from "@ast/vencord";
 import { formatModule, sendAndGetData } from "@server/index";
 import { SourcePatch } from "@type/ast";
@@ -7,6 +8,7 @@ import { ExtractModuleR } from "@type/server";
 import { format } from "./format";
 import { canonicalizeMatch, canonicalizeReplace, parseMatch, parseReplace } from "./patches";
 
+import DiffFunc, { DELETE, Diff } from "fast-diff";
 import { nanoid } from "nanoid";
 import {
     CancellationToken,
@@ -25,8 +27,6 @@ import {
     window,
     workspace,
 } from "vscode";
-import DiffFunc, { DELETE, Diff } from "fast-diff";
-import { makeRange } from "@ast/util";
 class LastTwo<T> {
     constructor(private one: T, private two: T) {
     }
@@ -142,7 +142,7 @@ export class PatchHelper {
     }
     private async highlightChanges() {
         const [was, is] = this.lastPatchedModule.get();
-        if (was === "" || is === "" || was == is) return;
+        if (!was || !is || was === is) return;
         const changes = DiffFunc(was, is);
         let i = -1;
         let cur: Diff;

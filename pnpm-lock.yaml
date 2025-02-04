@@ -8,9 +8,15 @@ importers:
 
   .:
     dependencies:
+      '@intrnl/xxhash64':
+        specifier: ^0.1.2
+        version: 0.1.2
       fast-diff:
         specifier: ^1.3.0
         version: 1.3.0
+      nanoid:
+        specifier: ^5.0.9
+        version: 5.0.9
       prettier:
         specifier: ^3.3.3
         version: 3.4.2
@@ -24,9 +30,6 @@ importers:
         specifier: ^8.12.1
         version: 8.18.0
     devDependencies:
-      '@intrnl/xxhash64':
-        specifier: ^0.1.2
-        version: 0.1.2
       '@stylistic/eslint-plugin':
         specifier: ^2.7.2
         version: 2.12.1(eslint@9.17.0)(typescript@4.9.5)
@@ -57,9 +60,6 @@ importers:
       eslint-plugin-simple-import-sort:
         specifier: ^12.1.1
         version: 12.1.1(eslint@9.17.0)
-      nanoid:
-        specifier: ^5.0.9
-        version: 5.0.9
       typescript-eslint:
         specifier: ^8.3.0
         version: 8.19.1(eslint@9.17.0)(typescript@4.9.5)

@@ -2,7 +2,7 @@ import { debounceAsync, zeroRange } from "@ast/util";
 import { VencordAstParser } from "@ast/vencord";
 import { sendAndGetData, sockets } from "@server/index";
 
-import { Diagnostic, DiagnosticSeverity, languages, Range, TextDocument, TextDocumentChangeEvent, TextEditor, Uri, window, workspace, WorkspaceFolder } from "vscode";
+import { Diagnostic, DiagnosticSeverity, languages, Range, TextDocument, TextDocumentChangeEvent, Uri } from "vscode";
 
 const diagnosticCollection = languages.createDiagnosticCollection("vencord-companion");
 
@@ -45,7 +45,7 @@ async function makePatchDiagnostic(doc: VencordAstParser): Promise<Diagnostic[]>
                     type: "testPatch",
                     data,
                 }).then(
-                    e => null,
+                    () => {},
                     (e: string | Error) => (typeof e === "string" ? e : e?.message)
                 ),
             }))
@@ -66,7 +66,7 @@ async function makeFindDiagnostic(doc: VencordAstParser): Promise<Diagnostic[]> 
             doc.getFinds().map(async ({ range, use }) => ({
                 range,
                 message: await sendAndGetData(use).then(
-                    e => null,
+                    () => {},
                     (e: string | Error) => (typeof e === "string" ? e : e?.message)
                 ),
             }))

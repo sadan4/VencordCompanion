@@ -22,6 +22,7 @@
       "@type/*": ["./src/types/*"],
       "@sidebar/*": ["./src/sidebar/*"],
       "@sidebar": ["./src/sidebar"],
+      "@extension": ["./src/extension"],
     },
   },
   // ingore our webview

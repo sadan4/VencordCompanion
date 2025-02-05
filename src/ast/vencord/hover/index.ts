@@ -2,10 +2,10 @@ import { isStringLiteralLikeOrTemplateLiteralFragmentOrRegexLiteral, makeRange }
 import { runtimeHashMessageKey } from "@modules/intlHash";
 import { intlRegex } from "@modules/patches";
 import { PromiseProivderResult } from "@type/index";
-import { doc } from "prettier";
-import { getAstNodeAtPosition, getTokenAtPosition } from "tsutils";
-import { createSourceFile, isRegularExpressionLiteral, isStringLiteral, isStringLiteralOrJsxExpression, ScriptKind, ScriptTarget } from "typescript";
-import { CancellationToken, Hover, HoverProvider, MarkdownString, Position, ProviderResult, TextDocument } from "vscode";
+
+import { getTokenAtPosition } from "tsutils";
+import { createSourceFile, isRegularExpressionLiteral, ScriptKind, ScriptTarget } from "typescript";
+import { Hover, HoverProvider, MarkdownString, Position, TextDocument } from "vscode";
 
 export class I18nHover implements HoverProvider {
     constructor() {
@@ -35,7 +35,7 @@ export class I18nHover implements HoverProvider {
                 return {
                     range,
                     contents: [new MarkdownString(hasSpecialChars ? `["${hashedKey}"]` : `.${hashedKey}`)]
-                }
+                };
             }
         }
     }

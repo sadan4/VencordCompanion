@@ -3,6 +3,7 @@
 import stylistic from "@stylistic/eslint-plugin";
 
 import simpleImportSort from "eslint-plugin-simple-import-sort";
+import unusedImports from "eslint-plugin-unused-imports";
 import tseslint from "typescript-eslint";
 export default tseslint.config(
     { ignores: ["dist", "src/webview"] },
@@ -12,6 +13,7 @@ export default tseslint.config(
             "@stylistic": stylistic,
             "@typescript-eslint": tseslint.plugin,
             "simple-import-sort": simpleImportSort,
+            "unused-imports": unusedImports
         },
         languageOptions: {
             parser: tseslint.parser,
@@ -73,7 +75,15 @@ export default tseslint.config(
             "use-isnan": "error",
             "prefer-const": "error",
             "prefer-spread": "error",
-
+            // unused imports
+            "no-unused-vars": "off",
+            "unused-imports/no-unused-imports": "error",
+            "unused-imports/no-unused-vars": ["warn", {
+                vars: "all",
+                varsIgnorePattern: "^_",
+                args: "after-used",
+                argsIgnorePattern: "^_",
+            }],
             // Plugin Rules
             "simple-import-sort/imports": ["error", {
                 groups: [

@@ -184,12 +184,10 @@ export class WebpackAstParser {
         const where = this.getDeps();
         const locs: Location[] = [];
 
-        console.log(moduleExports);
         for (const [name] of Object.entries(moduleExports).filter(([, v]) => v.some(x => {
             if (!x) return;
             return x.contains(position);
         }))) {
-            console.log("Fond mod");
             for (const mod of where?.sync ?? []) {
                 const modText = await ModuleCache.getModuleFromNum(mod);
                 if (!modText) continue;

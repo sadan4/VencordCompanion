@@ -1,9 +1,9 @@
 import { reloadDiagnostics } from "@ast/vencord/diagnostics";
+import { outputChannel } from "@extension";
 import { format } from "@modules/format";
-import { Base, DiffModule, Discriminate, ExtractModuleR, FullIncomingMessage, IncomingMessage, ModuleList, OutgoingMessage } from "@type/server";
+import { Base, DiffModule, Discriminate, ExtractModuleR, FullIncomingMessage, IncomingMessage, OutgoingMessage } from "@type/server";
 
 import { handleReporterData } from "../reporter";
-import { outputChannel } from "../shared";
 
 import { commands, Uri, workspace } from "vscode";
 import { RawData, WebSocket, WebSocketServer } from "ws";
@@ -62,7 +62,8 @@ export async function sendToSockets(data: OutgoingMessage, dataCb?: (data: any) 
             const msg = data.toString("utf-8");
             try {
                 var parsed: FullIncomingMessage = JSON.parse(msg);
-            } catch (err) {
+            } catch {
+                outputChannel.appendLine(`[WS] Invalid Response: ${msg}`);
                 return reject("Got Invalid Response: " + msg);
             }
 
@@ -154,7 +155,6 @@ export function startWebSocketServer() {
                 }
             }
             catch (e) {
-                console.error(e);
                 outputChannel.appendLine(String(e));
             }
         });

@@ -17,6 +17,8 @@ import { commands, ExtensionContext, languages, QuickPickItem, TextDocument, Uri
 export let extensionUri: Uri;
 export let extensionPath: string;
 
+export const outputChannel = vscWindow.createOutputChannel("Vencord Companion");
+
 export function activate(context: ExtensionContext) {
     extensionUri = context.extensionUri;
     extensionPath = context.extensionPath;

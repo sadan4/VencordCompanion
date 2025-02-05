@@ -12,7 +12,7 @@ import {
     tryParseStringLiteral,
 } from "@ast/util";
 import { FindUse, Import, SourcePatch, WithParent } from "@type/ast";
-import { PatchData, TestFind } from "@type/server";
+import { TestFind } from "@type/server";
 
 import { collectVariableUsage, DeclarationDomain, VariableInfo } from "tsutils";
 import {
@@ -29,7 +29,7 @@ import {
     ScriptTarget,
     SourceFile,
 } from "typescript";
-import { Location, Range, TextDocument, Uri, workspace } from "vscode";
+import { TextDocument, Uri, workspace } from "vscode";
 export class VencordAstParser {
     private doc: TextDocument;
     private text: string;

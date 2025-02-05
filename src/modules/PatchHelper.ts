@@ -1,5 +1,6 @@
 import { makeRange } from "@ast/util";
 import { VencordAstParser } from "@ast/vencord";
+import { outputChannel } from "@extension";
 import { formatModule, sendAndGetData } from "@server/index";
 import { SourcePatch } from "@type/ast";
 import { PromiseProivderResult } from "@type/index";
@@ -21,7 +22,6 @@ import {
     TextDocumentChangeEvent,
     TextEditor,
     TextEditorRevealType,
-    TextEditorViewColumnChangeEvent,
     Uri,
     ViewColumn,
     window,
@@ -209,11 +209,12 @@ export class PatchHelper {
                 const replacer = canonicalizeReplace(parseReplace(replace), this.ast.getPluginName() || "MyPlugin");
                 // @ts-expect-error stupid overloading
                 const newsrc = code.replace(matcher, replacer);
-                if (code === newsrc) continue;
+                if (code === newsrc) throw `Patch ${JSON.stringify({ match, replace })} had no effect`;
                 Function(newsrc);
 
                 code = newsrc;
             } catch (e) {
+                outputChannel.appendLine(`Error in patch ${i + 1}: ${e}`);
                 continue;
             }
         }
@@ -229,7 +230,7 @@ export class PatchHelper {
 
     public static async provideTextDocumentContent(
         uri: Uri,
-        token: CancellationToken
+        _token: CancellationToken
     ): PromiseProivderResult<string> {
         const helper = PatchHelper.activeWindowsById.get(PatchHelper.idFromUri(uri));
         if (!helper) return null;
@@ -242,7 +243,6 @@ export class PatchHelper {
      * @param e handle closing of our source documents
      */
     public static async onCloseDocument(e: TextDocument) {
-        console.log("called");
         if (e.uri.scheme === "vencord-patchhelper") {
             const helper = PatchHelper.activeWindowsById.get(PatchHelper.idFromUri(e.uri));
             helper?.end();
@@ -266,7 +266,7 @@ export class PatchHelper {
      *
      * wait for any of our editors to be opened, and set them to read only mode right away
      */
-    public static changeActiveEditor(e: TextEditor | undefined): void {
+    public static changeActiveEditor(_editor: TextEditor | undefined): void {
         if (
             window.activeTextEditor?.document.uri.scheme === "vencord-patchhelper"
         ) {

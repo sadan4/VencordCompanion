@@ -1,4 +1,5 @@
 import { WebpackAstParser } from "@ast/webpack";
+import { outputChannel } from "@extension";
 import { format } from "@modules/format";
 import { BufferedProgressBar, exists, getCurrentFolder, isDirectory, ProgressBar, SecTo } from "@modules/util";
 import { formatModule, sendAndGetData } from "@server";
@@ -39,8 +40,8 @@ class _ModuleCache {
             await this.formatModules(modmap);
             await this.writeModules(modmap);
         } catch (error) {
-            console.error(error);
             window.showErrorMessage("Error downloading modules:\n" + String(error));
+            outputChannel.appendLine(String(error));
         }
     }
 
@@ -99,7 +100,6 @@ class _ModuleCache {
 
         for (const [id, text] of Object.entries(modmap)) {
             if (canceled) {
-                console.log("canceled");
                 throw new Error("Module formatting canceled");
                 break;
             }
@@ -107,7 +107,6 @@ class _ModuleCache {
                 modmap[id] = await format(formatModule(text, id));
                 await progress.increment();
             } catch (error) {
-                console.log("error");
                 throw error;
             }
         }
@@ -141,7 +140,6 @@ class _ModuleCache {
             }
             res[id] = text;
         }
-        console.log(res);
         return res;
     }
 

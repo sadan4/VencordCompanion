@@ -22,7 +22,7 @@ export class I18nHover implements HoverProvider {
         /**
          * index from the start of the string. this would be 0 `"|as"`
          */
-        const stringStartingIndex = token.getStart(sourceFile, true) - Number(isRegularExpressionLiteral(token));
+        const stringStartingIndex = token.getStart(sourceFile, true) - +isRegularExpressionLiteral(token);
         const stringIndex = offset - stringStartingIndex - 1;
         for (const { "0": { length }, index, "1": key } of intls) {
             if (stringIndex >= index && stringIndex <= index + length) {

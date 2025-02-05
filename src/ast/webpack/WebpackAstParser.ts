@@ -187,7 +187,6 @@ export class WebpackAstParser {
         console.log(moduleExports);
         for (const [name] of Object.entries(moduleExports).filter(([, v]) => v.some(x => {
             if (!x) return;
-            console.log(x), console.log(position);
             return x.contains(position);
         }))) {
             console.log("Fond mod");

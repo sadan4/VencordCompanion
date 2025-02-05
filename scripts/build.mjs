@@ -4,6 +4,9 @@ import { commonOpts, webviewOpts } from "./common.mjs";
 //@ts-check
 
 await Promise.all([
-    esbuild.build(commonOpts),
+    esbuild.build({
+        ...commonOpts,
+        sourcemap: "linked",
+    }),
     esbuild.build(webviewOpts)
 ])

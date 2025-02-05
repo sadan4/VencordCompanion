@@ -1,7 +1,7 @@
 {
     "name": "vencord-user-companion",
     "displayName": "Vencord Companion Extended",
-    "version": "0.2.3",
+    "version": "0.2.4",
     "description": "Vencord Companion is a vscode extension to test Vencord patches & webpack finds right from the comfort of your IDE",
     "categories": [
         "Other",
@@ -129,7 +129,7 @@
     "devDependencies": {
         "@stylistic/eslint-plugin": "^3.0.1",
         "@types/node": "~22.13.1",
-        "@types/vscode": "^1.96.0",
+        "@types/vscode": "^1.70.0",
         "@types/ws": "^8.5.14",
         "@typescript-eslint/eslint-plugin": "^8.23.0",
         "@typescript-eslint/parser": "^8.23.0",

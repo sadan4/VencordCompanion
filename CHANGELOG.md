@@ -36,3 +36,7 @@ Minor bugfixes for new bundler settings
 # 0.2.3
 
 Added a live patch helper, make sure to update the plugin as well, as things will break without it
+
+# 0.2.4
+
+Added hover on intl keys and minor bugfixes

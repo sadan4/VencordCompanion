@@ -1,5 +1,6 @@
 import { isWebpackModule } from "@ast/util";
 import { WebpackAstParser } from "@ast/webpack";
+import { outputChannel } from "@extension";
 import { Definitions } from "@type/ast";
 
 import { DefinitionProvider as IDefinitionProvider, Position, TextDocument } from "vscode";
@@ -20,7 +21,7 @@ export class DefinitionProvider implements IDefinitionProvider {
                 position
             );
         } catch (e) {
-            console.error(e);
+            outputChannel.appendLine(String(e));
         }
     }
 }

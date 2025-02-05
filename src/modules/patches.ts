@@ -40,10 +40,11 @@ import { runtimeHashMessageKey } from "./intlHash";
 
 export type VencordReplaceFn = (match: string, ...groups: any[]) => string;
 
+export const intlRegex = /#{intl::([\w$+/]*)(?:::(\w+))?}/g;
 
 export function canonicalizeMatch<T extends RegExp | string>(match: T): T {
     let partialCanon = typeof match === "string" ? match : match.source;
-    partialCanon = partialCanon.replaceAll(/#{intl::([\w$+/]*)(?:::(\w+))?}/g, (_, key, modifier) => {
+    partialCanon = partialCanon.replaceAll(intlRegex, (_, key, modifier) => {
         const hashed = modifier === "raw" ? key : runtimeHashMessageKey(key);
 
         const isString = typeof match === "string";

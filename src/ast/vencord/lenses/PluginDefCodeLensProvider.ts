@@ -52,7 +52,7 @@ function parsePossiblePatches(node: Node): {
     let pluginDef;
     try {
         pluginDef = parseObjLiteralExpr(node.expression.arguments[0], ["name"]);
-    } catch (_error) {
+    } catch {
         return ParseResult.INVALID;
     }
     return {

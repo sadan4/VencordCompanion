@@ -1,5 +1,6 @@
 import { isWebpackModule } from "@ast/util";
 import { WebpackAstParser } from "@ast/webpack";
+import { outputChannel } from "@extension";
 import { ModuleCache, ModuleDepManager } from "@modules/cache";
 import { References } from "@type/ast";
 
@@ -7,7 +8,7 @@ import { CancellationToken, Position, ReferenceContext, ReferenceProvider as IRe
 
 
 export class ReferenceProvider implements IReferenceProvider {
-    async provideReferences(document: TextDocument, position: Position, context: ReferenceContext, token: CancellationToken): References {
+    async provideReferences(document: TextDocument, position: Position, _context: ReferenceContext, _token: CancellationToken): References {
         if(!isWebpackModule(document)) return;
         if (!await ModuleCache.hasCache()) {
             window.showErrorMessage("No Module Cache found, please download modules first");
@@ -21,7 +22,7 @@ export class ReferenceProvider implements IReferenceProvider {
         try {
             return await new WebpackAstParser(document).generateReferences(document, position);
         } catch (e) {
-            console.error(e);
+            outputChannel.appendLine(String(e));
         }
     }
 

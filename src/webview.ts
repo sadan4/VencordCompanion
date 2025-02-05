@@ -2,7 +2,7 @@
  * Manages react webview panels
  */
 import { format } from "@modules/format";
-import { handleDiffPayload, handleExtractPayload, mkStringUri, sendAndGetData, sendToSockets } from "@server";
+import { handleExtractPayload, mkStringUri, sendAndGetData } from "@server";
 import { EvaledPatch, ReporterData, WebviewMessage } from "@type/reporter";
 
 import { extensionPath, extensionUri } from "./extension";
@@ -78,7 +78,7 @@ export class ReporterPanel {
                         break;
                     }
                     case "jumpToPatch": {
-                        const { pluginName, patch }: Patch & PluginName = message.data;
+                        const { patch }: Patch & PluginName = message.data;
                         // any attempt to get this to open without user interaction is a complete shitshow
                         // just use the builtin fuzzy finder and the patch find
                         // while there might be more than one find, the user can deal with that
@@ -114,6 +114,7 @@ export class ReporterPanel {
                             sourceUri = mkStringUri(await format(oldModule));
                             patchedUri = mkStringUri(await format(newModule));
                         } catch (error) {
+                            window.showErrorMessage(`Failed to format code, probably a syntax error, ${error}`);
                             sourceUri = mkStringUri(oldModule);
                             patchedUri = mkStringUri(newModule);
                         }

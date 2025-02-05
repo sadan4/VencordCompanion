@@ -7,7 +7,6 @@ import { Button, Item, Section, Text } from "./Nodes";
 import { nanoid } from "nanoid";
 import {
     EventEmitter,
-    ProviderResult,
     TreeDataProvider,
     TreeItem,
 } from "vscode";

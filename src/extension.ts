@@ -1,4 +1,5 @@
 import { onEditCallback, onOpenCallback } from "@ast/vencord/diagnostics";
+import { I18nHover } from "@ast/vencord/hover";
 import { PatchCodeLensProvider, PluginDefCodeLensProvider, WebpackCodeLensProvider } from "@ast/vencord/lenses";
 import { PartialModuleJumpCodeLensProvider } from "@ast/webpack/lenses";
 import { DefinitionProvider, ReferenceProvider } from "@ast/webpack/lsp";
@@ -15,6 +16,8 @@ import { commands, ExtensionContext, languages, QuickPickItem, TextDocument, Uri
 
 export let extensionUri: Uri;
 export let extensionPath: string;
+
+export const outputChannel = vscWindow.createOutputChannel("Vencord Companion");
 
 export function activate(context: ExtensionContext) {
     extensionUri = context.extensionUri;
@@ -42,6 +45,8 @@ export function activate(context: ExtensionContext) {
         languages.registerCodeLensProvider({ language: "typescript" }, WebpackCodeLensProvider),
         languages.registerCodeLensProvider({ language: "typescriptreact" }, WebpackCodeLensProvider),
         languages.registerCodeLensProvider({ language: "javascript" }, new PartialModuleJumpCodeLensProvider),
+        languages.registerHoverProvider({ language: "typescript" }, new I18nHover()),
+        languages.registerHoverProvider({ language: "typescriptreact" }, new I18nHover()),
         workspace.registerTextDocumentContentProvider("vencord-patchhelper", PatchHelper),
         workspace.registerTextDocumentContentProvider("vencord-companion", {
             async provideTextDocumentContent(uri) {
@@ -124,6 +129,7 @@ export function activate(context: ExtensionContext) {
                         }
                     });
                     handleDiffPayload(r);
+                    return;
                 } catch (e) {
                     window.showErrorMessage(String(e));
                 }
@@ -167,6 +173,7 @@ export function activate(context: ExtensionContext) {
                         }
                     });
                     handleExtractPayload(r);
+                    return;
                 } catch (e) {
                     window.showErrorMessage(String(e));
                 }

@@ -36,6 +36,7 @@ import {
     isRegularExpressionLiteral,
     isReturnStatement,
     isStringLiteral,
+    isTemplateLiteralToken,
     isVariableDeclaration,
     NamedDeclaration,
     Node,
@@ -45,8 +46,11 @@ import {
     PropertyAccessExpression,
     readConfigFile,
     ReadonlyTextRange,
+    RegularExpressionLiteral,
+    StringLiteral,
     SyntaxKind,
     sys,
+    TemplateLiteralLikeNode,
     transpileModule,
 } from "typescript";
 import { Position, Range, TextDocument } from "vscode";
@@ -433,4 +437,11 @@ export function getImportName(x: Identifier): Pick<Import, "orig" | "as"> {
         orig: specifier.propertyName,
         as: specifier.name
     };
+}
+
+export function isStringLiteralLikeOrTemplateLiteralFragmentOrRegexLiteral(node: Node): node is TemplateLiteralLikeNode | StringLiteral | RegularExpressionLiteral {
+    if(isStringLiteral(node)) return true;
+    if (isTemplateLiteralToken(node)) return true;
+    if (isRegularExpressionLiteral(node)) return true;
+    return false;
 }

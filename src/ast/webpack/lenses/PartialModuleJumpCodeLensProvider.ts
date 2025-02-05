@@ -1,7 +1,7 @@
 import { CancellationToken, CodeLens, CodeLensProvider, Position, ProviderResult, Range, TextDocument } from "vscode";
 
 export class PartialModuleJumpCodeLensProvider implements CodeLensProvider {
-    provideCodeLenses(document: TextDocument, token: CancellationToken): ProviderResult<CodeLens[]> {
+    provideCodeLenses(document: TextDocument, _token: CancellationToken): ProviderResult<CodeLens[]> {
         const text = document.getText();
         if (!(text.startsWith("//WebpackModule") && text.substring(0, 100).includes("//OPEN FULL MODULE: "))) return;
 

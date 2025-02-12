@@ -251,11 +251,11 @@ export class PatchHelper {
         helper?.end();
     }
 
-    public static async changeDocument(e: TextDocumentChangeEvent) {
+    public static async changeDocument({ document }: TextDocumentChangeEvent) {
         try {
-            const helper = PatchHelper.activeWindows.get(e.document.uri.path);
+            const helper = PatchHelper.activeWindows.get(document.uri.path);
             if (!helper) return;
-            const newast = new VencordAstParser(e);
+            const newast = new VencordAstParser(document);
             helper.onChange(newast);
         } catch (e) {
             window.showErrorMessage(String(e));

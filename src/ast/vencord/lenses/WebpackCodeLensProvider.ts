@@ -1,4 +1,4 @@
-import { isNotNull, tryParseFunction, tryParseRegularExpressionLiteral, tryParseStringLiteral } from "@ast/util";
+import { tryParseFunction, tryParseRegularExpressionLiteral, tryParseStringLiteral } from "@ast/util";
 import { AnyFindType, Discriminate, OutgoingMessage } from "@type/server";
 
 import { createSourceFile, isCallExpression, Node, ScriptTarget } from "typescript";
@@ -37,7 +37,7 @@ export const WebpackCodeLensProvider: CodeLensProvider = {
                         data: {
                             extractType: "find",
                             findType: type as AnyFindType,
-                            findArgs: args.filter(isNotNull),
+                            findArgs: args.filter(x => x != null),
                         }
                     } satisfies Discriminate<OutgoingMessage, "extract">],
                     tooltip: "View Module"
@@ -45,7 +45,7 @@ export const WebpackCodeLensProvider: CodeLensProvider = {
                 lenses.push(new CodeLens(range, {
                     title: "Test Find",
                     command: "vencord-companion.testFind",
-                    arguments: [{ type, args: args.filter(isNotNull) }]
+                    arguments: [{ type, args: args.filter(x => x != null) }]
                 }));
             }
 

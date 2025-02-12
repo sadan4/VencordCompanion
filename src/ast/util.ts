@@ -1,3 +1,4 @@
+/* eslint-disable no-constant-condition */
 import { AnyFunction, AssertedType, CBAssertion, FunctionNode, Import, RegexNode, StringNode } from "@type/ast";
 import { IFindType, IReplacement, PatchData } from "@type/server";
 
@@ -5,10 +6,6 @@ import { getNumberAndColumnFromPos } from "./lineUtil";
 
 import { basename } from "path/posix";
 
-import {
-    isSyntaxList,
-    VariableInfo,
-} from "tsutils";
 import {
     Block,
     CompilerOptions,
@@ -20,16 +17,12 @@ import {
     Identifier,
     isArrayLiteralExpression,
     isArrowFunction,
-    isBinaryExpression,
     isBlock,
-    isCallExpression,
-    isExpressionStatement,
     isFunctionExpression,
     isIdentifier,
     isImportClause,
     isImportDeclaration,
     isImportSpecifier,
-    isNumericLiteral,
     isObjectLiteralExpression,
     isPropertyAccessExpression,
     isPropertyAssignment,
@@ -37,7 +30,6 @@ import {
     isReturnStatement,
     isStringLiteral,
     isTemplateLiteralToken,
-    isVariableDeclaration,
     NamedDeclaration,
     Node,
     ObjectLiteralElementLike,
@@ -49,6 +41,7 @@ import {
     RegularExpressionLiteral,
     StringLiteral,
     SyntaxKind,
+    SyntaxList,
     sys,
     TemplateLiteralLikeNode,
     transpileModule,
@@ -100,7 +93,7 @@ function parseReplacement(document: TextDocument, patch: ObjectLiteralExpression
             match: matchValue,
             replace: replaceValue
         };
-    }).filter(isNotNull);
+    }).filter(x => x != null);
 
     return replacementValues.length > 0 ? replacementValues : null;
 }
@@ -151,10 +144,6 @@ export function isWebpackModule(text: string | TextDocument | { document: TextDo
 
 export function hasName(node: NamedDeclaration, name: string) {
     return node.name && isIdentifier(node.name) && node.name.text === name;
-}
-
-export function isNotNull<T>(value: T): value is Exclude<T, null | undefined> {
-    return value != null;
 }
 
 export function tryParseFunction(document: TextDocument, node: Node): FunctionNode | null {
@@ -290,41 +279,8 @@ export function getLeadingIdentifier(
     ];
 }
 
-/**
- * @param node finds a webpack arg from the source tree
- * @param paramIndex the index of the param 0, 1, 2 etc...
- * @returns the indenfiier of the param if found or undef
- */
-export function findWebpackArg(
-    node: Node,
-    paramIndex = 2
-): Identifier | undefined {
-    for (const n of node.getChildren()) {
-        if (isSyntaxList(n) || isExpressionStatement(n) || isBinaryExpression(n))
-            return findWebpackArg(n, paramIndex);
-        if (isFunctionExpression(n)) {
-            if (n.parameters.length > 3 || n.parameters.length < paramIndex + 1)
-                return;
-            const p = n.parameters[paramIndex].name;
-            if (!p) return;
-            if (!isIdentifier(p)) return;
-            return p;
-        }
-    }
-}
-
-export function getModuleId(dec: VariableInfo | undefined): number | undefined {
-    if (!dec) return undefined;
-    if (dec.declarations.length !== 1) return undefined;
-    const init = findParrent(
-        dec.declarations[0],
-        isVariableDeclaration
-    )?.initializer;
-    if (!init || !isCallExpression(init)) return undefined;
-    if (init.arguments.length !== 1 || !isNumericLiteral(init.arguments[0]))
-        return undefined;
-    const num = +init.arguments[0].text;
-    return num;
+export function isSyntaxList(node: Node): node is SyntaxList {
+    return node.kind === SyntaxKind.SyntaxList;
 }
 
 /**
@@ -356,8 +312,8 @@ export function findObjectLiteralByKey(
 export function findReturnIdentifier(
     func: AnyFunction
 ): Identifier | undefined {
-    if(isBlock(func.body)) return _findReturnIdentifier(func.body);
-    if(isIdentifier(func.body)) return func.body;
+    if (isBlock(func.body)) return _findReturnIdentifier(func.body);
+    if (isIdentifier(func.body)) return func.body;
 }
 function _findReturnIdentifier(
     func: Block
@@ -375,12 +331,22 @@ function _findReturnIdentifier(
     return lastStatment.expression;
 }
 
+/**
+ * given a function like
+ * ```ts
+ * function myFunc() {
+ * // any code here
+ * return a.b; // can be anything else, eg a.b.c a.b[anything]
+ * }
+ * ```
+ * @returns the returned property access expression, if any
+ **/
 export function findReturnPropertyAccessExpression(func: AnyFunction): PropertyAccessExpression | undefined {
-    if(isBlock(func.body)) return _findReturnPropertyAccessExpression(func.body);
-    if(isPropertyAccessExpression(func.body)) return func.body;
+    if (isBlock(func.body)) return _findReturnPropertyAccessExpression(func.body);
+    if (isPropertyAccessExpression(func.body)) return func.body;
 }
 
-export function _findReturnPropertyAccessExpression(func: Block): PropertyAccessExpression | undefined {
+function _findReturnPropertyAccessExpression(func: Block): PropertyAccessExpression | undefined {
     const lastStatment = func.statements.at(-1);
 
     if (
@@ -440,8 +406,79 @@ export function getImportName(x: Identifier): Pick<Import, "orig" | "as"> {
 }
 
 export function isStringLiteralLikeOrTemplateLiteralFragmentOrRegexLiteral(node: Node): node is TemplateLiteralLikeNode | StringLiteral | RegularExpressionLiteral {
-    if(isStringLiteral(node)) return true;
+    if (isStringLiteral(node)) return true;
     if (isTemplateLiteralToken(node)) return true;
     if (isRegularExpressionLiteral(node)) return true;
     return false;
 }
+const SYM_UNCACHED = Symbol("uncached");
+/**
+ * Caches the result of a function and provides an option to invalidate the cache.
+ *
+ * Only works on methods with no parameters
+ *
+ * @param invalidate An optional array of functions that a function to invalidate the cache will be pushed to.
+ * @returns A decorator function that can be used to cache the result of a method.
+ */
+export function Cache(invalidate?: (() => void)[]) {
+    type _<P extends () => any> = (...args: Parameters<P>) => ReturnType<P>;
+    return function <P extends () => any>(target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<_<P>>): TypedPropertyDescriptor<_<P>> | void {
+        const sym = Symbol(`cache-${propertyKey.toString()}`);
+        target[sym] = SYM_UNCACHED;
+        type A = Parameters<P>;
+        type R = ReturnType<P>;
+        const orig = descriptor.value;
+        if (typeof orig !== "function") {
+            throw new Error("Not a function");
+        }
+        descriptor.value = function (...args: A): R {
+            if (this[sym] === SYM_UNCACHED) {
+                invalidate?.push(() => {
+                    this[sym] = SYM_UNCACHED;
+                });
+                this[sym] = orig.apply(this, args);
+            }
+            return this[sym];
+
+        };
+    };
+}
+/**
+ * Same thing as {@link Cache} but for getters.
+ */
+export function CacheGetter(invalidate?: (() => void)[]) {
+    return function <T>(target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): TypedPropertyDescriptor<T> | void {
+        const sym = Symbol(`cache-${propertyKey.toString()}`);
+        target[sym] = SYM_UNCACHED;
+        const orig = descriptor.get;
+        if (typeof orig !== "function") {
+            throw new Error("Not a getter");
+        }
+        descriptor.get = function (): T {
+            if (this[sym] === SYM_UNCACHED) {
+                invalidate?.push(() => {
+                    this[sym] = SYM_UNCACHED;
+                });
+                this[sym] = orig.apply(this);
+            }
+            return this[sym];
+        };
+        return descriptor;
+    };
+}
+
+export const enum CharCode {
+    /**
+     * The `\n` character.
+     */
+    LineFeed = 10,
+    /**
+     * The `\r` character.
+     */
+    CarriageReturn = 13,
+}
+
+export function isEOL(char: number) {
+    return char === CharCode.CarriageReturn || char === CharCode.LineFeed;
+}
+

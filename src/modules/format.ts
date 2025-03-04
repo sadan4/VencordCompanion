@@ -1,11 +1,6 @@
-import babel from "prettier/plugins/babel";
-import estree from "prettier/plugins/estree";
-import { format as fmt } from "prettier/standalone";
+import { Format } from "@sadan4/devtools-pretty-printer";
 
-export async function format(text: string) {
-    return await fmt(text, {
-        parser: "babel",
-        plugins: [babel, estree],
-        tabWidth: 4
-    });
+
+export function format(text: string) {
+    return Format(text);
 }

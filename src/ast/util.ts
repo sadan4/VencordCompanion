@@ -1,5 +1,5 @@
-/* eslint-disable no-constant-condition */
-import { AnyFunction, AssertedType, CBAssertion, FunctionNode, Import, RegexNode, StringNode } from "@type/ast";
+
+import { AnyFunction, AssertedType, CBAssertion, FunctionNode, Import, RegexNode, StringNode, WithParent } from "@type/ast";
 import { IFindType, IReplacement, PatchData } from "@type/server";
 
 import { getNumberAndColumnFromPos } from "./lineUtil";
@@ -15,6 +15,7 @@ import {
     Expression,
     findConfigFile,
     Identifier,
+    ImportClause,
     isArrayLiteralExpression,
     isArrowFunction,
     isBlock,
@@ -23,6 +24,7 @@ import {
     isImportClause,
     isImportDeclaration,
     isImportSpecifier,
+    isNamespaceImport as _TS_isNamespaceImport,
     isObjectLiteralExpression,
     isPropertyAccessExpression,
     isPropertyAssignment,
@@ -31,6 +33,7 @@ import {
     isStringLiteral,
     isTemplateLiteralToken,
     NamedDeclaration,
+    NamespaceImport,
     Node,
     ObjectLiteralElementLike,
     ObjectLiteralExpression,
@@ -138,7 +141,7 @@ export function isWebpackModule(text: string | TextDocument | { document: TextDo
     else if ("document" in text) text = text.document.getText();
     else text = text.getText();
 
-    return text.startsWith("//WebpackModule") || text.substring(0, 100).includes("//OPEN FULL MODULE:");
+    return text.startsWith("// Webpack Module ") || text.substring(0, 100).includes("//OPEN FULL MODULE:");
 }
 
 
@@ -384,6 +387,15 @@ export function isInImportStatment(x: Node): boolean {
     return findParrent(x, isImportDeclaration) != null;
 }
 
+/**
+ * @param x an identifier in the import statment, not just any imported identifier
+ * @returns the source of the import statment
+ * @example
+ * ```
+ * import { x } from "source"
+ * ```
+ * @returns "source"
+ */
 export function getImportSource(x: Identifier): string {
     const clause = findParrent(x, isImportDeclaration);
     if (!clause) throw new Error("x is not in an import statment");
@@ -391,13 +403,21 @@ export function getImportSource(x: Identifier): string {
     return clause.moduleSpecifier.getText().slice(1, -1);
 }
 
-export function isDefaultImport(x: Identifier): boolean {
+export function isDefaultImport(x: Identifier): x is WithParent<typeof x, ImportClause> {
     return isImportClause(x.parent);
 }
 
-export function getImportName(x: Identifier): Pick<Import, "orig" | "as"> {
-    if (isImportClause(x.parent)) return { as: x };
-    const specifier = findParrent(x, isImportSpecifier);
+export function isNamespaceImport(x: Identifier): x is WithParent<typeof x, NamespaceImport> {
+    return _TS_isNamespaceImport(x.parent);
+}
+
+/**
+ * @param node any identifier in an import statment
+ */
+export function getImportName(node: Identifier): Pick<Import, "orig" | "as"> {
+    // default or namespace
+    if (isDefaultImport(node) || isNamespaceImport(node)) return { as: node };
+    const specifier = findParrent(node, isImportSpecifier);
     if (!specifier) throw new Error("x is not in an import statment");
     return {
         orig: specifier.propertyName,

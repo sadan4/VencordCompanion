@@ -58,8 +58,8 @@ export class WebpackAstParser extends AstParser {
      */
     @CacheGetter()
     private get moduleId(): string | null {
-        if (this.text.startsWith("//WebpackModule")) {
-            const [, id] = this.text.match(/^\/\/WebpackModule(\d+)\n/) ?? [];
+        if (this.text.startsWith("// Webpack Module ")) {
+            const [, id] = this.text.match(/^\/\/ Webpack Module (\d+) /) ?? [];
             return id || null;
         }
         return null;

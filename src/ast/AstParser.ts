@@ -4,7 +4,16 @@ import { Cache, CacheGetter, CharCode, isEOL } from "./util";
 
 import { collectVariableUsage, VariableInfo } from "tsutils/util/usage";
 import { getTokenAtPosition } from "tsutils/util/util";
-import { createSourceFile, Identifier, isFunctionDeclaration, Node, ReadonlyTextRange, ScriptKind, ScriptTarget, SourceFile } from "typescript";
+import {
+    createSourceFile,
+    Identifier,
+    isFunctionDeclaration,
+    Node,
+    ReadonlyTextRange,
+    ScriptKind,
+    ScriptTarget,
+    SourceFile,
+} from "typescript";
 import { Position, Range } from "vscode";
 
 export class AstParser {
@@ -17,7 +26,7 @@ export class AstParser {
 
     /**
      * All the variables in the source file
-    */
+     */
     @CacheGetter()
     public get vars(): Map<Identifier, VariableInfo> {
         return collectVariableUsage(this.sourceFile);
@@ -33,7 +42,13 @@ export class AstParser {
      */
     @Cache()
     protected createSourceFile(): SourceFile {
-        return createSourceFile("file.tsx", this.text, ScriptTarget.ESNext, true, ScriptKind.TSX);
+        return createSourceFile(
+            "file.tsx",
+            this.text,
+            ScriptTarget.ESNext,
+            true,
+            ScriptKind.TSX,
+        );
     }
 
     /** Returns the token at or following the specified position or undefined if none is found inside `parent`. */
@@ -48,24 +63,26 @@ export class AstParser {
      * convert two offsets to a range
      */
     public makeRange({ pos, end }: ReadonlyTextRange): Range {
-        return new Range(
-            this.makeLocation(pos),
-            this.makeLocation(end)
-        );
+        return new Range(this.makeLocation(pos), this.makeLocation(end));
     }
     /**
      * convert an offset to a position
      * @param pos zero-based offset
      */
     public makeLocation(pos: number): Position {
-        const { lineNumber, column } = getNumberAndColumnFromPos(this.text, pos);
+        const { lineNumber, column } = getNumberAndColumnFromPos(
+            this.text,
+            pos,
+        );
         return new Position(lineNumber - 1, column - 1);
     }
 
     public makeRangeFromFuctionDef(ret: Identifier): Range | undefined {
         const uses = this.vars.get(ret)?.uses;
         if (!uses) return undefined;
-        const def = uses.find(({ location }) => isFunctionDeclaration(location.parent));
+        const def = uses.find(({ location }) =>
+            isFunctionDeclaration(location.parent),
+        );
         if (!def) return undefined;
         return this.makeRange(def.location);
     }
@@ -90,8 +107,14 @@ export class AstParser {
             return lineOffset;
         }
 
-        const nextLineOffset = (position.line + 1 < lineOffsets.length) ? lineOffsets[position.line + 1] : this.text.length;
-        const offset = Math.min(lineOffset + position.character, nextLineOffset);
+        const nextLineOffset =
+            position.line + 1 < lineOffsets.length
+                ? lineOffsets[position.line + 1]
+                : this.text.length;
+        const offset = Math.min(
+            lineOffset + position.character,
+            nextLineOffset,
+        );
         return this.ensureBeforeEOL(offset, lineOffset);
     }
     // methods copied from vscode-languageserver-node
@@ -106,13 +129,20 @@ export class AstParser {
         }
         return offset;
     }
-    private computeLineOffsets(isAtLineStart: boolean, textOffset = 0): number[] {
+    private computeLineOffsets(
+        isAtLineStart: boolean,
+        textOffset = 0,
+    ): number[] {
         const { text } = this;
         const result: number[] = isAtLineStart ? [textOffset] : [];
         for (let i = 0; i < text.length; i++) {
             const ch = text.charCodeAt(i);
             if (isEOL(ch)) {
-                if (ch === CharCode.CarriageReturn && i + 1 < text.length && text.charCodeAt(i + 1) === CharCode.LineFeed) {
+                if (
+                    ch === CharCode.CarriageReturn &&
+                    i + 1 < text.length &&
+                    text.charCodeAt(i + 1) === CharCode.LineFeed
+                ) {
                     i++;
                 }
                 result.push(textOffset + i + 1);

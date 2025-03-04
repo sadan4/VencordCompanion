@@ -20,7 +20,7 @@ export class DefinitionProvider implements IDefinitionProvider {
                 position
             );
         } catch (e) {
-            outputChannel.appendLine(String(e));
+            outputChannel.error(e);
         }
     }
 }

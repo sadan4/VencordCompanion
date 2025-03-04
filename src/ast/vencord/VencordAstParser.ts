@@ -7,6 +7,7 @@ import {
     getImportSource,
     isDefaultImport,
     isInImportStatment,
+    isNamespaceImport,
     parsePatch,
     tryParseFunction,
     tryParseRegularExpressionLiteral,
@@ -150,6 +151,7 @@ export class VencordAstParser extends AstParser {
         const [importIdent] = source;
         return {
             default: isDefaultImport(importIdent),
+            namespace: isNamespaceImport(importIdent),
             ...getImportName(importIdent),
             source: getImportSource(importIdent),
         };

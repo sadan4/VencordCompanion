@@ -3,7 +3,7 @@ import { CancellationToken, CodeLens, CodeLensProvider, Position, ProviderResult
 export class PartialModuleJumpCodeLensProvider implements CodeLensProvider {
     provideCodeLenses(document: TextDocument, _token: CancellationToken): ProviderResult<CodeLens[]> {
         const text = document.getText();
-        if (!(text.startsWith("//WebpackModule") && text.substring(0, 100).includes("//OPEN FULL MODULE: "))) return;
+        if (!(text.startsWith("// Webpack Module ") && text.substring(0, 100).includes("//OPEN FULL MODULE: "))) return;
 
         const moduleId = (text.match(/^\/\/OPEN FULL MODULE: (\d{0,6})/m) ?? [])[1];
         if (!moduleId) return;

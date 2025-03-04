@@ -8,7 +8,7 @@
 import { ReporterData as IReporterData } from "../reporter";
 export type ReporterData = IReporterData;
 
-export type IncomingMessage = (Report | DiffModule | ExtractModuleR | ModuleList | RawId) & Base;
+export type IncomingMessage = (Report | DiffModule | ExtractModuleR | ModuleList | RawId | I18nValue) & Base;
 export type FullIncomingMessage = IncomingMessage & Nonce;
 export type Base = {
     ok: true;
@@ -24,6 +24,13 @@ export type ModuleResult = {
 };
 
 // #region valid payloads
+export type I18nValue = {
+    type: "i18n";
+    data: {
+        value: string;
+    };
+};
+
 export type Report = {
     type: "report";
     data: ReporterData;

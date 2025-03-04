@@ -90,9 +90,9 @@ export class PatchHelper {
             ).data;
             PatchHelper.changeEmitter.fire(this.displayUri);
         } catch (e) {
-            window.showErrorMessage(
-                `PatchHelper: Could not load the new patch, exiting. Error: ${e}`
-            );
+            const message = `PatchHelper: Could not load the new patch, exiting. Error: ${e}`;
+            outputChannel.error(message);
+            window.showErrorMessage(message);
             this.end();
         }
     }
@@ -100,6 +100,7 @@ export class PatchHelper {
         this.id = nanoid();
         this.ast = new VencordAstParser(doc);
         this.lastPatch = lastPatch;
+        outputChannel.debug(`Opening new patch helper for patch ${JSON.stringify(lastPatch)}, with id ${this.id} and for document ${doc.uri.path}`);
     }
     public async openModuleWindow() {
         if (!this.moduleData) {
@@ -113,9 +114,9 @@ export class PatchHelper {
         this.ast = newAst;
         const patch = this.findPatch();
         if (patch == null) {
-            window.showWarningMessage(
-                `Lost patch with\nfind: ${this.lastPatch.find}\nnum replacements: ${this.lastPatch.replacement.length}\nindex: ${this.lastPatch.origIndex}`
-            );
+            const message = `Lost patch with\nfind: ${this.lastPatch.find}\nnum replacements: ${this.lastPatch.replacement.length}\nindex: ${this.lastPatch.origIndex}`;
+            outputChannel.info(message);
+            window.showErrorMessage(message);
             this.end();
             return;
         }
@@ -137,12 +138,14 @@ export class PatchHelper {
                     tab.input.uri.path === this.displayUri.path
             );
         if (tab) {
+            outputChannel.debug(`closing tab with label ${tab.label}`);
             await window.tabGroups.close(tab);
         }
+        outputChannel.debug(`ending patch helper with id ${this.id}`);
     }
     private async highlightChanges() {
         const [was, is] = this.lastPatchedModule.get();
-        if (!was || !is || was === is) return;
+        if (!was || !is || was === is) return void outputChannel.warn("no changes to highlight");
         const changes = DiffFunc(was, is);
         let i = -1;
         let cur: Diff;
@@ -154,7 +157,8 @@ export class PatchHelper {
             cur[0] !== DELETE && (end += cur[1].length);
 
         const rangeToShow = makeRange({ pos, end }, is);
-        if (!this.editor) return;
+        if (!this.editor) return void outputChannel.warn("no editor to show changes");
+        outputChannel.debug(`highlighting changes from ${pos} to ${end}`);
         this.editor.revealRange(rangeToShow, TextEditorRevealType.InCenter);
     }
     /**
@@ -162,6 +166,7 @@ export class PatchHelper {
      *
      * check how many times our find appears, if >1, we need take a good guess or return null of there is no good guess
      */
+    // TODO: make this more fault tolerant
     private findPatch(): SourcePatch | null {
         const patches = this.ast.getPatches();
         if (this.lastFindLength === 1) {
@@ -201,7 +206,7 @@ export class PatchHelper {
     private lastPatchedModule = new LastTwo("", "");
     async patch(): PromiseProivderResult<string> {
         if (!this.moduleData) return null;
-        let code = "0," + this.moduleData?.module.replaceAll("\n", "");
+        let code = this.moduleData.module;
         for (let i = 0; i < this.lastPatch.replacement.length; i++) {
             const { match, replace } = this.lastPatch.replacement[i];
             try {
@@ -214,7 +219,7 @@ export class PatchHelper {
 
                 code = newsrc;
             } catch (e) {
-                outputChannel.appendLine(`Error in patch ${i + 1}: ${e}`);
+                outputChannel.warn(`Error in patch ${i + 1}: ${e}`);
                 continue;
             }
         }
@@ -232,11 +237,16 @@ export class PatchHelper {
         uri: Uri,
         _token: CancellationToken
     ): PromiseProivderResult<string> {
-        const helper = PatchHelper.activeWindowsById.get(PatchHelper.idFromUri(uri));
-        if (!helper) return null;
-        const toRet = await helper.patch();
-        helper.highlightChanges();
-        return toRet;
+        try {
+            const helper = PatchHelper.activeWindowsById.get(PatchHelper.idFromUri(uri));
+            if (!helper) return null;
+            const toRet = await helper.patch();
+            helper.highlightChanges();
+            return toRet;
+        } catch (e) {
+            outputChannel.error(e);
+            return null;
+        }
     }
 
     /**
@@ -251,11 +261,11 @@ export class PatchHelper {
         helper?.end();
     }
 
-    public static async changeDocument(e: TextDocumentChangeEvent) {
+    public static async changeDocument({ document }: TextDocumentChangeEvent) {
         try {
-            const helper = PatchHelper.activeWindows.get(e.document.uri.path);
+            const helper = PatchHelper.activeWindows.get(document.uri.path);
             if (!helper) return;
-            const newast = new VencordAstParser(e);
+            const newast = new VencordAstParser(document);
             helper.onChange(newast);
         } catch (e) {
             window.showErrorMessage(String(e));
@@ -270,6 +280,7 @@ export class PatchHelper {
         if (
             window.activeTextEditor?.document.uri.scheme === "vencord-patchhelper"
         ) {
+            outputChannel.debug(`setting active editor with URI: (${window.activeTextEditor?.document.uri.toString()}) to read only`);
             commands.executeCommand(
                 "workbench.action.files.setActiveEditorReadonlyInSession"
             );

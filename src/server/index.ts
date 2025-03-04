@@ -63,7 +63,7 @@ export async function sendToSockets(data: OutgoingMessage, dataCb?: (data: any) 
             try {
                 var parsed: FullIncomingMessage = JSON.parse(msg);
             } catch {
-                outputChannel.appendLine(`[WS] Invalid Response: ${msg}`);
+                outputChannel.error(`[WS] Invalid Response: ${msg}`);
                 return reject("Got Invalid Response: " + msg);
             }
 
@@ -121,23 +121,24 @@ export function startWebSocketServer() {
                         throw "a party";
                 }
             } catch {
-                outputChannel.appendLine(`[WS] Rejected request from invalid or disallowed origin: ${req.headers.origin}`);
+                outputChannel.error(`[WS] Rejected request from invalid or disallowed origin: ${req.headers.origin}`);
                 sock.close(CloseCode.POLICY_VIOLATION, "Invalid or disallowed origin");
                 return;
             }
         }
 
-        outputChannel.appendLine(`[WS] New Connection (Origin: ${req.headers.origin || "-"})`);
+        outputChannel.info(`[WS] New Connection (Origin: ${req.headers.origin || "-"})`);
         sockets.add(sock);
         onConnectCbs.forEach(async cb => cb(sock));
 
         sock.on("close", () => {
-            outputChannel.appendLine("[WS] Connection Closed");
+            outputChannel.warn("[WS] Connection Closed");
             sockets.delete(sock);
         });
 
         sock.on("message", async msg => {
             try {
+                outputChannel.trace(`[WS] RECV: ${msg.toString()}`);
                 const rec: FullIncomingMessage = JSON.parse(msg.toString());
                 switch (rec.type) {
                     case "report": {
@@ -155,19 +156,19 @@ export function startWebSocketServer() {
                 }
             }
             catch (e) {
-                outputChannel.appendLine(String(e));
+                outputChannel.error(String(e));
             }
         });
 
         sock.on("error", err => {
             console.error("[Vencord Companion WS", err);
-            outputChannel.appendLine(`[WS] Error: ${err}`);
+            outputChannel.error(`[WS] Error: ${err}`);
         });
 
         const originalSend = sock.send;
         sock.send = function (data) {
-            outputChannel.appendLine(`[WS] SEND: ${data}`);
-            // @ts-ignore "Expected 3-4 arguments but got 2?????" No bestie it expects 2-3....
+            outputChannel.trace(`[WS] SEND: ${data}`);
+            // @ts-expect-error "Expected 3-4 arguments but got 2?????" No bestie it expects 2-3....
             originalSend.call(this, data);
         };
 
@@ -175,15 +176,15 @@ export function startWebSocketServer() {
 
     wss.on("error", err => {
         console.error("[Vencord Companion WS", err);
-        outputChannel.appendLine(`[WS] Error: ${err}`);
+        outputChannel.error(`[WS] Error: ${err}`);
     });
 
     wss.once("listening", () => {
-        outputChannel.appendLine("[WS] Listening on port 8485");
+        outputChannel.info("[WS] Listening on port 8485");
     });
 
     wss.on("close", () => {
-        outputChannel.appendLine("[WS] Closed");
+        outputChannel.warn("[WS] Closed");
     });
 }
 export async function handleDiffPayload({ data }: DiffModule) {
@@ -230,5 +231,7 @@ export function mkStringUri(patched: any, filename = "module", filetype = "js"):
  * @returns a string with the formatted module
  */
 export function formatModule(moduleContents: string, moduleId: string | number | undefined = "000000", isFind?: boolean): string {
-    return `//WebpackModule${moduleId}\n${isFind ? `//OPEN FULL MODULE: ${moduleId}\n` : ""}//EXTRACED WEPBACK MODULE ${moduleId}\n 0,\n${moduleContents}`;
+    if (isFind)
+        return `// Webpack Module ${moduleId} \n${isFind ? `//OPEN FULL MODULE: ${moduleId}\n` : ""}//EXTRACED WEPBACK MODULE ${moduleId}\n 0,\n${moduleContents}`;
+    return moduleContents;
 }

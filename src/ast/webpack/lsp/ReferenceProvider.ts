@@ -20,9 +20,9 @@ export class ReferenceProvider implements IReferenceProvider {
             });
         }
         try {
-            return await new WebpackAstParser(document).generateReferences(document, position);
+            return await new WebpackAstParser(document.getText()).generateReferences(position);
         } catch (e) {
-            outputChannel.appendLine(String(e));
+            outputChannel.error(String(e));
         }
     }
 

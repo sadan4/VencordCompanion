@@ -115,13 +115,14 @@
     },
     "activationEvents": [
         "onLanguage:typescript",
+        "onLanguage:javascript",
         "onLanguage:typescriptreact"
     ],
     "dependencies": {
         "@intrnl/xxhash64": "^0.1.2",
+        "@sadan4/devtools-pretty-printer": "^1.0.2",
         "fast-diff": "^1.3.0",
         "nanoid": "^5.0.9",
-        "prettier": "^3.4.2",
         "tsutils": "^3.21.0",
         "typescript": "^5.7.3",
         "ws": "^8.18.0"
@@ -129,12 +130,12 @@
     "devDependencies": {
         "@stylistic/eslint-plugin": "^3.0.1",
         "@types/node": "~22.13.1",
-        "@types/vscode": "^1.70.0",
+        "@types/vscode": "^1.96.0",
         "@types/ws": "^8.5.14",
         "@typescript-eslint/eslint-plugin": "^8.23.0",
         "@typescript-eslint/parser": "^8.23.0",
         "@vscode/vsce": "^3.2.2",
-        "esbuild": "^0.24.2",
+        "esbuild": "^0.25.0",
         "eslint": "^9.19.0",
         "eslint-plugin-simple-import-sort": "^12.1.1",
         "eslint-plugin-unused-imports": "^4.1.4",

@@ -83,9 +83,15 @@ export type DisablePluginData = {
     pluginName: string;
 };
 
-export type OutgoingMessage = DisablePlugin | RawIdS | DiffPatch | Reload | ExtractModuleS | TestPatch | TestFind | AllModules;
+export type OutgoingMessage = DisablePlugin | RawIdS | DiffPatch | Reload | ExtractModuleS | TestPatch | TestFind | AllModules | I18nLookup;
 export type FullOutgoingMessage = OutgoingMessage & { nonce: number; };
 // #region valid payloads
+export type I18nLookup = {
+    type: "i18n";
+    data: {
+        hashedKey: string;
+    };
+};
 export type DisablePlugin = {
     type: "disable";
     data: DisablePluginData;

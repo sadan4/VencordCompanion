@@ -12,12 +12,14 @@ import { DisablePluginData, FindData, OutgoingMessage, PatchData } from "@type/s
 
 import { startReporter } from "./reporter";
 
-import { commands, ExtensionContext, languages, QuickPickItem, TextDocument, Uri, window as vscWindow, window, workspace } from "vscode";
+import { commands, ExtensionContext, languages, LogOutputChannel, QuickPickItem, TextDocument, Uri, window as vscWindow, window, workspace } from "vscode";
 
 export let extensionUri: Uri;
 export let extensionPath: string;
 
-export const outputChannel = vscWindow.createOutputChannel("Vencord Companion");
+export const outputChannel: LogOutputChannel = vscWindow.createOutputChannel("Vencord Companion", {
+    log: true
+});
 
 export function activate(context: ExtensionContext) {
     extensionUri = context.extensionUri;
@@ -57,7 +59,9 @@ export function activate(context: ExtensionContext) {
         }),
         commands.registerCommand("vencord-companion.openPatchHelper", async (doc: TextDocument, patch: SourcePatch) => {
             if (!doc) {
-                return window.showErrorMessage("Could not find soruce document");
+                outputChannel.warn("Could not find soruce document");
+                window.showErrorMessage("Could not find soruce document");
+                return;
             }
             const helper = await PatchHelper.create(doc, patch);
             helper.openModuleWindow();
@@ -74,9 +78,11 @@ export function activate(context: ExtensionContext) {
                         }
                     });
                     handleDiffPayload(r);
-                    return;
                 } catch (e) {
+                    outputChannel.error(String(e));
                     window.showErrorMessage(String(e));
+                } finally {
+                    return;
                 }
             }
             // FIXME: refactor to generic quicpick class with these features
@@ -111,6 +117,7 @@ export function activate(context: ExtensionContext) {
                     });
                     handleDiffPayload(r);
                 } catch (error) {
+                    outputChannel.error(String(error));
                     vscWindow.showErrorMessage(String(error));
                 }
             });
@@ -131,12 +138,17 @@ export function activate(context: ExtensionContext) {
                     handleDiffPayload(r);
                     return;
                 } catch (e) {
+                    outputChannel.error(String(e));
                     window.showErrorMessage(String(e));
+                } finally {
+                    return;
                 }
             }
             const input = await window.showInputBox();
-            if (!input)
+            if (!input) {
+                outputChannel.warn("No Input Provided");
                 return window.showErrorMessage("No Input Provided");
+            }
             try {
                 const r = await sendAndGetData<"diff">({
                     type: "diff",
@@ -147,17 +159,22 @@ export function activate(context: ExtensionContext) {
                     }
                 });
                 handleDiffPayload(r);
-            } catch (error) {
-                vscWindow.showErrorMessage(String(error));
+            } catch (e) {
+                outputChannel.error(String(e));
+                vscWindow.showErrorMessage(String(e));
             }
         }),
         commands.registerCommand("vencord-companion.extractFind", async (args: Discriminate<OutgoingMessage, "extract">) => {
-            if (!args)
-                return vscWindow.showErrorMessage("No Data Provided");
+            if (!args) {
+                outputChannel.warn("No Data Provided");
+                vscWindow.showErrorMessage("No Data Provided");
+                return;
+            }
             try {
                 const r = await sendAndGetData<"extract">(args);
                 handleExtractPayload(r);
             } catch (e) {
+                outputChannel.error(String(e));
                 vscWindow.showErrorMessage(String(e));
             }
         }),
@@ -175,7 +192,10 @@ export function activate(context: ExtensionContext) {
                     handleExtractPayload(r);
                     return;
                 } catch (e) {
+                    outputChannel.error(String(e));
                     window.showErrorMessage(String(e));
+                } finally {
+                    return;
                 }
             }
             const quickPick = window.createQuickPick();
@@ -209,8 +229,9 @@ export function activate(context: ExtensionContext) {
                         },
                     });
                     handleExtractPayload(r);
-                } catch (error) {
-                    vscWindow.showErrorMessage(String(error));
+                } catch (e) {
+                    outputChannel.error(String(e));
+                    vscWindow.showErrorMessage(String(e));
                 }
             });
 
@@ -229,7 +250,10 @@ export function activate(context: ExtensionContext) {
                     });
                     handleExtractPayload(r);
                 } catch (e) {
+                    outputChannel.error(String(e));
                     window.showErrorMessage(String(e));
+                } finally {
+                    return;
                 }
             }
             const input = await window.showInputBox();
@@ -247,6 +271,7 @@ export function activate(context: ExtensionContext) {
                 });
                 handleExtractPayload(r);
             } catch (e) {
+                outputChannel.error(String(e));
                 vscWindow.showErrorMessage(String(e));
             }
         }),
@@ -257,8 +282,9 @@ export function activate(context: ExtensionContext) {
                     type: "disable",
                     data
                 });
-            } catch (error) {
-                vscWindow.showErrorMessage(String(error));
+            } catch (e) {
+                outputChannel.error(String(e));
+                vscWindow.showErrorMessage(String(e));
             }
         }),
         commands.registerCommand("vencord-companion.testPatch", async (patch: PatchData) => {
@@ -268,8 +294,9 @@ export function activate(context: ExtensionContext) {
                     data: patch,
                 });
                 vscWindow.showInformationMessage("Patch OK!");
-            } catch (err) {
-                vscWindow.showErrorMessage("Patch failed: " + String(err));
+            } catch (e) {
+                outputChannel.info(`Patch failed: ${e}`);
+                vscWindow.showErrorMessage(`Patch failed: ${e}`);
             }
         }),
 
@@ -280,8 +307,9 @@ export function activate(context: ExtensionContext) {
                     data: find,
                 });
                 vscWindow.showInformationMessage("Find OK!");
-            } catch (err) {
-                vscWindow.showErrorMessage("Find bad: " + String(err));
+            } catch (e) {
+                outputChannel.info(`Find bad: ${e}`);
+                vscWindow.showErrorMessage(`Find bad: ${e}`);
             }
         }),
     );

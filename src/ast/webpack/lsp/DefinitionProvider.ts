@@ -16,12 +16,11 @@ export class DefinitionProvider implements IDefinitionProvider {
             // just dont want to search really long webpack modules
             if (!isWebpackModule(document))
                 return;
-            return await new WebpackAstParser(document).generateDefinitions(
-                document,
+            return await new WebpackAstParser(document.getText()).generateDefinitions(
                 position
             );
         } catch (e) {
-            outputChannel.appendLine(String(e));
+            outputChannel.error(e);
         }
     }
 }

@@ -1,5 +1,6 @@
 import { debounceAsync, zeroRange } from "@ast/util";
 import { VencordAstParser } from "@ast/vencord";
+import { outputChannel } from "@extension";
 import { sendAndGetData, sockets } from "@server/index";
 
 import { Diagnostic, DiagnosticSeverity, languages, Range, TextDocument, TextDocumentChangeEvent, Uri } from "vscode";
@@ -29,28 +30,30 @@ export const updateDiagnostics = debounceAsync(
 );
 async function updateDiagnosticsImeaditely(e: Uri) {
     if (sockets.size === 0) {
-        diagnosticCollection.set(e, [makeNoClientsWarning()]);
+        diagnosticCollection.set(e, [zeroClientsWarning]);
         return;
     }
     const doc = await VencordAstParser.fromUri(e);
-    const diagnostics = (await Promise.all([makeFindDiagnostic(doc), makePatchDiagnostic(doc)])).flat();
+    // Set to filter duplicate error / no client warnings
+    const diagnostics = Array.from(new Set((await Promise.all([makeFindDiagnostic(doc), makePatchDiagnostic(doc)])).flat()));
     diagnosticCollection.set(e, diagnostics);
 }
 async function makePatchDiagnostic(doc: VencordAstParser): Promise<Diagnostic[]> {
-    return (
-        await Promise.all(
-            doc.getPatches().map(async ({ range, ...data }) => ({
-                range,
-                message: await sendAndGetData({
-                    type: "testPatch",
-                    data,
-                }).then(
+    try {
+        return (
+            await Promise.all(
+                doc.getPatches().map(async ({ range, ...data }) => ({
+                    range,
+                    message: await sendAndGetData({
+                        type: "testPatch",
+                        data,
+                    }).then(
                     () => {},
-                    (e: string | Error) => (typeof e === "string" ? e : e?.message)
-                ),
-            }))
+                        (e: string | Error) => (typeof e === "string" ? e : e?.message)
+                    ),
+                }))
+            )
         )
-    )
         .filter((e): e is { range: Range; message: string; } => e.message !== null)
         .map(({ range, message }) => ({
             range: range,
@@ -59,19 +62,24 @@ async function makePatchDiagnostic(doc: VencordAstParser): Promise<Diagnostic[]>
             source: "Vencord-Companion",
             code: "patch",
         }));
+    } catch (e) {
+        outputChannel.error(e);
+        return [runtimeErrorWarning];
+    }
 }
 async function makeFindDiagnostic(doc: VencordAstParser): Promise<Diagnostic[]> {
-    return (
-        await Promise.all(
-            doc.getFinds().map(async ({ range, use }) => ({
-                range,
-                message: await sendAndGetData(use).then(
-                    () => {},
-                    (e: string | Error) => (typeof e === "string" ? e : e?.message)
-                ),
-            }))
+    try {
+        return (
+            await Promise.all(
+                doc.getFinds().map(async ({ range, use }) => ({
+                    range,
+                    message: await sendAndGetData(use).then(
+                        () => {},
+                            (e: string | Error) => (typeof e === "string" ? e : e?.message)
+                    ),
+                }))
+            )
         )
-    )
         .filter((e): e is { range: Range; message: string; } => e.message !== null)
         .map(({ range, message }) => ({
             range: range,
@@ -80,7 +88,10 @@ async function makeFindDiagnostic(doc: VencordAstParser): Promise<Diagnostic[]> 
             source: "Vencord-Companion",
             code: "find",
         }));
+    } catch (e) {
+        outputChannel.error(e);
+        return [runtimeErrorWarning];
+    }
 }
-function makeNoClientsWarning(): Diagnostic {
-    return new Diagnostic(zeroRange, "No clients connected", DiagnosticSeverity.Warning);
-}
+const runtimeErrorWarning = new Diagnostic(zeroRange, "An error occured, check the log for more info", DiagnosticSeverity.Warning);
+const zeroClientsWarning = new Diagnostic(zeroRange, "No clients connected", DiagnosticSeverity.Warning);

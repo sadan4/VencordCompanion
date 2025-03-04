@@ -20,6 +20,7 @@ export type FindUse = {
 export type Import = {
     default: boolean;
     source: string;
+    namespace: boolean;
     orig?: ModuleExportName;
     as: Identifier;
 };

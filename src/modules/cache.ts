@@ -4,7 +4,7 @@ import { format } from "@modules/format";
 import { BufferedProgressBar, exists, getCurrentFolder, isDirectory, ProgressBar, SecTo } from "@modules/util";
 import { formatModule, sendAndGetData } from "@server";
 
-import { mkdir, readdir,readFile, rm, writeFile } from "fs/promises";
+import { mkdir, readdir, readFile, rm, writeFile } from "fs/promises";
 import { join, resolve } from "path";
 
 import { ProgressLocation, Uri, window } from "vscode";
@@ -35,13 +35,16 @@ class _ModuleCache {
 
     async downloadModules() {
         try {
+            const before = performance.now();
             const moduleIds = await this.getModuleIDs();
             const modmap = await this.downloadModuleText(moduleIds);
             await this.formatModules(modmap);
             await this.writeModules(modmap);
+            const after = performance.now();
+            outputChannel.debug(`Downloading ${moduleIds.length} modules took ${after - before}ms`);
         } catch (error) {
             window.showErrorMessage("Error downloading modules:\n" + String(error));
-            outputChannel.appendLine(String(error));
+            outputChannel.error(String(error));
         }
     }
 
@@ -97,19 +100,20 @@ class _ModuleCache {
         const progress = await new BufferedProgressBar(Object.entries(modmap).length, "Formatting modules", () => {
             canceled = true;
         }).start();
-
+        const startTime = performance.now();
         for (const [id, text] of Object.entries(modmap)) {
             if (canceled) {
                 throw new Error("Module formatting canceled");
-                break;
             }
             try {
-                modmap[id] = await format(formatModule(text, id));
+                modmap[id] = format(formatModule(text, id));
                 await progress.increment();
             } catch (error) {
                 throw error;
             }
         }
+        const endTime = performance.now();
+        outputChannel.debug(`Formatting modules took ${endTime - startTime}ms`);
     }
 
     private async downloadModuleText(moduleIDs: string[]) {
@@ -127,10 +131,18 @@ class _ModuleCache {
             }
             progress.increment();
             try {
-                var { data: text } = await sendAndGetData<"rawId">({
-                    type: "rawId",
+                // var { data: text } = await sendAndGetData<"rawId">({
+                //     type: "rawId",
+                //     data: {
+                //         id: +id
+                //     }
+                // });
+                var { data: { module: text } } = await sendAndGetData<"extract">({
+                    type: "extract",
                     data: {
-                        id: +id
+                        extractType: "id",
+                        idOrSearch: +id,
+                        usePatched: null
                     }
                 });
             } catch (error) {

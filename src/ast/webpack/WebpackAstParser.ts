@@ -69,7 +69,7 @@ export class WebpackAstParser extends AstParser {
         super(text);
     }
 
-    protected createSourceFile(): SourceFile {
+    protected override createSourceFile(): SourceFile {
         return createSourceFile("module.js", this.text, ScriptTarget.ESNext, true, ScriptKind.JS);
     }
 

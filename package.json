@@ -36,7 +36,9 @@
         "vscode:prepublish": "pnpm build && pnpm lint",
         "publish": "vsce publish --no-dependencies",
         "typecheck": "tsc --noEmit",
-        "postinstall": "(cd src/webview && pnpm i)"
+        "postinstall": "(cd src/webview && pnpm i)",
+        "pretest": "node scripts/test.mjs",
+        "test": "node dist.test/startTests"
     },
     "contributes": {
         "configuration": {
@@ -131,11 +133,15 @@
         "@types/ws": "^8.5.14",
         "@typescript-eslint/eslint-plugin": "^8.23.0",
         "@typescript-eslint/parser": "^8.23.0",
+        "@vscode/test-cli": "^0.0.10",
+        "@vscode/test-electron": "^2.4.1",
         "@vscode/vsce": "^3.2.2",
         "esbuild": "^0.25.0",
         "eslint": "^9.19.0",
         "eslint-plugin-simple-import-sort": "^12.1.1",
         "eslint-plugin-unused-imports": "^4.1.4",
+        "glob": "^11.0.1",
+        "resolve-tspaths": "^0.8.23",
         "typescript-eslint": "^8.23.0"
     },
     "engines": {

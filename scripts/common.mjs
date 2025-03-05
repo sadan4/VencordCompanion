@@ -1,7 +1,25 @@
 import { commonOpts as webviewCommonOpts } from "../src/webview/scripts/common.mjs"
 import { join } from "path";
+import { } from "glob";
+import { glob } from "fs/promises";
 //@ts-check
-
+const sourceFiles = await Array.fromAsync(glob("src/**/*.ts", {
+    exclude: ["src/webview"]
+}));
+/**
+ * @type {import("esbuild").BuildOptions}
+ */
+export const testOpts = {
+    entryPoints: sourceFiles,
+    outdir: "dist.test",
+    minify: false,
+    treeShaking: false,
+    bundle: false,
+    platform: "node",
+    sourcemap: "inline",
+    logLevel: "info",
+    format: "cjs"
+}
 /**
  * @type {import("esbuild").BuildOptions}
  */

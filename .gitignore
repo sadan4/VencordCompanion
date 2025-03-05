@@ -4,3 +4,4 @@ src/webview/dist
 node_modules
 .vscode-test/
 *.vsix
+.direnv

@@ -1,11 +1,16 @@
-import { AstParser } from "@ast/AstParser";
+// import { AstParser } from "@ast/AstParser";
 
 import { expect } from "chai";
 import file from "test://ast/file.js";
 import { SyntaxKind } from "typescript";
-import { Position } from "vscode";
 
 describe("AstParser", function () {
+    before("test import of extension", async function () {
+        const my_Chai = expect;
+        const my_require = require;
+        console.log(await import("@ast/AstParser"));
+    });
+
     it("constructs", function () {
         new AstParser(file);
     });

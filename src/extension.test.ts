@@ -1,9 +1,9 @@
 import { strictEqual } from "node:assert";
-import { window } from "vscode";
+// import { window } from "vscode";
 
-after(() => {
-    window.showInformationMessage("All tests done!");
-});
+// after(() => {
+//     window.showInformationMessage("All tests done!");
+// });
 
 context("Sanity check, always passes", function () {
     it("should pass", (function () {

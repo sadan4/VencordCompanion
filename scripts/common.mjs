@@ -45,7 +45,7 @@ const fileUrlPlugin = {
  */
 const testOpts = {
     entryPoints: sourceFiles,
-    outdir: "dist.test",
+    outdir: "dist",
     minify: false,
     treeShaking: false,
     bundle: true,

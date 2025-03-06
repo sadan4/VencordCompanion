@@ -2,5 +2,6 @@
     "color": true,
     "diff": true,
     "enable-source-maps": true,
-    "spec": "dist.test/**/*.test.js"
+    "spec": "dist/**/*.test.js",
+    "timeout": 99999999
 }

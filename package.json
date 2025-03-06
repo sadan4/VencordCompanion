@@ -38,7 +38,7 @@
         "typecheck": "tsc --noEmit",
         "postinstall": "(cd src/webview && pnpm i)",
         "pretest": "node scripts/test.mjs",
-        "test": "node dist.test/tests/startTests"
+        "test": "node dist/tests/startTests"
     },
     "dependencies": {
         "@intrnl/xxhash64": "^0.1.2",
@@ -69,7 +69,8 @@
         "glob": "^11.0.1",
         "mocha": "^11.1.0",
         "resolve-tspaths": "^0.8.23",
-        "typescript-eslint": "^8.23.0"
+        "typescript-eslint": "^8.23.0",
+        "vscode-extension-tester": "^8.13.0"
     },
     "contributes": {
         "configuration": {

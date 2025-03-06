@@ -19,21 +19,14 @@
       ]
     },
     {
-      "name": "Extension Tests",
-      "type": "extensionHost",
-      "request": "launch",
-      "args": [
-        "--extensionDevelopmentPath=${workspaceFolder}",
-        "--extensionTestsPath=${workspaceFolder}/dist.test/tests/runTests",
-        "--disable-extensions"
-      ],
-      "outFiles": ["${workspaceFolder}/dist.test/**/*.js"],
-      "preLaunchTask": "preTest",
-      "pauseForSourceMap": true,
-      "resolveSourceMapLocations": [
-        "${workspaceFolder}/**",
-        "!**/node_modules/**"
-      ]
-    }
+        "name": "Debug Tests",
+        "type": "node",
+        "request": "launch",
+        "program": "${workspaceFolder}/dist/tests/startTests",
+        "console": "integratedTerminal",
+        "runtimeExecutable": "node",
+        "internalConsoleOptions": "neverOpen",
+        "preLaunchTask": "preTest",
+    },
   ]
 }

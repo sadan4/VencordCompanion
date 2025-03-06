@@ -95,7 +95,7 @@ export class AstParser {
      * @return A valid zero-based offset.
      */
     // copied from vscode-languageserver-node
-    public offsetAt(position: Position) {
+    public offsetAt(position: Position): number {
         const { lineOffsets } = this;
         if (position.line >= lineOffsets.length) {
             return this.text.length;

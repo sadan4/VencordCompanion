@@ -24,7 +24,8 @@
       "request": "launch",
       "args": [
         "--extensionDevelopmentPath=${workspaceFolder}",
-        "--extensionTestsPath=${workspaceFolder}/dist.test/tests/runTests"
+        "--extensionTestsPath=${workspaceFolder}/dist.test/tests/runTests",
+        "--disable-extensions"
       ],
       "outFiles": ["${workspaceFolder}/dist.test/**/*.js"],
       "preLaunchTask": "preTest",

@@ -51,7 +51,9 @@ import {
 } from "typescript";
 import { Position, Range, TextDocument } from "vscode";
 
-function parseFind(patch: ObjectLiteralExpression): IFindType | null {
+export * from "@ast/lineUtil";
+
+export function parseFind(patch: ObjectLiteralExpression): IFindType | null {
     const find = patch.properties.find(p => hasName(p, "find"));
     if (!find || !isPropertyAssignment(find)) return null;
     if (!(isStringLiteral(find.initializer) || isRegularExpressionLiteral(find.initializer))) return null;
@@ -62,15 +64,15 @@ function parseFind(patch: ObjectLiteralExpression): IFindType | null {
     };
 }
 
-function parseMatch(node: Expression) {
+export function parseMatch(node: Expression) {
     return tryParseStringLiteral(node) ?? tryParseRegularExpressionLiteral(node);
 }
 
-function parseReplace(document: TextDocument, node: Expression) {
+export function parseReplace(document: TextDocument, node: Expression) {
     return tryParseStringLiteral(node) ?? tryParseFunction(document, node);
 }
 
-function parseReplacement(document: TextDocument, patch: ObjectLiteralExpression): IReplacement[] | null {
+export function parseReplacement(document: TextDocument, patch: ObjectLiteralExpression): IReplacement[] | null {
     const replacementObj = patch.properties.find(p => hasName(p, "replacement"));
 
     if (!replacementObj || !isPropertyAssignment(replacementObj)) return null;
@@ -113,7 +115,6 @@ export function parsePatch(document: TextDocument, patch: ObjectLiteralExpressio
     };
 }
 
-export * from "@ast/lineUtil";
 
 export function debounce<F extends (...args: any) => any>(func: F, delay = 300): (...args: Parameters<F>) => undefined {
     let timeout: NodeJS.Timeout;

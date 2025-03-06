@@ -1,25 +1,62 @@
+//@ts-check
 import { commonOpts as webviewCommonOpts } from "../src/webview/scripts/common.mjs"
 import { join } from "path";
-import { } from "glob";
-import { glob } from "fs/promises";
-//@ts-check
-const sourceFiles = await Array.fromAsync(glob("src/**/*.ts", {
-    exclude: ["src/webview"]
-}));
+import { glob } from "glob";
+import { readFile } from "fs/promises";
+const sourceFiles = await glob("src/**/*.{ts,cts,mts}", {
+    ignore: ["src/webview/**"]
+});
+/**
+ * @type {import("esbuild").Plugin}
+ */
+const fileUrlPlugin = {
+    name: "file-uri-plugin",
+    setup: build => {
+        console.log("BUILDING");
+        const filter = /^test:\/\/.+$/;
+        build.onResolve({ filter }, args => {
+            return {
+                namespace: "file-uri",
+                path: args.path,
+                pluginData: {
+                    uri: args.path,
+                    path: args.path.slice("test://".length).split("?")[0]
+                }
+            }
+        });
+        build.onLoad({ filter, namespace: "file-uri" }, async ({ pluginData: { path, uri } }) => {
+            const { searchParams } = new URL(uri);
+            const base64 = searchParams.has("base64");
+            const noTrim = searchParams.get("trim") === "false";
+
+            const encoding = base64 ? "base64" : "utf-8";
+
+            let content;
+            content = await readFile(join("assets", "test", path), encoding);
+            if (!noTrim) content = content.trimEnd();
+            return {
+                contents: `export default ${JSON.stringify(content)}`
+            };
+        });
+    }
+};
 /**
  * @type {import("esbuild").BuildOptions}
  */
-export const testOpts = {
+const testOpts = {
     entryPoints: sourceFiles,
     outdir: "dist.test",
     minify: false,
     treeShaking: false,
-    bundle: false,
+    bundle: true,
+    external: ["*"],
     platform: "node",
     sourcemap: "inline",
     logLevel: "info",
-    format: "cjs"
+    format: "cjs",
+    plugins: [fileUrlPlugin],
 }
+export const testOptions = [testOpts];
 /**
  * @type {import("esbuild").BuildOptions}
  */
@@ -37,6 +74,8 @@ export const commonOpts = {
 const webviewopts = {
     ...webviewCommonOpts
 };
+if (!webviewopts.define || !Array.isArray(webviewopts.entryPoints))
+    throw new Error("how");
 webviewopts.entryPoints = webviewopts.entryPoints.map(x => join("src/webview", x))
 webviewopts.outdir = "./dist/webview"
 webviewopts.define.IS_DEV = "false"

@@ -17,6 +17,24 @@
         "kind": "build",
         "isDefault": true
       }
+    },
+    {
+        "type": "shell",
+        "command": "npm",
+        "args": [
+            "run",
+            "pretest"
+        ],
+        "label": "preTest",
+        "isBackground": true,
+        "presentation": {
+            "echo": true,
+            "reveal": "silent",
+            "focus": false,
+            "panel": "shared",
+            "showReuseMessage": false,
+            "clear": true
+        },
 
     }
   ]

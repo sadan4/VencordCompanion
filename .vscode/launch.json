@@ -24,10 +24,15 @@
       "request": "launch",
       "args": [
         "--extensionDevelopmentPath=${workspaceFolder}",
-        "--extensionTestsPath=${workspaceFolder}/dist/test/suite/index"
+        "--extensionTestsPath=${workspaceFolder}/dist.test/tests/runTests"
       ],
-      "outFiles": ["${workspaceFolder}/dist/test/**/*.js"],
-      "preLaunchTask": "${defaultBuildTask}"
+      "outFiles": ["${workspaceFolder}/dist.test/**/*.js"],
+      "preLaunchTask": "preTest",
+      "pauseForSourceMap": true,
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/**",
+        "!**/node_modules/**"
+      ]
     }
   ]
 }

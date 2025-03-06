@@ -4,7 +4,7 @@ import { resolve } from "path";
 
 (async function () {
     try {
-        const extensionDevelopmentPath = resolve(__dirname, "..");
+        const extensionDevelopmentPath = resolve(__dirname, "../..");
 
         const extensionTestsPath = resolve(__dirname, "runTests");
 

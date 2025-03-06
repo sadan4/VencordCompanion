@@ -38,7 +38,7 @@
         "typecheck": "tsc --noEmit",
         "postinstall": "(cd src/webview && pnpm i)",
         "pretest": "node scripts/test.mjs",
-        "test": "node dist.test/startTests"
+        "test": "node dist.test/tests/startTests"
     },
     "dependencies": {
         "@intrnl/xxhash64": "^0.1.2",
@@ -51,6 +51,8 @@
     },
     "devDependencies": {
         "@stylistic/eslint-plugin": "^3.0.1",
+        "@types/chai": "^4.3.16",
+        "@types/mocha": "^10.0.10",
         "@types/node": "~22.13.1",
         "@types/vscode": "^1.80.0",
         "@types/ws": "^8.5.14",
@@ -59,11 +61,13 @@
         "@vscode/test-cli": "^0.0.10",
         "@vscode/test-electron": "^2.4.1",
         "@vscode/vsce": "^3.2.2",
+        "chai": "^4.5.0",
         "esbuild": "^0.25.0",
         "eslint": "^9.19.0",
         "eslint-plugin-simple-import-sort": "^12.1.1",
         "eslint-plugin-unused-imports": "^4.1.4",
         "glob": "^11.0.1",
+        "mocha": "^11.1.0",
         "resolve-tspaths": "^0.8.23",
         "typescript-eslint": "^8.23.0"
     },

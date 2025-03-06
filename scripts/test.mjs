@@ -1,8 +1,8 @@
 import { build } from "esbuild";
-import { testOpts } from "./common.mjs";
+import { testOptions } from "./common.mjs";
 import { resolveTsPaths } from "resolve-tspaths";
 import { rm } from "fs/promises";
 
-await rm(testOpts.outdir, { recursive: true, force: true });
-await build(testOpts);
+await rm(testOptions[0].outdir, { recursive: true, force: true });
+await Promise.all(testOptions.map(x => build(x)))
 await resolveTsPaths();

@@ -2,15 +2,16 @@ import { resolve } from "path";
 
 import { glob } from "glob";
 import Mocha from "mocha";
-export function run() {
-    const mocha = new Mocha({
-        ui: "bdd",
-        color: true
-    });
 
-    const testsRoot = __dirname;
+export function run(): Promise<void> {
+    return new Promise((res, rej) => {
+        const mocha = new Mocha({
+            ui: "bdd",
+            color: true
+        });
 
-    return new Promise<void>((res, rej) => {
+        const testsRoot = resolve(__dirname, "..");
+
         glob("**/*.test.js", {
             cwd: testsRoot
         }).then(matches => {
@@ -29,6 +30,6 @@ export function run() {
                 console.error(e);
                 rej(e);
             }
-        }, err => rej(err));
+        });
     });
 }

@@ -8,5 +8,16 @@
   },
   // Turn off tsc task auto detection since we have the necessary tasks as npm scripts
   "typescript.tsc.autoDetect": "off",
-  "typescript.tsdk": "node_modules/typescript/lib"
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "extension-test-runner.extractSettings": {
+    "suite": [
+        "describe",
+        "suite"
+    ],
+    "test": [
+        "it",
+        "test"
+    ],
+    "extractWith": "evaluation"
+  },
 }

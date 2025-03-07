@@ -51,7 +51,7 @@ const testOpts = {
     bundle: true,
     external: ["*"],
     platform: "node",
-    sourcemap: "inline",
+    sourcemap: "linked",
     logLevel: "info",
     format: "cjs",
     plugins: [fileUrlPlugin],

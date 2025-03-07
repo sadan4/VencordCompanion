@@ -1,11 +1,12 @@
 import { AstParser } from "@ast/AstParser";
 
 import { expect } from "chai";
-import file from "test://ast/file.js";
 import { SyntaxKind } from "typescript";
 import { Position } from "vscode";
 
 describe("AstParser", function () {
+    const file: string = require("test://ast/AstParser/file.js");
+    expect(file).to.be.a("string");
     it("constructs", function () {
         new AstParser(file);
     });

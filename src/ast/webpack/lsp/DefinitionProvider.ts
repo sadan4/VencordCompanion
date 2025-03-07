@@ -12,9 +12,7 @@ export class DefinitionProvider implements IDefinitionProvider {
         position: Position
     ): Definitions {
         try {
-            // not sure if substring is a good idea here
-            // just dont want to search really long webpack modules
-            if (!isWebpackModule(document))
+            if (!isWebpackModule(document.getText()))
                 return;
             return await new WebpackAstParser(document.getText()).generateDefinitions(
                 position

@@ -9,7 +9,7 @@ import { CancellationToken, Position, ReferenceContext, ReferenceProvider as IRe
 
 export class ReferenceProvider implements IReferenceProvider {
     async provideReferences(document: TextDocument, position: Position, _context: ReferenceContext, _token: CancellationToken): References {
-        if(!isWebpackModule(document)) return;
+        if(!isWebpackModule(document.getText())) return;
         if (!await ModuleCache.hasCache()) {
             window.showErrorMessage("No Module Cache found, please download modules first");
             return;

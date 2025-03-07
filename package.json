@@ -30,14 +30,16 @@
     "main": "./dist/extension.js",
     "scripts": {
         "build": "node ./scripts/build.mjs",
+        "build:test": "node scripts/test.mjs",
         "watch": "node ./scripts/watch.mjs",
+        "watch:test": "npx nodemon",
         "lint": "eslint && pnpm typecheck",
         "package": "vsce package --no-dependencies",
         "vscode:prepublish": "pnpm build && pnpm lint",
         "publish": "vsce publish --no-dependencies",
         "typecheck": "tsc --noEmit",
         "postinstall": "(cd src/webview && pnpm i)",
-        "pretest": "node scripts/test.mjs",
+        "pretest": "npm run build:test",
         "test": "vscode-test"
     },
     "dependencies": {
@@ -68,6 +70,7 @@
         "eslint-plugin-unused-imports": "^4.1.4",
         "glob": "^11.0.1",
         "mocha": "^11.1.0",
+        "nodemon": "^3.1.9",
         "resolve-tspaths": "^0.8.23",
         "typescript-eslint": "^8.23.0"
     },

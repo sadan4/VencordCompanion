@@ -137,12 +137,13 @@ export function debounceAsync<F extends (...args: any) => Promise<any>>(func: F,
     };
 }
 
-export function isWebpackModule(text: string | TextDocument | { document: TextDocument; }) {
-    if (typeof text === "string") void 0;
-    else if ("document" in text) text = text.document.getText();
-    else text = text.getText();
-
-    return text.startsWith("// Webpack Module ") || text.substring(0, 100).includes("//OPEN FULL MODULE:");
+/**
+ * @param text the module text
+ * @returns if the module text is a webpack module or an extracted find
+ */
+export function isWebpackModule(text: string) {
+    return text.startsWith("// Webpack Module ")
+        || text.substring(0, 100).includes("//OPEN FULL MODULE:");
 }
 
 

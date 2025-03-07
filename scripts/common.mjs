@@ -35,7 +35,7 @@ const fileUrlPlugin = {
             content = await readFile(join("assets", "test", path), encoding);
             if (!noTrim) content = content.trimEnd();
             return {
-                contents: `export default ${JSON.stringify(content)}`
+                contents: `module.exports = ${JSON.stringify(content)}`
             };
         });
     }

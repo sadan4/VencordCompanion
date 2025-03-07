@@ -20,4 +20,8 @@
     ],
     "extractWith": "evaluation"
   },
+  "extension-test-runner.debugOptions": {
+      "outFiles": ["${workspaceFolder}/dist.test/**/*.js"],
+      "pauseForSourceMap": true
+  }
 }

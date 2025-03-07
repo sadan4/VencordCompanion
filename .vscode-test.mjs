@@ -15,5 +15,8 @@ export default defineConfig({
     mocha: {
         ui: "bdd",
         color: true
-    }
+    },
+    launchArgs: [
+        "--disable-extensions"
+    ]
 })

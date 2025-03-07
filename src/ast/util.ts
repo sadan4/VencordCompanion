@@ -471,7 +471,7 @@ export function CacheGetter(invalidate?: (() => void)[]) {
     return function <T>(target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>): TypedPropertyDescriptor<T> | void {
         const sym = Symbol(`cache-${propertyKey.toString()}`);
         target[sym] = SYM_UNCACHED;
-        const orig = descriptor.get;
+        const orig = descriptor?.get;
         if (typeof orig !== "function") {
             throw new Error("Not a getter");
         }

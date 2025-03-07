@@ -5,7 +5,7 @@ after(() => {
     window.showInformationMessage("All tests done!");
 });
 
-context("Sanity check, always passes", function () {
+describe("Sanity check, always passes", function () {
     it("should pass", (function () {
         strictEqual(1, 1);
         strictEqual(-1, [2, 3].indexOf(5));

@@ -2,6 +2,7 @@ import { Cache, CacheGetter, debounce, isWebpackModule, zeroRange } from "@ast/u
 
 import { expect } from "chai";
 import randomData from "test://random";
+import { Range } from "vscode";
 
 describe("debounce()", function () {
     it("resets the timeout correctly", async function () {
@@ -46,8 +47,9 @@ describe("zeroRange", function () {
     it("is empty", function () {
         expect(zeroRange.isEmpty).to.be.true;
     });
-    it.skip("is equal to a new zero range", function () {
-    })
+    it("is equal to a new zero range", function () {
+        expect(zeroRange.isEqual(new Range(0, 0, 0, 0))).to.be.true;
+    });
 });
 
 describe("@CacheGetter()", function () {

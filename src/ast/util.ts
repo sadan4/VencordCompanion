@@ -1,4 +1,3 @@
-
 import { AnyFunction, AssertedType, CBAssertion, FunctionNode, Import, RegexNode, StringNode, WithParent } from "@type/ast";
 import { IFindType, IReplacement, PatchData } from "@type/server";
 
@@ -222,7 +221,7 @@ export const findParrent: CBAssertion = (node, func) => {
 // FIXME: try simplifying this
 /**
  * @param node the node to start from
- * @param func a function to check if the parrent matches
+ * @param func a function to check if the parent matches
  */
 export const lastParrent: CBAssertion = (node, func) => {
     if (!node.parent) return undefined;

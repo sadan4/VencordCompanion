@@ -6,7 +6,7 @@
     "outDir": "dist.test",
     "lib": ["ES2020"],
     "sourceMap": true,
-    "rootDir": "src",
+    "rootDirs": ["src"],
     "strict": true, /* enable all strict type-checking options */
     "noImplicitOverride": true,
     "noImplicitAny": false,

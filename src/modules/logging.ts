@@ -7,20 +7,21 @@ const consoleMethods = {
     log: "log",
     append: "log",
     appendLine: "log",
-    trace: "trace",
     debug: "debug",
     info: "info",
     warn: "warn",
     error: "error"
 };
 export const outputChannel: LogOutputChannel = new Proxy(internalOutputChannel, {
-    get(target, p) {
+    get(target, p, r) {
         if (p in consoleMethods) {
             return function () {
                 console[consoleMethods[p]](...arguments);
-                // @ts-expect-error
-                return target[p].apply(this, arguments);
+                return target[p].apply(r, arguments);
             };
         }
+        return function () {
+            return target[p].apply(r, arguments);
+        };
     }
 });

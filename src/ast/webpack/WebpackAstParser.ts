@@ -301,17 +301,8 @@ export class WebpackAstParser extends AstParser {
         }).filter(x => x !== false) as any);
     }
     /**
-     * takes an object literal and returns a map of its properties
-     * the keys are the string keys of the object literal,
-     * the ranges are the range of each key and then the ranges of their values
+     * takes an expression, and maps it to ranges which it is in
      */
-    public makeObjectLiteralExportMap(obj: ObjectLiteralExpression): ExportMap {
-        return Object.fromEntries(obj.properties.map((x): false | [string, ExportMap[string]] => {
-            // wreq.e is used for css class name exports
-            if (!isPropertyAssignment(x) || (!isStringLiteral(x.initializer) && !isIdentifier(x.initializer))) return false;
-            return [x.name.getText(), [this.makeRangeFromAstNode(x.name), this.makeRangeFromAstNode(x.initializer)]];
-        }).filter(x => x !== false) as any);
-    }
     public makeExportMapRecursive(node: PropertyAssignment): ExportMap[keyof ExportMap];
     public makeExportMapRecursive(node: LiteralToken): ExportMap[keyof ExportMap];
     public makeExportMapRecursive(node: ObjectLiteralExpression): ExportMap;

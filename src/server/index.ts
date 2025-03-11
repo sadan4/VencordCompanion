@@ -1,6 +1,6 @@
 import { reloadDiagnostics } from "@ast/vencord/diagnostics";
-import { outputChannel } from "@extension";
 import { format } from "@modules/format";
+import { outputChannel } from "@modules/logging";
 import { Base, DiffModule, Discriminate, ExtractModuleR, FullIncomingMessage, IncomingMessage, OutgoingMessage } from "@type/server";
 
 import { handleReporterData } from "../reporter";

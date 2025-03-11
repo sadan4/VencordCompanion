@@ -1,6 +1,6 @@
 import { debounceAsync, zeroRange } from "@ast/util";
 import { VencordAstParser } from "@ast/vencord";
-import { outputChannel } from "@extension";
+import { outputChannel } from "@modules/logging";
 import { sendAndGetData, sockets } from "@server/index";
 
 import { Diagnostic, DiagnosticSeverity, languages, Range, TextDocument, TextDocumentChangeEvent, Uri } from "vscode";

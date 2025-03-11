@@ -33,6 +33,7 @@
   },
   // ingore our webview
   "exclude": [
-    "src/webview"
+    "src/webview",
+    "assets/**"
   ],
 }

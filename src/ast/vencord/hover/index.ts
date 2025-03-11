@@ -1,7 +1,7 @@
 import { AstParser } from "@ast/AstParser";
 import { isStringLiteralLikeOrTemplateLiteralFragmentOrRegexLiteral } from "@ast/util";
-import { outputChannel } from "@extension";
 import { runtimeHashMessageKey } from "@modules/intlHash";
+import { outputChannel } from "@modules/logging";
 import { intlRegex } from "@modules/patches";
 import { sendAndGetData } from "@server/index";
 import { PromiseProivderResult } from "@type/index";

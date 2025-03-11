@@ -1,6 +1,6 @@
 import { makeRange } from "@ast/util";
 import { VencordAstParser } from "@ast/vencord";
-import { outputChannel } from "@extension";
+import { outputChannel } from "@modules/logging";
 import { formatModule, sendAndGetData } from "@server/index";
 import { SourcePatch } from "@type/ast";
 import { PromiseProivderResult } from "@type/index";

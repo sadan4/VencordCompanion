@@ -1,6 +1,6 @@
 import { isWebpackModule } from "@ast/util";
 import { WebpackAstParser } from "@ast/webpack";
-import { outputChannel } from "@extension";
+import { outputChannel } from "@modules/logging";
 import { Definitions } from "@type/ast";
 
 import { DefinitionProvider as IDefinitionProvider, Position, TextDocument } from "vscode";

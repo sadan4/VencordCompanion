@@ -1,6 +1,6 @@
 import { WebpackAstParser } from "@ast/webpack";
-import { outputChannel } from "@extension";
 import { format } from "@modules/format";
+import { outputChannel } from "@modules/logging";
 import { BufferedProgressBar, exists, getCurrentFolder, isDirectory, ProgressBar, SecTo } from "@modules/util";
 import { formatModule, sendAndGetData } from "@server";
 

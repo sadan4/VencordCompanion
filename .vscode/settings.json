@@ -25,6 +25,13 @@
       "pauseForSourceMap": true
   },
   "cSpell.words": [
-    "Vencord"
+    "flatmaps",
+    "intrnl",
+    "Literalish",
+    "moduleid",
+    "outdir",
+    "typeguard",
+    "Vencord",
+    "wreq"
   ]
 }

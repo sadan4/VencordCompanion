@@ -1,6 +1,6 @@
 //@ts-check
 import { commonOpts as webviewCommonOpts } from "../src/webview/scripts/common.mjs"
-import { join } from "path";
+import { join, relative } from "path";
 import { glob } from "glob";
 import { readFile } from "fs/promises";
 const sourceFiles = await glob("src/**/*.{ts,cts,mts}", {
@@ -26,18 +26,47 @@ const fileUrlPlugin = {
         });
         build.onLoad({ filter, namespace: "file-uri" }, async ({ pluginData: { path, uri } }) => {
             const { searchParams } = new URL(uri);
-            const base64 = searchParams.has("base64");
-            const noTrim = searchParams.get("trim") === "false";
-
-            const encoding = base64 ? "base64" : "utf-8";
-
-            let content;
-            content = await readFile(join("assets", "test", path), encoding);
-            if (!noTrim) content = content.trimEnd();
             return {
-                contents: `module.exports = ${JSON.stringify(content)}`
-            };
+                contents: await readFile(join("assets", "test", path), "utf8"),
+                loader: searchParams.has("base64") ? "base64" : "text"
+            }
         });
+    }
+};
+/**
+ * @type {import("esbuild").Plugin}
+ */
+const bundleESMPlugin = {
+    name: "bundle-esm-plugin",
+    setup(build) {
+        const bundle = ["@intrnl/xxhash64", "nanoid"]
+        const bundlePaths = []
+        const nodeDir = join(process.cwd(), "node_modules");
+        build.onResolve({ filter: /./, namespace: "file" }, async ({ kind, path, importer, resolveDir, namespace, with: With, pluginData }) => {
+            if (pluginData?.IGNORE) return;
+            if (kind === "entry-point") return;
+            if (bundlePaths.some(x => relative(nodeDir, importer).startsWith(x))) {
+                return;
+            }
+            if (bundle.includes(path)) {
+                const { path: resPath } = await build.resolve(path, {
+                    importer,
+                    pluginName: "bundle-esm-plugin",
+                    kind,
+                    namespace,
+                    resolveDir,
+                    with: With,
+                    pluginData: {
+                        IGNORE: true
+                    }
+                });
+                bundlePaths.push(join(...relative(nodeDir, resPath).split("/", 2)))
+                return;
+            }
+            return {
+                external: true
+            }
+        })
     }
 };
 /**
@@ -49,12 +78,12 @@ const testOpts = {
     minify: false,
     treeShaking: false,
     bundle: true,
-    external: ["*"],
+    external: ["vscode", "typescript", "@sadan4/devtools-pretty-printer", "mocha", "chai", "fast-diff", "tsutils", "ws"],
     platform: "node",
     sourcemap: "linked",
     logLevel: "info",
     format: "cjs",
-    plugins: [fileUrlPlugin],
+    plugins: [fileUrlPlugin, bundleESMPlugin],
 }
 export const testOptions = [testOpts];
 /**

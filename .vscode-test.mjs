@@ -1,5 +1,10 @@
 import { defineConfig } from "@vscode/test-cli";
+import { dirname, resolve } from "path";
+import { fileURLToPath } from "url";
 // build the tests before running them
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 export default defineConfig({
     files: ["./dist.test/**/*.test.js"],
@@ -12,6 +17,11 @@ export default defineConfig({
             version: "1.89.1"
         }
     ),
+    extensionDevelopmentPath: __dirname,
+    coverage: {
+        // FIXME: this is broken 
+        // exclude: [`dist.test`]
+    },
     mocha: {
         ui: "bdd",
         color: true

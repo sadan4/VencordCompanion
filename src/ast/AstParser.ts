@@ -1,18 +1,35 @@
 import { getNumberAndColumnFromPos } from "@ast/lineUtil";
+import { outputChannel } from "@modules/logging";
 
 import { Cache, CacheGetter, CharCode, isEOL } from "./util";
 
 import { collectVariableUsage, VariableInfo } from "tsutils/util/usage";
 import { getTokenAtPosition } from "tsutils/util/util";
 import {
+    ArrowFunction,
+    CallExpression,
     createSourceFile,
+    Expression,
+    FunctionDeclaration,
+    FunctionExpression,
     Identifier,
+    isArrowFunction,
+    isBigIntLiteral,
     isFunctionDeclaration,
+    isFunctionExpression,
+    isFunctionLike,
+    isJsxText,
+    isNumericLiteral,
+    isRegularExpressionLiteral,
+    isStringLiteralLike,
+    isVariableDeclaration,
+    LiteralToken,
     Node,
     ReadonlyTextRange,
     ScriptKind,
     ScriptTarget,
     SourceFile,
+    SyntaxKind,
 } from "typescript";
 import { Position, Range } from "vscode";
 
@@ -32,9 +49,64 @@ export class AstParser {
         return collectVariableUsage(this.sourceFile);
     }
 
+    public getVarInfoFromUse(ident: Identifier): VariableInfo | undefined {
+        const toRet = [...this.vars.values()].find(x => x.uses.some(use => use.location === ident));
+        if (!toRet) {
+            outputChannel.debug("getVarInfoFromUse: no variable info found for identifier");
+        }
+        return toRet;
+    }
+
     public constructor(text: string) {
         this.text = text;
     }
+
+    /**
+     * given something like this
+     * ```js
+     * const bar = "foo";
+     * const baz = bar;
+     * const qux = baz;
+     * ```
+     * if given `qux` it will return `[bar, baz]`;
+     *
+     * fails on something where a variable is reassigned
+     */
+    public unwrapVariableDeclaration(ident: Identifier): Identifier[] | undefined {
+        const arr: Identifier[] = [];
+        let last = ident;
+        while (true) {
+            const [varDec, ...rest] = this.getVarInfoFromUse(last)?.declarations ?? [];
+            if (!varDec) break;
+            if (rest.length) {
+                arr.length = 0;
+                break;
+            }
+            arr.push(last = varDec);
+        }
+        if (arr.length !== 0)
+            return arr;
+        outputChannel.debug("Failed finding variable declaration");
+    }
+    public isCallExpression(node: Node | undefined): node is CallExpression {
+        return node?.kind === SyntaxKind.CallExpression;
+    }
+    /**
+     * given the `x` of
+     * ```js
+     * const x = {
+     * foo: bar
+     * }
+     * ```
+     * NOTE: this must be the exact x, not a use of it
+     * @returns the expression {foo: bar}
+     */
+    public getVariableInitializer(ident: Identifier): Expression | undefined {
+        const dec = ident.parent;
+        if (!isVariableDeclaration(dec)) return;
+        return dec.initializer;
+    }
+
     /**
      * Create the source file for this parser
      *
@@ -61,9 +133,15 @@ export class AstParser {
     }
     /**
      * convert two offsets to a range
+     * DO NOT USE WITH AN AST NODE, IT WILL LEAD TO INCORRECT LOCATIONS
+     * @see makeRangeFromAstNode
      */
     public makeRange({ pos, end }: ReadonlyTextRange): Range {
         return new Range(this.makeLocation(pos), this.makeLocation(end));
+    }
+
+    public makeRangeFromAstNode(node: Node) {
+        return new Range(this.makeLocation(node.getStart(this.sourceFile)), this.makeLocation(node.end));
     }
     /**
      * convert an offset to a position
@@ -76,15 +154,35 @@ export class AstParser {
         );
         return new Position(lineNumber - 1, column - 1);
     }
-
-    public makeRangeFromFuctionDef(ret: Identifier): Range | undefined {
-        const uses = this.vars.get(ret)?.uses;
-        if (!uses) return undefined;
-        const def = uses.find(({ location }) =>
-            isFunctionDeclaration(location.parent),
-        );
-        if (!def) return undefined;
-        return this.makeRange(def.location);
+    public makeRangeFromAnonFunction(func: FunctionExpression | ArrowFunction): Range {
+        const { body: { pos } } = func;
+        return this.makeRange({ pos: func.getStart(), end: pos });
+    }
+    public makeRangeFromFunctionDef(ident: Identifier): Range | undefined {
+        const { declarations } = this.getVarInfoFromUse(ident) ?? {};
+        if (!declarations) {
+            outputChannel.debug("makeRangeFromFunctionDef: no declarations found for identifier");
+            return undefined;
+        }
+        if (declarations.length !== 1) {
+            outputChannel.debug("makeRangeFromFunctionDef: zero or multiple declarations found for identifier");
+            return undefined;
+        }
+        if (declarations[0].parent && !isFunctionLike(declarations[0].parent)) {
+            outputChannel.debug("makeRangeFromFunctionDef: dec. parent is not a function");
+            return undefined;
+        }
+        return this.makeRangeFromAstNode(declarations[0]);
+    }
+    public isLiteralish(node: Node): node is LiteralToken {
+        return isStringLiteralLike(node)
+            || isNumericLiteral(node)
+            || isBigIntLiteral(node)
+            || isJsxText(node)
+            || isRegularExpressionLiteral(node);
+    }
+    public isFunctionLike(node: Node): node is FunctionDeclaration | ArrowFunction | FunctionExpression {
+        return isArrowFunction(node) || isFunctionDeclaration(node) || isFunctionExpression(node);
     }
     /**
      * Converts the position to a zero-based offset.

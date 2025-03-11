@@ -10,10 +10,11 @@ import {
     isSyntaxList,
     zeroRange
 } from "@ast/util";
+import { outputChannel } from "@extension";
 import { ModuleCache, ModuleDepManager } from "@modules/cache";
 import { format } from "@modules/format";
 import { formatModule, mkStringUri, sendAndGetData } from "@server/index";
-import { Definitions, ExportMap, ModuleDeps, References } from "@type/ast";
+import { AssertedType, Definitions, ExportMap, ModuleDeps, References } from "@type/ast";
 
 import { VariableInfo } from "tsutils/util/usage";
 import {
@@ -24,6 +25,7 @@ import {
     isBinaryExpression,
     isCallExpression,
     isExpressionStatement,
+    isFunctionDeclaration,
     isFunctionExpression,
     isIdentifier,
     isNumericLiteral,
@@ -32,8 +34,10 @@ import {
     isPropertyAssignment,
     isStringLiteral,
     isVariableDeclaration,
+    LiteralToken,
     Node,
     ObjectLiteralExpression,
+    PropertyAssignment,
     ScriptKind,
     ScriptTarget,
     SourceFile,
@@ -43,21 +47,34 @@ import { Location, Position, Range } from "vscode";
 // FIXME: rewrite to use module cache
 
 export class WebpackAstParser extends AstParser {
-    /** The webpack instanse */
+    /**
+     * This is set on {@link ExportMap} when the default export is commonjs and has no properties, eg, string literal, function
+     */
+    public static SYM_CJS_DEFAULT = Symbol("CommonJS Default Export");
+    /**
+     * The webpack instance passed to this module
+     *
+     * The `n` of
+     * ```
+     * function (e, t, n) {
+     // webpack module contents
+     * }
+     * ```
+     */
     @CacheGetter()
-    private get wreq(): Identifier | undefined {
+    public get wreq(): Identifier | undefined {
         return this.findWebpackArg();
     }
     /** where {@link WebpackAstParser.wreq this.wreq} is used*/
     @CacheGetter()
-    private get uses(): VariableInfo | undefined {
+    public get uses(): VariableInfo | undefined {
         return this.wreq && this.vars.get(this.wreq);
     }
     /**
      * The module id of the current module
      */
     @CacheGetter()
-    private get moduleId(): string | null {
+    public get moduleId(): string | null {
         if (this.text.startsWith("// Webpack Module ")) {
             const [, id] = this.text.match(/^\/\/ Webpack Module (\d+) /) ?? [];
             return id || null;
@@ -109,7 +126,7 @@ export class WebpackAstParser extends AstParser {
                 sync: guh.syncUses
             };
         }
-        // flatmaps because .map(...).filter(x => x !== false) isnt a valid typeguard
+        // flatmaps because .map(...).filter(x => x !== false) isn't a valid typeguard
         /**
          * things like wreq(moduleid)
          */
@@ -142,7 +159,7 @@ export class WebpackAstParser extends AstParser {
     public async generateDefinitions(
         position: Position
     ): Definitions {
-        if (!this.uses) throw new Error("Wreq isnt used anywhere");
+        if (!this.uses) throw new Error("Wreq isn't used anywhere");
 
         // map the assignment of required modules to their uses
         const modules = new Map(
@@ -207,7 +224,8 @@ export class WebpackAstParser extends AstParser {
         const where = this.getDeps();
         const locs: Location[] = [];
 
-        for (const [name] of Object.entries(moduleExports).filter(([, v]) => v.some(x => {
+        // TODO: support jumping from object literals
+        for (const [name] of Object.entries(moduleExports).filter(([, v]) => Array.isArray(v) && v.some(x => {
             if (!x) return;
             return x.contains(position);
         }))) {
@@ -246,7 +264,7 @@ export class WebpackAstParser extends AstParser {
 
                     if (location.parent.name.getText() !== exportName) continue;
 
-                    uses.push(this.makeRange(location.parent.name));
+                    uses.push(this.makeRangeFromAstNode(location.parent.name));
                 }
                 continue;
             }
@@ -257,7 +275,7 @@ export class WebpackAstParser extends AstParser {
 
                 if (direct.parent.name.text !== exportName) continue;
 
-                uses.push(this.makeRange(direct.parent.name));
+                uses.push(this.makeRangeFromAstNode(direct.parent.name));
             }
         }
         return uses;
@@ -277,11 +295,64 @@ export class WebpackAstParser extends AstParser {
             const [, exportAssignment] = getLeadingIdentifier(location);
             const binary = findParrent(location, isBinaryExpression);
             if (exportAssignment && binary && isIdentifier(binary?.right)) {
-                return [exportAssignment.text, [this.makeRange(exportAssignment), this.makeRange(binary.right), this.makeRangeFromFuctionDef(binary.right)]];
+                return [exportAssignment.text, [this.makeRangeFromAstNode(exportAssignment), this.makeRangeFromAstNode(binary.right), this.makeRangeFromFunctionDef(binary.right)]];
             }
-            return exportAssignment ? [exportAssignment.text, [this.makeRange(exportAssignment)]] : false;
+            return exportAssignment ? [exportAssignment.text, [this.makeRangeFromAstNode(exportAssignment)]] : false;
         }).filter(x => x !== false) as any);
     }
+    /**
+     * takes an object literal and returns a map of its properties
+     * the keys are the string keys of the object literal,
+     * the ranges are the range of each key and then the ranges of their values
+     */
+    public makeObjectLiteralExportMap(obj: ObjectLiteralExpression): ExportMap {
+        return Object.fromEntries(obj.properties.map((x): false | [string, ExportMap[string]] => {
+            // wreq.e is used for css class name exports
+            if (!isPropertyAssignment(x) || (!isStringLiteral(x.initializer) && !isIdentifier(x.initializer))) return false;
+            return [x.name.getText(), [this.makeRangeFromAstNode(x.name), this.makeRangeFromAstNode(x.initializer)]];
+        }).filter(x => x !== false) as any);
+    }
+    public makeExportMapRecursive(node: PropertyAssignment): ExportMap[keyof ExportMap];
+    public makeExportMapRecursive(node: LiteralToken): ExportMap[keyof ExportMap];
+    public makeExportMapRecursive(node: ObjectLiteralExpression): ExportMap;
+    public makeExportMapRecursive(node: AssertedType<AstParser["isFunctionLike"]>): ExportMap[keyof ExportMap];
+    public makeExportMapRecursive(node: Node): ExportMap[keyof ExportMap] | ExportMap;
+    public makeExportMapRecursive(node: Node): ExportMap | ExportMap[keyof ExportMap] {
+        if (isObjectLiteralExpression(node)) {
+            return Object.fromEntries(node.properties.map((x): false | [string, ExportMap[string]] => {
+                // wreq.e is used for css class name exports
+                if (!isPropertyAssignment(x) || (!isStringLiteral(x.initializer) && !isIdentifier(x.initializer))) return false;
+                return [x.name.getText(), this.makeExportMapRecursive(x)];
+            }).filter(x => x !== false) as any);
+        } else if (this.isLiteralish(node)) {
+            return [this.makeRangeFromAstNode(node)];
+        } else if (isPropertyAssignment(node)) {
+            return [this.makeRangeFromAstNode(node.name), ...[this.makeExportMapRecursive(node.initializer)].flat()] as ExportMap[keyof ExportMap];
+        } else if (this.isFunctionLike(node)) {
+            if (isFunctionDeclaration(node)) {
+                if (!node.name) throw new Error("Function declaration has no name, and is not anonymous function");
+                return [this.makeRangeFromAstNode(node.name)];
+            } else {
+                return [this.makeRangeFromAnonFunction(node)];
+            }
+        } else if (isCallExpression(node)) {
+            return [this.makeRangeFromAstNode(node)];
+        } else if (isIdentifier(node)) {
+            const trail = this.unwrapVariableDeclaration(node);
+            if (!trail || trail.length === 0) {
+                outputChannel.warn("Could not find variable declaration for identifier");
+                return [];
+            }
+            const last = this.getVariableInitializer(trail.at(-1)!);
+            if (!last) {
+                outputChannel.warn("Could not find initializer of identifier");
+                return [];
+            }
+            return this.makeExportMapRecursive(last);
+        }
+        return [this.makeRangeFromAstNode(node)];
+    }
+    // FIXME: handle when there is more than one module.exports assignment, eg e = () => {}; e.foo = () => {};
     @Cache()
     private getExportMapWreq_e(): ExportMap | undefined {
         const wreqE = this.findWreq_e();
@@ -303,14 +374,18 @@ export class WebpackAstParser extends AstParser {
             exportAssignment.location, isBinaryExpression
         )?.right;
 
-        if (!exportObject || !isObjectLiteralExpression(exportObject))
+        if (!exportObject) {
+            outputChannel.debug("Could not find export object");
             return undefined;
+        }
 
-        return Object.fromEntries(exportObject.properties.map((x): false | [string, ExportMap[string]] => {
-            // wreq.e is used for css class name exports
-            if (!isPropertyAssignment(x) || (!isStringLiteral(x.initializer) && !isIdentifier(x.initializer))) return false;
-            return [x.name.getText(), [this.makeRange(x.initializer)]];
-        }).filter(x => x !== false) as any);
+        const exports = this.makeExportMapRecursive(exportObject);
+        if (Array.isArray(exports)) {
+            return {
+                [WebpackAstParser.SYM_CJS_DEFAULT]: exports
+            };
+        }
+        return exports;
     }
     @Cache()
     private getExportMapWreq_d(): ExportMap | undefined {
@@ -321,7 +396,7 @@ export class WebpackAstParser extends AstParser {
             if (!isPropertyAssignment(x) || !(isArrowFunction(x.initializer) || isFunctionExpression(x.initializer))) return false as const;
             let ret: Node | undefined = findReturnIdentifier(x.initializer);
             ret ??= findReturnPropertyAccessExpression(x.initializer);
-            return ret != null ? [x.name.getText(), [this.makeRange(x.name), isIdentifier(ret) ? this.makeRangeFromFuctionDef(ret) : undefined]] : false as const;
+            return ret != null ? [x.name.getText(), [this.makeRangeFromAstNode(x.name), isIdentifier(ret) ? this.makeRangeFromFunctionDef(ret) : undefined]] : false as const;
         }).filter(x => x !== false) as any);
     }
 
@@ -371,11 +446,11 @@ export class WebpackAstParser extends AstParser {
 
                 if (!exportDec) return undefined;
 
-                return this.makeRange(exportDec);
+                return this.makeRangeFromAstNode(exportDec);
             }
             const reExport = findReturnPropertyAccessExpression(exportCallAssignment.initializer);
             if (reExport) {
-                return this.makeRange(reExport.name);
+                return this.makeRangeFromAstNode(reExport.name);
             }
         }
     }
@@ -398,7 +473,7 @@ export class WebpackAstParser extends AstParser {
             return exportAssignment?.text === exportName;
         });
 
-        return exports ? this.makeRange(exports.location) : undefined;
+        return exports ? this.makeRangeFromAstNode(exports.location) : undefined;
     }
     private findWreq_e(): Identifier | undefined {
         return this.findWebpackArg(0);
@@ -431,6 +506,6 @@ export class WebpackAstParser extends AstParser {
 
         if (!exportItem) return undefined;
 
-        return this.makeRange(exportItem.name ?? exportItem);
+        return this.makeRangeFromAstNode(exportItem.name ?? exportItem);
     }
 }

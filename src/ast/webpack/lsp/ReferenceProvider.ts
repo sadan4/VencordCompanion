@@ -1,7 +1,7 @@
 import { isWebpackModule } from "@ast/util";
 import { WebpackAstParser } from "@ast/webpack";
-import { outputChannel } from "@extension";
 import { ModuleCache, ModuleDepManager } from "@modules/cache";
+import { outputChannel } from "@modules/logging";
 import { References } from "@type/ast";
 
 import { CancellationToken, Position, ReferenceContext, ReferenceProvider as IReferenceProvider, TextDocument, window } from "vscode";

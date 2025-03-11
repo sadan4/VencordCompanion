@@ -82,7 +82,7 @@ export class VencordAstParser extends AstParser {
                 if (!res) return null;
                 return {
                     ...res,
-                    range: this.makeRange(x.getChildAt(1)),
+                    range: this.makeRangeFromAstNode(x.getChildAt(1)),
                     origIndex
                 };
             })
@@ -102,7 +102,7 @@ export class VencordAstParser extends AstParser {
             const call = x.parent;
             if (call.arguments.length === 0) return false;
             const args = call.arguments.map(x => tryParseStringLiteral(x) ?? tryParseRegularExpressionLiteral(x) ?? tryParseFunction(this.doc, x));
-            const range = this.makeRange(call);
+            const range = this.makeRangeFromAstNode(call);
             return {
                 range,
                 use: {

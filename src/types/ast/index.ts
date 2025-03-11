@@ -27,7 +27,10 @@ export type Import = {
 
 export interface ExportMap {
     // ranges of code that will count as references to this export
-    [exposedName: string]: (Range | undefined)[];
+    /**
+     * the name of the export => array of ranges where it is defined, with the last one being the most specific
+     */
+    [exposedName: string | symbol]: (Range | undefined)[] | ExportMap;
 }
 
 export interface ModuleDeps {

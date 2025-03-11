@@ -3,6 +3,7 @@ import { I18nHover } from "@ast/vencord/hover";
 import { PatchCodeLensProvider, PluginDefCodeLensProvider, WebpackCodeLensProvider } from "@ast/vencord/lenses";
 import { PartialModuleJumpCodeLensProvider } from "@ast/webpack/lenses";
 import { DefinitionProvider, ReferenceProvider } from "@ast/webpack/lsp";
+import { outputChannel } from "@modules/logging";
 import { PatchHelper } from "@modules/PatchHelper";
 import { handleDiffPayload, handleExtractPayload, moduleCache, sendAndGetData, startWebSocketServer, stopWebSocketServer } from "@server";
 import { treeDataProvider } from "@sidebar";
@@ -12,14 +13,11 @@ import { DisablePluginData, FindData, OutgoingMessage, PatchData } from "@type/s
 
 import { startReporter } from "./reporter";
 
-import { commands, ExtensionContext, languages, LogOutputChannel, QuickPickItem, TextDocument, Uri, window as vscWindow, window, workspace } from "vscode";
+import { commands, ExtensionContext, languages, QuickPickItem, TextDocument, Uri, window as vscWindow, window, workspace } from "vscode";
 
 export let extensionUri: Uri;
 export let extensionPath: string;
 
-export const outputChannel: LogOutputChannel = vscWindow.createOutputChannel("Vencord Companion", {
-    log: true
-});
 
 export function activate(context: ExtensionContext) {
     extensionUri = context.extensionUri;
@@ -59,8 +57,8 @@ export function activate(context: ExtensionContext) {
         }),
         commands.registerCommand("vencord-companion.openPatchHelper", async (doc: TextDocument, patch: SourcePatch) => {
             if (!doc) {
-                outputChannel.warn("Could not find soruce document");
-                window.showErrorMessage("Could not find soruce document");
+                outputChannel.warn("Could not find source document");
+                window.showErrorMessage("Could not find source document");
                 return;
             }
             const helper = await PatchHelper.create(doc, patch);
@@ -319,3 +317,5 @@ export function activate(context: ExtensionContext) {
 export function deactivate() {
     stopWebSocketServer();
 }
+export { outputChannel };
+

@@ -50,7 +50,7 @@ export class WebpackAstParser extends AstParser {
     /**
      * This is set on {@link ExportMap} when the default export is commonjs and has no properties, eg, string literal, function
      */
-    public static SYM_CJS_DEFAULT = Symbol("CommonJS Default Export");
+    static SYM_CJS_DEFAULT = Symbol("CommonJS Default Export");
     /**
      * The webpack instance passed to this module
      *
@@ -62,19 +62,19 @@ export class WebpackAstParser extends AstParser {
      * ```
      */
     @CacheGetter()
-    public get wreq(): Identifier | undefined {
+    get wreq(): Identifier | undefined {
         return this.findWebpackArg();
     }
     /** where {@link WebpackAstParser.wreq this.wreq} is used*/
     @CacheGetter()
-    public get uses(): VariableInfo | undefined {
+    get uses(): VariableInfo | undefined {
         return this.wreq && this.vars.get(this.wreq);
     }
     /**
      * The module id of the current module
      */
     @CacheGetter()
-    public get moduleId(): string | null {
+    get moduleId(): string | null {
         if (this.text.startsWith("// Webpack Module ")) {
             const [, id] = this.text.match(/^\/\/ Webpack Module (\d+) /) ?? [];
             return id || null;
@@ -95,7 +95,7 @@ export class WebpackAstParser extends AstParser {
      * @param start finds a webpack arg from the source tree
      * @returns the indenfiier of the param if found or undef
      */
-    private findWebpackArg(
+    findWebpackArg(
         paramIndex = 2,
         start: Node = this.sourceFile
     ): Identifier | undefined {
@@ -203,7 +203,17 @@ export class WebpackAstParser extends AstParser {
         };
     }
 
-    private getModuleId(dec: VariableInfo | undefined): number | undefined {
+    /**
+     * gets the module id from a require
+     * given
+     * ```js
+     * var mod = n(123456);
+     * ```
+     * @argument dec the variable info for that mod
+     * @see {@link getVariableInitializer} which can than be passed into {@link vars|vars.get}
+     * @returns `123456`
+     */
+    getModuleId(dec: VariableInfo | undefined): number | undefined {
         if (!dec) return undefined;
         if (dec.declarations.length !== 1) return undefined;
         const init = findParrent(
@@ -240,11 +250,17 @@ export class WebpackAstParser extends AstParser {
     }
 
     @Cache()
-    public getExportMap(): ExportMap {
+    getExportMap(): ExportMap {
         return Object.assign({}, this.getExportMapWreq_d() ?? {}, this.getExportMapWreq_t() ?? {}, this.getExportMapWreq_e() ?? {});
     }
 
-    private getUsesOfExport(moduleId: string, exportName: string): Range[] {
+    /**
+     * @param moduleId the module id that the export is from
+     * @param exportName the string of the export
+     * TODO: support nested exports eg: `wreq(123).ZP.storeMethod()`
+     * @returns the ranges where the export is used in this file
+     */
+    getUsesOfExport(moduleId: string, exportName: string): Range[] {
         if (!this.wreq) throw new Error("Wreq is not used in this file");
         const uses: Range[] = [];
         for (const { location } of this.vars.get(this.wreq)?.uses ?? []) {
@@ -282,7 +298,7 @@ export class WebpackAstParser extends AstParser {
     }
 
     @Cache()
-    private getExportMapWreq_t(): ExportMap | undefined {
+    getExportMapWreq_t(): ExportMap | undefined {
         const wreqT = this.findWreq_t();
 
         if (!wreqT) return undefined;
@@ -303,12 +319,12 @@ export class WebpackAstParser extends AstParser {
     /**
      * takes an expression, and maps it to ranges which it is in
      */
-    public makeExportMapRecursive(node: PropertyAssignment): ExportMap[keyof ExportMap];
-    public makeExportMapRecursive(node: LiteralToken): ExportMap[keyof ExportMap];
-    public makeExportMapRecursive(node: ObjectLiteralExpression): ExportMap;
-    public makeExportMapRecursive(node: AssertedType<AstParser["isFunctionLike"]>): ExportMap[keyof ExportMap];
-    public makeExportMapRecursive(node: Node): ExportMap[keyof ExportMap] | ExportMap;
-    public makeExportMapRecursive(node: Node): ExportMap | ExportMap[keyof ExportMap] {
+    makeExportMapRecursive(node: PropertyAssignment): ExportMap[keyof ExportMap];
+    makeExportMapRecursive(node: LiteralToken): ExportMap[keyof ExportMap];
+    makeExportMapRecursive(node: ObjectLiteralExpression): ExportMap;
+    makeExportMapRecursive(node: AssertedType<AstParser["isFunctionLike"]>): ExportMap[keyof ExportMap];
+    makeExportMapRecursive(node: Node): ExportMap[keyof ExportMap] | ExportMap;
+    makeExportMapRecursive(node: Node): ExportMap | ExportMap[keyof ExportMap] {
         if (isObjectLiteralExpression(node)) {
             return Object.fromEntries(node.properties.map((x): false | [string, ExportMap[string]] => {
                 // wreq.e is used for css class name exports
@@ -345,7 +361,7 @@ export class WebpackAstParser extends AstParser {
     }
     // FIXME: handle when there is more than one module.exports assignment, eg e = () => {}; e.foo = () => {};
     @Cache()
-    private getExportMapWreq_e(): ExportMap | undefined {
+    getExportMapWreq_e(): ExportMap | undefined {
         const wreqE = this.findWreq_e();
 
         if (!wreqE) return undefined;
@@ -379,7 +395,7 @@ export class WebpackAstParser extends AstParser {
         return exports;
     }
     @Cache()
-    private getExportMapWreq_d(): ExportMap | undefined {
+    getExportMapWreq_d(): ExportMap | undefined {
         const wreqD = this.findWreq_d();
         if (!wreqD) return;
         const [, exports] = wreqD.arguments;
@@ -391,7 +407,7 @@ export class WebpackAstParser extends AstParser {
         }).filter(x => x !== false) as any);
     }
 
-    public findExportLocation(exportName: string): Range {
+    findExportLocation(exportName: string): Range {
         return (
             this.tryFindExportwreq_d(exportName) ||
             this.tryFindExportWreq_t(exportName) ||
@@ -400,7 +416,7 @@ export class WebpackAstParser extends AstParser {
         );
     }
     @Cache()
-    private findWreq_d(): (CallExpression & { arguments: [Identifier, ObjectLiteralExpression, ...any]; }) | undefined {
+    findWreq_d(): (CallExpression & { arguments: [Identifier, ObjectLiteralExpression, ...any]; }) | undefined {
         if (this.uses) {
             const maybeWreqD = this.uses.uses.find(use => getLeadingIdentifier(use.location)[1]?.text === "d"
             )?.location.parent.parent;
@@ -411,7 +427,7 @@ export class WebpackAstParser extends AstParser {
             return maybeWreqD as any;
         }
     }
-    private tryFindExportwreq_d(exportName: string): Range | undefined {
+    tryFindExportwreq_d(exportName: string): Range | undefined {
         if (this.uses) {
             const wreq_dCall = this.findWreq_d();
             if (!wreq_dCall) return undefined;
@@ -447,10 +463,10 @@ export class WebpackAstParser extends AstParser {
     }
 
     @Cache()
-    private findWreq_t(): Identifier | undefined {
+    findWreq_t(): Identifier | undefined {
         return this.findWebpackArg(1);
     }
-    private tryFindExportWreq_t(exportName: string): Range | undefined {
+    tryFindExportWreq_t(exportName: string): Range | undefined {
         const wreq_t = this.findWreq_t();
 
         if (!wreq_t) return undefined;
@@ -466,10 +482,10 @@ export class WebpackAstParser extends AstParser {
 
         return exports ? this.makeRangeFromAstNode(exports.location) : undefined;
     }
-    private findWreq_e(): Identifier | undefined {
+    findWreq_e(): Identifier | undefined {
         return this.findWebpackArg(0);
     }
-    private tryFindExportsWreq_e(exportName: string): Range | undefined {
+    tryFindExportsWreq_e(exportName: string): Range | undefined {
         const wreq_e = this.findWreq_e();
 
         if (!wreq_e) return undefined;

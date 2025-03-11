@@ -6,8 +6,7 @@ import { intlRegex } from "@modules/patches";
 import { sendAndGetData } from "@server/index";
 import { PromiseProivderResult } from "@type/index";
 
-import mappings from "./mappings.json";
-
+// import mappings from "./mappings.json";
 import { isRegularExpressionLiteral } from "typescript";
 import { Hover, HoverProvider, MarkdownString, Position, TextDocument } from "vscode";
 const i18ncache = {};

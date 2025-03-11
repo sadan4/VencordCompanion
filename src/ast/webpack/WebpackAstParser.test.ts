@@ -136,4 +136,9 @@ describe("WebpackAstParser", function () {
             });
         });
     });
+    describe("gets the correct location for an export", function () {
+        it.skip("gets the correct location for wreq.d that has no indirection", function () {
+            // const parser = new WebpackAstParser(normalModule);
+        });
+    });
 });

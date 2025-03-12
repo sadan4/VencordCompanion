@@ -58,13 +58,14 @@ export async function sendToSockets(data: OutgoingMessage, dataCb?: (data: any) 
     (data as any).nonce = nonce;
 
     const promises = Array.from(sockets, sock => new Promise<void>((resolve, reject) => {
-        const onMessage = (data: RawData) => {
+        function onMessage(data: RawData) {
             const msg = data.toString("utf-8");
+            let parsed: FullIncomingMessage;
             try {
-                var parsed: FullIncomingMessage = JSON.parse(msg);
+                parsed = JSON.parse(msg);
             } catch {
                 outputChannel.error(`[WS] Invalid Response: ${msg}`);
-                return reject("Got Invalid Response: " + msg);
+                return reject(new Error(`Got Invalid Response: ${msg}`));
             }
 
             if (parsed.nonce !== nonce) return;
@@ -77,24 +78,25 @@ export async function sendToSockets(data: OutgoingMessage, dataCb?: (data: any) 
             } else {
                 reject(parsed.error);
             }
-        };
+        }
 
-        const onError = (err: Error) => {
+        function onError(err: Error) {
             cleanup();
             reject(err);
-        };
+        }
 
-        const cleanup = () => {
+        function cleanup() {
             sock.off("message", onMessage);
             sock.off("error", onError);
-        };
+        }
+
 
         sock.on("message", onMessage);
         sock.once("error", onError);
 
         setTimeout(() => {
             cleanup();
-            reject("Timed out");
+            reject(new Error("Timed out")); // Throw a new Error object instead of a string
         }, timeout);
 
         sock.send(JSON.stringify(data));
@@ -118,7 +120,7 @@ export function startWebSocketServer() {
                     case "ptb.discord.com":
                         break;
                     default:
-                        throw "a party";
+                        throw new Error("Invalid origin");
                 }
             } catch {
                 outputChannel.error(`[WS] Rejected request from invalid or disallowed origin: ${req.headers.origin}`);
@@ -129,14 +131,14 @@ export function startWebSocketServer() {
 
         outputChannel.info(`[WS] New Connection (Origin: ${req.headers.origin || "-"})`);
         sockets.add(sock);
-        onConnectCbs.forEach(async cb => cb(sock));
+        onConnectCbs.forEach(cb => cb(sock));
 
         sock.on("close", () => {
             outputChannel.warn("[WS] Connection Closed");
             sockets.delete(sock);
         });
 
-        sock.on("message", async msg => {
+        sock.on("message", msg => {
             try {
                 outputChannel.trace(`[WS] RECV: ${msg.toString()}`);
                 const rec: FullIncomingMessage = JSON.parse(msg.toString());
@@ -153,6 +155,7 @@ export function startWebSocketServer() {
                         moduleCache.push(...m.modules);
                         break;
                     }
+                    default:
                 }
             }
             catch (e) {
@@ -190,7 +193,7 @@ export function startWebSocketServer() {
 export async function handleDiffPayload({ data }: DiffModule) {
     const sourceUri = mkStringUri(await format(formatModule(data.source, data.moduleNumber)));
     const patchedUri = mkStringUri(await format(formatModule(data.patched, data.moduleNumber)));
-    commands.executeCommand("vscode.diff", sourceUri, patchedUri, "Patch Diff: " + data.moduleNumber);
+    commands.executeCommand("vscode.diff", sourceUri, patchedUri, `Patch Diff: ${data.moduleNumber}`);
 }
 export async function handleExtractPayload({ data }: ExtractModuleR): Promise<void> {
     if (!data.module) return;
@@ -213,7 +216,7 @@ export function stopWebSocketServer() {
  * @returns the Uri for the file
  */
 export function mkStringUri(patched: any, filename = "module", filetype = "js"): Uri {
-    const SUFFIX = "/" + filename + "." + filetype;
+    const SUFFIX = `/${filename}.${filetype}`;
     if (filename.indexOf("/") !== -1 || filetype.indexOf("/") !== -1) throw new Error(`Filename and filetype must not contain \`/\`. Got: ${SUFFIX.substring(1)}`);
     const PREFIX = "vencord-companion://b64string/";
     const a = Buffer.from(patched);

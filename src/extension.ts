@@ -49,7 +49,7 @@ export function activate(context: ExtensionContext) {
         languages.registerHoverProvider({ language: "typescriptreact" }, new I18nHover()),
         workspace.registerTextDocumentContentProvider("vencord-patchhelper", PatchHelper),
         workspace.registerTextDocumentContentProvider("vencord-companion", {
-            async provideTextDocumentContent(uri) {
+            provideTextDocumentContent(uri) {
                 // FIXME: full uri shows up in title bar
                 const newLocal = Buffer.from(uri.path.substring(1, uri.path.lastIndexOf("/")), "base64url");
                 return newLocal.toString();
@@ -79,9 +79,8 @@ export function activate(context: ExtensionContext) {
                 } catch (e) {
                     outputChannel.error(String(e));
                     window.showErrorMessage(String(e));
-                } finally {
-                    return;
                 }
+                return;
             }
             // FIXME: refactor to generic quicpick class with these features
             const quickPick = window.createQuickPick();
@@ -137,9 +136,8 @@ export function activate(context: ExtensionContext) {
                 } catch (e) {
                     outputChannel.error(String(e));
                     window.showErrorMessage(String(e));
-                } finally {
-                    return;
                 }
+                return;
             }
             const input = await window.showInputBox();
             if (!input) {
@@ -190,9 +188,8 @@ export function activate(context: ExtensionContext) {
                 } catch (e) {
                     outputChannel.error(String(e));
                     window.showErrorMessage(String(e));
-                } finally {
-                    return;
                 }
+                    return;
             }
             const quickPick = window.createQuickPick();
             quickPick.placeholder = "module ID";
@@ -248,9 +245,8 @@ export function activate(context: ExtensionContext) {
                 } catch (e) {
                     outputChannel.error(String(e));
                     window.showErrorMessage(String(e));
-                } finally {
-                    return;
                 }
+                    return;
             }
             const input = await window.showInputBox();
             if (!input)

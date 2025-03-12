@@ -251,7 +251,7 @@ export class WebpackAstParser extends AstParser {
 
     @Cache()
     getExportMap(): ExportMap {
-        return Object.assign({}, this.getExportMapWreq_d() ?? {}, this.getExportMapWreq_t() ?? {}, this.getExportMapWreq_e() ?? {});
+        return { ...this.getExportMapWreq_d() ?? {}, ...this.getExportMapWreq_t() ?? {}, ...this.getExportMapWreq_e() ?? {} };
     }
 
     /**
@@ -339,9 +339,9 @@ export class WebpackAstParser extends AstParser {
             if (isFunctionDeclaration(node)) {
                 if (!node.name) throw new Error("Function declaration has no name, and is not anonymous function");
                 return [this.makeRangeFromAstNode(node.name)];
-            } else {
-                return [this.makeRangeFromAnonFunction(node)];
             }
+            return [this.makeRangeFromAnonFunction(node)];
+
         } else if (isCallExpression(node)) {
             return [this.makeRangeFromAstNode(node)];
         } else if (isIdentifier(node)) {

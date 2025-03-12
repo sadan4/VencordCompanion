@@ -13,7 +13,7 @@ export class ProgressBar {
     static forSingleFunc<T>(opts: ProgressOptions, func: () => PromiseLike<T>): PromiseLike<T> {
         return window.withProgress(opts, (p, c) => {
             return new Promise((res, rej) => {
-                c.onCancellationRequested(() => rej("Cancelled by user"));
+                c.onCancellationRequested(() => rej(new Error("Cancelled by user")));
                 func().then(res, rej);
             });
         });

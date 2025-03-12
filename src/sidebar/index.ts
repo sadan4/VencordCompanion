@@ -35,7 +35,7 @@ export class treeDataProvider implements TreeDataProvider<TNode> {
     })();
     private id = nanoid();
 
-    private async makeModuleSettings(): Promise<TNode> {
+    private makeModuleSettings(): TNode {
         return new this.DynamicNode(
             async r => {
                 onConnect(r);
@@ -59,7 +59,7 @@ export class treeDataProvider implements TreeDataProvider<TNode> {
                 await ModuleCache.hasCache() && !ModuleDepManager.hasModDeps() ?
                     ModuleDepManager.hasModDeps()
                         ? new Text("Module Dependencies Loaded")
-                        : new Button("Load Module Dependencies", async () => {
+                        : new Button("Load Module Dependencies", () => {
                             ModuleDepManager.initModDeps({ fromDisk: true }).then(() =>
                                 reRender()
                             );

@@ -4,20 +4,24 @@ import stylistic, { RuleOptions, UnprefixedRuleOptions } from "@stylistic/eslint
 
 import simpleImportSort from "eslint-plugin-simple-import-sort";
 import unusedImports from "eslint-plugin-unused-imports";
-import tseslint from "typescript-eslint";
-import { ESLintRules } from "eslint/rules";
+import TSEslint from "typescript-eslint";
+// cursed
+import type ruleTypes from "./node_modules/@typescript-eslint/eslint-plugin/dist/rules";
+import { ESLintRules as IESLintRules } from "eslint/rules";
+import { Linter } from "eslint";
 type PrefixRules<Rules extends Record<string, any>, Prefix extends string> = {
     [K in keyof Rules as K extends string ? `${Prefix}${K}` : never]: Rules[K]
 }
-const lintRules: ESLintRules = {
-    "array-callback-return": "error",
+const ESLintRules: IESLintRules = {
+    "array-callback-return": ["error", {
+        allowImplicit: true
+    }],
     // done by tsserver
     "constructor-super": "off",
     "for-direction": "error",
     // done by tsserver
     "getter-return": "off",
     "no-async-promise-executor": "error",
-    "no-await-in-loop": "error",
     // done by tsserver
     "no-class-assign": "off",
     "no-compare-neg-zero": "error",
@@ -63,7 +67,6 @@ const lintRules: ESLintRules = {
     "no-new-native-nonconstructor": "off",
     // done by tsserver
     "no-obj-calls": "off",
-    "no-promise-executor-return": "error",
     "no-prototype-builtins": "error",
     "no-self-assign": "error",
     "no-self-compare": "error",
@@ -85,15 +88,8 @@ const lintRules: ESLintRules = {
     "no-unsafe-negation": "off",
     "no-unsafe-optional-chaining": "error",
     "no-unused-private-class-members": "error",
-    "no-unused-vars": ["warn", {
-        args: "after-used",
-        vars: "all",
-        varsIgnorePattern: "^_",
-        argsIgnorePattern: "^_",
-        caughtErrors: "all",
-        reportUsedIgnorePattern: true
-    }],
-    "no-use-before-define": "error",
+    // done by no-unused-imports
+    "no-unused-vars": "off",
     "no-useless-assignment": "error",
     "no-useless-backreference": "error",
     "require-atomic-updates": "off",
@@ -110,7 +106,6 @@ const lintRules: ESLintRules = {
     "default-case": "error",
     "default-case-last": "error",
     "dot-notation": "error",
-    "default-param-last": "error",
     "eqeqeq": ["error", "always", { null: "ignore" }],
     "grouped-accessor-pairs": ["error", "getBeforeSet"],
     "logical-assignment-operators": ["error", "always", {
@@ -135,7 +130,6 @@ const lintRules: ESLintRules = {
     "no-nonoctal-decimal-escape": "error",
     "no-octal": "error",
     "no-octal-escape": "error",
-    "no-param-reassign": "error",
     "no-redeclare": "error",
     "no-regex-spaces": "error",
     "no-return-assign": ["error", "except-parens"],
@@ -150,7 +144,6 @@ const lintRules: ESLintRules = {
     "no-useless-concat": "error",
     "no-useless-escape": "error",
     "no-useless-rename": "error",
-    "no-var": "error",
     "no-with": "error",
     "object-shorthand": "error",
     "operator-assignment": ["error", "always"],
@@ -168,32 +161,44 @@ const lintRules: ESLintRules = {
     "prefer-rest-params": "error",
     "prefer-spread": "error",
     "prefer-template": "error",
-    "require-await": "error",
     "require-yield": "error",
-    "symbol-description": "error",
     "yoda": ["error", "never"],
+};
+type ExtractRules<Rules = typeof ruleTypes> = {
+    [K in keyof Rules as K extends string ? `@typescript-eslint/${K}` : never]: Rules[K] extends { defaultOptions: infer Options extends any[]; } ? Linter.RuleEntry<Options> : never;
+};
+const TSLintRules: Partial<ExtractRules> = {
+    "@typescript-eslint/no-use-before-define": ["error", {
+        ignoreTypeReferences: true,
+        functions: false
+    }],
+    "@typescript-eslint/require-await": "error",
+    "@typescript-eslint/default-param-last": "error",
 };
 // const styleRules: RuleOptions = {
 //     "@stylistic/array-bracket-newline": []
 // }
-export default tseslint.config(
+export default TSEslint.config(
     { ignores: ["dist", "src/webview"] },
     {
         files: ["src/**/*.{tsx,ts,mts,mjs,js,jsx}", "eslint.config.mjs"],
         plugins: {
             "@stylistic": stylistic,
-            "@typescript-eslint": tseslint.plugin,
+            "@typescript-eslint": TSEslint.plugin,
             "simple-import-sort": simpleImportSort,
             "unused-imports": unusedImports
         },
         languageOptions: {
-            parser: tseslint.parser,
+            parser: TSEslint.parser,
             parserOptions: {
+                projectService: true,
                 tsconfigRootDir: import.meta.dirname
             }
         },
         rules: {
 
+            ...ESLintRules,
+            ...TSLintRules,
             // Style Rules
             "@stylistic/jsx-quotes": ["error", "prefer-double"],
             "@stylistic/quotes": ["error", "double", { "avoidEscape": true }],
@@ -210,44 +215,8 @@ export default tseslint.config(
             "@stylistic/object-curly-spacing": ["error", "always"],
             "@stylistic/spaced-comment": ["error", "always", { "markers": ["!"] }],
             "@stylistic/no-extra-semi": "error",
-
             // TS Rules
             "@stylistic/func-call-spacing": ["error", "never"],
-            ...lintRules,
-            // ESLint Rules
-            // "yoda": "error",
-            // "eqeqeq": ["error", "always", { "null": "ignore" }],
-            // "prefer-destructuring": ["error", {
-            //     "VariableDeclarator": { "array": false, "object": true },
-            //     "AssignmentExpression": { "array": false, "object": false }
-            // }],
-            // "operator-assignment": ["error", "always"],
-            // "no-useless-computed-key": "error",
-            // "no-unneeded-ternary": ["error", { "defaultAssignment": false }],
-            // "no-invalid-regexp": "error",
-            // "no-constant-condition": ["error", { "checkLoops": false }],
-            // "no-duplicate-imports": "error",
-            // "dot-notation": "error",
-            // "no-fallthrough": "error",
-            // "for-direction": "error",
-            // "no-async-promise-executor": "error",
-            // "no-cond-assign": "error",
-            // "no-dupe-else-if": "error",
-            // "no-duplicate-case": "error",
-            // "no-irregular-whitespace": "error",
-            // "no-loss-of-precision": "error",
-            // "no-misleading-character-class": "error",
-            // "no-prototype-builtins": "error",
-            // "no-regex-spaces": "error",
-            // "no-shadow-restricted-names": "error",
-            // "no-unexpected-multiline": "error",
-            // "no-unsafe-optional-chaining": "error",
-            // "no-useless-backreference": "error",
-            // "use-isnan": "error",
-            // "prefer-const": "error",
-            // "prefer-spread": "error",
-            // // unused imports
-            // "no-unused-vars": "off",
             "unused-imports/no-unused-imports": "error",
             "unused-imports/no-unused-vars": ["warn", {
                 vars: "all",

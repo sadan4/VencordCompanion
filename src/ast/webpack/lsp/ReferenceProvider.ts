@@ -8,6 +8,8 @@ import { CancellationToken, Position, ReferenceContext, ReferenceProvider as IRe
 
 
 export class ReferenceProvider implements IReferenceProvider {
+    // from API
+    // eslint-disable-next-line max-params
     async provideReferences(document: TextDocument, position: Position, _context: ReferenceContext, _token: CancellationToken): References {
         if(!isWebpackModule(document.getText())) return;
         if (!await ModuleCache.hasCache()) {

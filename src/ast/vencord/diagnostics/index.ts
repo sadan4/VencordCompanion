@@ -6,7 +6,13 @@ import { sendAndGetData, sockets } from "@server/index";
 import { Diagnostic, DiagnosticSeverity, languages, Range, TextDocument, TextDocumentChangeEvent, Uri } from "vscode";
 
 const diagnosticCollection = languages.createDiagnosticCollection("vencord-companion");
+const runtimeErrorWarning = new Diagnostic(zeroRange, "An error occured, check the log for more info", DiagnosticSeverity.Warning);
+const zeroClientsWarning = new Diagnostic(zeroRange, "No clients connected", DiagnosticSeverity.Warning);
 
+export const updateDiagnostics = debounceAsync(
+    updateDiagnosticsImmediately,
+    1500
+);
 export function onEditCallback(e: TextDocumentChangeEvent) {
     if (!e) return;
     return onOpenCallback(e.document);
@@ -21,14 +27,10 @@ export function onOpenCallback(e: TextDocument) {
 
 export function reloadDiagnostics() {
     for (const [uri] of diagnosticCollection) {
-        updateDiagnosticsImeaditely(uri);
+        updateDiagnosticsImmediately(uri);
     }
 }
-export const updateDiagnostics = debounceAsync(
-    updateDiagnosticsImeaditely,
-    1500
-);
-async function updateDiagnosticsImeaditely(e: Uri) {
+async function updateDiagnosticsImmediately(e: Uri) {
     if (sockets.size === 0) {
         diagnosticCollection.set(e, [zeroClientsWarning]);
         return;
@@ -56,8 +58,8 @@ async function makePatchDiagnostic(doc: VencordAstParser): Promise<Diagnostic[]>
         )
         .filter((e): e is { range: Range; message: string; } => e.message !== null)
         .map(({ range, message }) => ({
-            range: range,
-            message: message,
+            range,
+            message,
             severity: DiagnosticSeverity.Error,
             source: "Vencord-Companion",
             code: "patch",
@@ -82,9 +84,9 @@ async function makeFindDiagnostic(doc: VencordAstParser): Promise<Diagnostic[]> 
         )
         .filter((e): e is { range: Range; message: string; } => e.message !== null)
         .map(({ range, message }) => ({
-            range: range,
+            range,
             severity: DiagnosticSeverity.Error,
-            message: message,
+            message,
             source: "Vencord-Companion",
             code: "find",
         }));
@@ -93,5 +95,3 @@ async function makeFindDiagnostic(doc: VencordAstParser): Promise<Diagnostic[]> 
         return [runtimeErrorWarning];
     }
 }
-const runtimeErrorWarning = new Diagnostic(zeroRange, "An error occured, check the log for more info", DiagnosticSeverity.Warning);
-const zeroClientsWarning = new Diagnostic(zeroRange, "No clients connected", DiagnosticSeverity.Warning);

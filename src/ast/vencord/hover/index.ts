@@ -9,14 +9,14 @@ import { PromiseProivderResult } from "@type/index";
 // import mappings from "./mappings.json";
 import { isRegularExpressionLiteral } from "typescript";
 import { Hover, HoverProvider, MarkdownString, Position, TextDocument } from "vscode";
-const i18ncache = {};
+const i18nCache = {};
 async function getI18nValue(hashedKey: string) {
-    return i18ncache[hashedKey] ??= (await sendAndGetData<"i18n">({
+    return (i18nCache[hashedKey] ??= (await sendAndGetData<"i18n">({
         type: "i18n",
         data: {
             hashedKey
         }
-    }))?.data.value ?? "ERROR FETCHING I18N VALUE";
+    }))?.data.value ?? "ERROR FETCHING I18N VALUE");
 }
 export class I18nHover implements HoverProvider {
     async provideHover(document: TextDocument, position: Position): PromiseProivderResult<Hover> {
@@ -46,6 +46,7 @@ export class I18nHover implements HoverProvider {
                         range,
                         contents: [
                             new MarkdownString(hasSpecialChars ? `["${hashedKey}"]` : `.${hashedKey}`),
+                            // FIXME: refactor
                             new MarkdownString(await getI18nValue(hashedKey))
                         ]
                     };

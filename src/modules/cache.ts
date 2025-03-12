@@ -30,7 +30,7 @@ class _ModuleCache {
     }
 
     public getModulePath(id: string): string {
-        return resolve(join(this.modpath, id + ".js"));
+        return resolve(join(this.modpath, `${id}.js`));
     }
 
     async downloadModules() {
@@ -43,7 +43,7 @@ class _ModuleCache {
             const after = performance.now();
             outputChannel.debug(`Downloading ${moduleIds.length} modules took ${after - before}ms`);
         } catch (error) {
-            window.showErrorMessage("Error downloading modules:\n" + String(error));
+            window.showErrorMessage(`Error downloading modules:\n${String(error)}`);
             outputChannel.error(String(error));
         }
     }
@@ -66,7 +66,7 @@ class _ModuleCache {
         if (!await this.hasCache()) {
             throw new Error("Module cache not found");
         }
-        return await readFile(join(this.modpath, id + ".js"), {
+        return await readFile(join(this.modpath, `${id}.js`), {
             encoding: "utf-8"
         });
     }
@@ -86,7 +86,7 @@ class _ModuleCache {
             }
             try {
                 // FIXME: check if id has any invalid/malicious characters
-                await writeFile(join(this.modpath, id + ".js"), text);
+                await writeFile(join(this.modpath, `${id}.js`), text);
                 progress.increment();
             } catch (error) {
                 progress.stop(error);
@@ -105,12 +105,8 @@ class _ModuleCache {
             if (canceled) {
                 throw new Error("Module formatting canceled");
             }
-            try {
-                modmap[id] = format(formatModule(text, id));
-                await progress.increment();
-            } catch (error) {
-                throw error;
-            }
+            modmap[id] = format(formatModule(text, id));
+            await progress.increment();
         }
         const endTime = performance.now();
         outputChannel.debug(`Formatting modules took ${endTime - startTime}ms`);
@@ -130,21 +126,16 @@ class _ModuleCache {
                 break;
             }
             progress.increment();
+            let text: string;
             try {
-                // var { data: text } = await sendAndGetData<"rawId">({
-                //     type: "rawId",
-                //     data: {
-                //         id: +id
-                //     }
-                // });
-                var { data: { module: text } } = await sendAndGetData<"extract">({
+                [{ data: { module: text } }] = [await sendAndGetData<"extract">({
                     type: "extract",
                     data: {
                         extractType: "id",
                         idOrSearch: +id,
                         usePatched: null
                     }
-                });
+                })];
             } catch (error) {
                 progress.stop(error);
                 throw error;
@@ -216,7 +207,7 @@ export class ModuleDepManager {
             this.modmap = opts.modmap;
         } else if (opts.fromDisk) {
             this.readyPromise = this.generateModmap(opts.folder || ".modules")
-                .then(v => this.modmap = v);
+                .then(v => (this.modmap = v));
         }
     }
 
@@ -275,7 +266,7 @@ export class ModuleDepManager {
         const toRet = {};
         const modpath = join(this.currentFolder, folder);
         const validPath = await exists(modpath) && await isDirectory(modpath);
-        if (!validPath) throw new Error("modpath is not valid. got: " + modpath);
+        if (!validPath) throw new Error(`modpath is not valid. got: ${modpath}`);
 
         const files = await ProgressBar.forSingleFunc({
             location: ProgressLocation.Notification,
@@ -321,12 +312,12 @@ export class testProgressBar {
 
     }
     async start() {
+        const timeouts: NodeJS.Timeout[] = [];
         const bar = new ProgressBar(4, "testing abc", () => {
             timeouts.map(clearTimeout);
             window.showInformationMessage("Canceled");
         });
         await bar.start();
-        const timeouts: NodeJS.Timeout[] = [];
         timeouts.push(
             setTimeout(() => bar.increment(), 0),
             setTimeout(() => bar.increment(), 1000),

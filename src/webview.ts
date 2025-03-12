@@ -82,7 +82,7 @@ export class ReporterPanel {
                         // any attempt to get this to open without user interaction is a complete shitshow
                         // just use the builtin fuzzy finder and the patch find
                         // while there might be more than one find, the user can deal with that
-                        commands.executeCommand("workbench.action.quickOpen", "%" + patch.find);
+                        commands.executeCommand("workbench.action.quickOpen", `%${patch.find}`);
                         break;
                     }
                     case "extract": {
@@ -118,11 +118,11 @@ export class ReporterPanel {
                             sourceUri = mkStringUri(oldModule);
                             patchedUri = mkStringUri(newModule);
                         }
-                        commands.executeCommand("vscode.diff", sourceUri, patchedUri, "Patch Diff: " + id);
+                        commands.executeCommand("vscode.diff", sourceUri, patchedUri, `Patch Diff: ${id}`);
                         break;
                     }
                     default: {
-                        window.showErrorMessage("Unknown message type from webview, got : " + message.type);
+                        window.showErrorMessage(`Unknown message type from webview, got : ${message.type}`);
                         break;
                     }
                 }

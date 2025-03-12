@@ -1,3 +1,4 @@
+/* eslint-disable prefer-rest-params */
 import { LogOutputChannel, window } from "vscode";
 
 const internalOutputChannel: LogOutputChannel = window.createOutputChannel("Vencord Companion", {

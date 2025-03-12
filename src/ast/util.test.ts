@@ -132,6 +132,7 @@ describe("@CacheGetter()", function () {
         it("errors on a lone setter", function () {
             expect(() => {
                 class _shouldThrow {
+                    // eslint-disable-next-line accessor-pairs
                     @CacheGetter()
                     set value(v) {
                         void v;
@@ -212,6 +213,7 @@ describe("@Cache()", function () {
         it("errors on setters", function () {
             expect(() => {
                 class _shouldThrow {
+                    // eslint-disable-next-line accessor-pairs
                     @Cache()
                     set setter(v) {
                     }

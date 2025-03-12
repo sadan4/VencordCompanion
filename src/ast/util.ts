@@ -131,7 +131,7 @@ export function debounceAsync<F extends (...args: any) => Promise<any>>(func: F,
         if (running) return;
         running = true;
         clearTimeout(timeout);
-        setTimeout(() => func(...args).finally(() => running = false), delay);
+        setTimeout(() => func(...args).finally(() => void (running = false)), delay);
         return;
     };
 }

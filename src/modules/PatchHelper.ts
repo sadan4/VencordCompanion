@@ -143,7 +143,7 @@ export class PatchHelper {
         }
         outputChannel.debug(`ending patch helper with id ${this.id}`);
     }
-    private async highlightChanges() {
+    private highlightChanges() {
         const [was, is] = this.lastPatchedModule.get();
         if (!was || !is || was === is) return void outputChannel.warn("no changes to highlight");
         const changes = DiffFunc(was, is);
@@ -191,10 +191,10 @@ export class PatchHelper {
                 && maybe.replacement.some(maybeReplacement => {
                     if (maybeReplacement.match.type === "string") {
                         return strmatch.some(e2 => e2 === maybeReplacement.match.value);
-                    } else {
-                        const x = maybeReplacement.match.value.pattern;
-                        return regexmatch.some(e2 => e2 === x);
                     }
+                    const x = maybeReplacement.match.value.pattern;
+                    return regexmatch.some(e2 => e2 === x);
+
                 })
         );
 
@@ -213,13 +213,13 @@ export class PatchHelper {
                 const matcher = canonicalizeMatch(parseMatch(match));
                 const replacer = canonicalizeReplace(parseReplace(replace), this.ast.getPluginName() || "MyPlugin");
                 // @ts-expect-error stupid overloading
-                const newsrc = code.replace(matcher, replacer);
-                if (code === newsrc) throw `Patch ${JSON.stringify({ match, replace })} had no effect`;
-                Function(newsrc);
+                const newSrc = code.replace(matcher, replacer);
+                if (code === newSrc) throw new Error(`Patch ${JSON.stringify({ match, replace })} had no effect`);
+                Function(newSrc);
 
-                code = newsrc;
+                code = newSrc;
             } catch (e) {
-                outputChannel.warn(`Error in patch ${i + 1}: ${e}`);
+                outputChannel.warn(`Error in patch ${i + 1}: ${e.message}`);
                 continue;
             }
         }
@@ -252,7 +252,7 @@ export class PatchHelper {
     /**
      * @param e handle closing of our source documents
      */
-    public static async onCloseDocument(e: TextDocument) {
+    public static onCloseDocument(e: TextDocument) {
         if (e.uri.scheme === "vencord-patchhelper") {
             const helper = PatchHelper.activeWindowsById.get(PatchHelper.idFromUri(e.uri));
             helper?.end();
@@ -261,7 +261,7 @@ export class PatchHelper {
         helper?.end();
     }
 
-    public static async changeDocument({ document }: TextDocumentChangeEvent) {
+    public static changeDocument({ document }: TextDocumentChangeEvent) {
         try {
             const helper = PatchHelper.activeWindows.get(document.uri.path);
             if (!helper) return;

@@ -95,6 +95,6 @@ function parseNode(node: FindNode) {
             // since we're running in the browser sandbox, whereas the sender has host access
             return (0, eval)(node.value);
         default:
-            throw new Error("Unknown Node Type " + (node as any).type);
+            throw new Error(`Unknown Node Type ${(node as any).type}`);
     }
 }

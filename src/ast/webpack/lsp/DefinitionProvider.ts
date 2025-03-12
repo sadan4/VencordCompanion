@@ -7,16 +7,12 @@ import { DefinitionProvider as IDefinitionProvider, Position, TextDocument } fro
 
 
 export class DefinitionProvider implements IDefinitionProvider {
-    async provideDefinition(
-        document: TextDocument,
-        position: Position
-    ): Definitions {
+    async provideDefinition(document: TextDocument, position: Position): Definitions {
         try {
             if (!isWebpackModule(document.getText()))
                 return;
-            return await new WebpackAstParser(document.getText()).generateDefinitions(
-                position
-            );
+            return await new WebpackAstParser(document.getText())
+                .generateDefinitions(position);
         } catch (e) {
             outputChannel.error(e);
         }

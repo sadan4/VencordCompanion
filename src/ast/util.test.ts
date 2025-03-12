@@ -8,12 +8,13 @@ describe("debounce()", function () {
     it("resets the timeout correctly", async function () {
         let i = 0;
         const debouncedFunc = debounce(() => i++, 100);
+
         debouncedFunc();
         debouncedFunc();
         debouncedFunc();
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await new Promise((resolve) => setTimeout(resolve, 50));
         debouncedFunc();
-        await new Promise(resolve => setTimeout(resolve, 125));
+        await new Promise((resolve) => setTimeout(resolve, 125));
         expect(i).to.equal(1);
     });
 });
@@ -36,10 +37,12 @@ describe("isWebpackModule", function () {
     });
     it("works on a module", function () {
         const file: string = require("test://ast/util/webpackHeader.js");
+
         expect(isWebpackModule(file)).to.be.true;
     });
     it("works on an extracted find", function () {
         const file: string = require("test://ast/util/extractedFindHeader.js");
+
         expect(isWebpackModule(file)).to.be.true;
     });
 });
@@ -64,25 +67,27 @@ describe("@CacheGetter()", function () {
             get value() {
                 return Symbol();
             }
-
         }
         return TestCachingGetters;
     };
 
     it("works on static getters", function () {
         const cls = mkTestClass();
+
         expect(cls.staticValue).to.be.a("symbol").and.equal(cls.staticValue);
     });
 
     it("works on instance getters", function () {
         const cls = mkTestClass();
         const instance = new cls();
+
         expect(instance.value).to.be.a("symbol").and.equal(instance.value);
     });
 
     it("keeps values separate between static class getters", function () {
         const cls1 = mkTestClass();
         const cls2 = mkTestClass();
+
         expect(cls1.staticValue).to.be.a("symbol").and.not.equal(cls2.staticValue);
     });
 
@@ -90,21 +95,27 @@ describe("@CacheGetter()", function () {
         const cls = mkTestClass();
         const inst1 = new cls();
         const inst2 = new cls();
+
         expect(inst1.value).to.be.a("symbol").and.not.equal(inst2.value);
     });
 
     it("properly invalidates the cache", function () {
         const arr: (() => void)[] = [];
+
         class cls {
             @CacheGetter(arr)
             get rand() {
                 return Symbol();
             }
         }
-        const inst = new cls;
+
+        const inst = new cls();
         const val1 = inst.rand;
-        arr.forEach(x => x());
+
+        arr.forEach((x) => x());
+
         const val2 = inst.rand;
+
         expect(val1).to.not.equal(val2);
     });
 
@@ -160,18 +171,21 @@ describe("@Cache()", function () {
 
     it("works on static methods", function () {
         const cls = mkTestClass();
+
         expect(cls.staticFunc()).to.be.a("symbol").and.equal(cls.staticFunc());
     });
 
     it("works on instance methods", function () {
         const cls = mkTestClass();
         const instance = new cls();
+
         expect(instance.func()).to.be.a("symbol").and.equal(instance.func());
     });
 
     it("keeps values separate between static class methods", function () {
         const cls1 = mkTestClass();
         const cls2 = mkTestClass();
+
         expect(cls1.staticFunc()).to.be.a("symbol").and.not.equal(cls2.staticFunc());
     });
 
@@ -179,21 +193,27 @@ describe("@Cache()", function () {
         const cls = mkTestClass();
         const inst1 = new cls();
         const inst2 = new cls();
+
         expect(inst1.func()).to.be.a("symbol").and.not.equal(inst2.func());
     });
 
     it("properly invalidates the cache", function () {
         const arr: (() => void)[] = [];
+
         class cls {
             @Cache(arr)
             rand() {
                 return Symbol();
             }
         }
-        const inst = new cls;
+
+        const inst = new cls();
         const val1 = inst.rand();
-        arr.forEach(x => x());
+
+        arr.forEach((x) => x());
+
         const val2 = inst.rand();
+
         expect(val1).to.not.equal(val2);
     });
 
@@ -229,6 +249,7 @@ describe("@Cache()", function () {
                     get val() {
                         return;
                     }
+
                     set val(v) {
                     }
                 }

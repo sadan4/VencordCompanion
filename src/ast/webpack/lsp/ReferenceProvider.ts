@@ -9,23 +9,24 @@ import { CancellationToken, Position, ReferenceContext, ReferenceProvider as IRe
 
 export class ReferenceProvider implements IReferenceProvider {
     // from API
-    // eslint-disable-next-line max-params
+    // eslint-disable-next-line max-params, @stylistic/max-len
     async provideReferences(document: TextDocument, position: Position, _context: ReferenceContext, _token: CancellationToken): References {
-        if(!isWebpackModule(document.getText())) return;
+        if (!isWebpackModule(document.getText()))
+            return;
         if (!await ModuleCache.hasCache()) {
             window.showErrorMessage("No Module Cache found, please download modules first");
             return;
         }
         if (!ModuleDepManager.hasModDeps()) {
             await ModuleDepManager.initModDeps({
-                fromDisk: true
+                fromDisk: true,
             });
         }
         try {
-            return await new WebpackAstParser(document.getText()).generateReferences(position);
+            return await new WebpackAstParser(document.getText())
+                .generateReferences(position);
         } catch (e) {
             outputChannel.error(String(e));
         }
     }
-
 }

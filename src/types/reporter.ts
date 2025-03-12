@@ -43,6 +43,6 @@ export interface ReporterData {
 }
 
 export interface WebviewMessage {
-    type: string,
-    data: any,
+    type: string;
+    data: any;
 }

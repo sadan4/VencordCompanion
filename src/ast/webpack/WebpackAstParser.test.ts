@@ -6,17 +6,22 @@ import { Range } from "vscode";
 
 describe("WebpackAstParser", function () {
     const normalModule: string = require("test://ast/webpack/module.js");
+
     it("constructs", function () {
         new WebpackAstParser(normalModule);
     });
+
     it("parses the module ID", function () {
         const parser = new WebpackAstParser(normalModule);
+
         expect(parser.moduleId).to.equal("317269");
     });
+
     describe("export parsing", function () {
         it("parses a module with only wreq.d", function () {
             const parser = new WebpackAstParser(normalModule);
             const map: ExportMap = parser.getExportMap();
+
             expect(map).to.have.keys("TB", "VY", "ZP");
             for (const expName in map) {
                 expect(map[expName]).to.have.length(2);
@@ -41,6 +46,7 @@ describe("WebpackAstParser", function () {
             it("parses a module with an object literal export (class names)", function () {
                 const parser = new WebpackAstParser(require("test://ast/webpack/e.exports/objLiteral.js"));
                 const map = parser.getExportMap();
+
                 expect(map).to.have.keys("addButton", "addButtonInner", "productListingsHeader", "productListings");
                 for (const k in map)
                     expect(map[k]).to.have.length(2);
@@ -58,6 +64,7 @@ describe("WebpackAstParser", function () {
             it("parses a single string export", function () {
                 const parser = new WebpackAstParser(require("test://ast/webpack/e.exports/string.js"));
                 const map = parser.getExportMap();
+
                 expect(map).to.have.keys(WebpackAstParser.SYM_CJS_DEFAULT);
                 expect(map[WebpackAstParser.SYM_CJS_DEFAULT]).to.have.length(1);
                 expect(map[WebpackAstParser.SYM_CJS_DEFAULT][0]).to.deep.equal(new Range(4, 16, 4, 46));
@@ -65,6 +72,7 @@ describe("WebpackAstParser", function () {
             it("parses a re-export", function () {
                 const parser = new WebpackAstParser(require("test://ast/webpack/e.exports/identReExport.js"));
                 const map = parser.getExportMap();
+
                 expect(map).to.have.keys(WebpackAstParser.SYM_CJS_DEFAULT);
                 expect(map[WebpackAstParser.SYM_CJS_DEFAULT]).to.have.length(1);
                 expect(map[WebpackAstParser.SYM_CJS_DEFAULT][0]).to.deep.equal(new Range(4, 12, 4, 21));
@@ -72,6 +80,7 @@ describe("WebpackAstParser", function () {
             it("parses exports in an intermediate variable", function () {
                 const parser = new WebpackAstParser(require("test://ast/webpack/e.exports/ident.js"));
                 const map = parser.getExportMap();
+
                 const keys = [
                     "headerContainer",
                     "closeContainer",
@@ -83,22 +92,29 @@ describe("WebpackAstParser", function () {
                     "confirmationTitle",
                     "confirmationSubtitle",
                 ];
+
                 expect(map).to.have.keys(keys);
-                keys.forEach(key => {
+                keys.forEach((key) => {
                     expect(map[key]).to.have.length(2);
                 });
-                keys.filter(x => typeof x === "string").forEach((key, i) => {
-                    expect(map[key][0]).to.deep.equal(new Range(i + 5, 8, i + 5, key.length + 8));
-                });
+                keys.filter((x) => typeof x === "string")
+                    .forEach((key, i) => {
+                        expect(map[key][0]).to.deep.equal(new Range(i + 5, 8, i + 5, key.length + 8));
+                    });
+
                 const stringPoints = [49, 47, 37, 41, 59, 61, 88, 53, 59];
-                keys.filter(x => typeof x === "string").forEach((key, i) => {
-                    const end = stringPoints[i];
-                    expect(map[key][1]).to.deep.equal(new Range(i + 5, key.length + 8 + 2, i + 5, end));
-                });
+
+                keys.filter((x) => typeof x === "string")
+                    .forEach((key, i) => {
+                        const end = stringPoints[i];
+
+                        expect(map[key][1]).to.deep.equal(new Range(i + 5, key.length + 8 + 2, i + 5, end));
+                    });
             });
             it("parses a function expression", function () {
                 const parser = new WebpackAstParser(require("test://ast/webpack/e.exports/function.js"));
                 const map = parser.getExportMap();
+
                 expect(map).to.have.keys(WebpackAstParser.SYM_CJS_DEFAULT);
                 expect(map[WebpackAstParser.SYM_CJS_DEFAULT]).to.have.length(1);
                 expect(map[WebpackAstParser.SYM_CJS_DEFAULT][0]).to.deep.equal(new Range(9, 16, 9, 27));
@@ -106,6 +122,7 @@ describe("WebpackAstParser", function () {
             it("parses everything else", function () {
                 const parser = new WebpackAstParser(require("test://ast/webpack/e.exports/everythingElse.js"));
                 const map = parser.getExportMap();
+
                 expect(map).to.have.keys(WebpackAstParser.SYM_CJS_DEFAULT);
                 expect(map[WebpackAstParser.SYM_CJS_DEFAULT]).to.have.length(1);
                 expect(map[WebpackAstParser.SYM_CJS_DEFAULT][0]).to.deep.equal(new Range(5, 16, 5, 44));
@@ -114,15 +131,18 @@ describe("WebpackAstParser", function () {
         describe("exports", function () {
             it("Parses exports properly", function () {
                 const parser = new WebpackAstParser(require("test://ast/webpack/exports/module.js"));
+
                 const keys = [
                     "Deflate",
                     "deflate",
                     "deflateRaw",
-                    "gzip"
+                    "gzip",
                 ];
+
                 const map = parser.getExportMap();
+
                 expect(map).to.have.keys(keys);
-                keys.forEach(key => {
+                keys.forEach((key) => {
                     expect(map[key]).to.have.length(3);
                 });
                 keys.forEach((key, i) => {

@@ -2,8 +2,9 @@
 import { LogOutputChannel, window } from "vscode";
 
 const internalOutputChannel: LogOutputChannel = window.createOutputChannel("Vencord Companion", {
-    log: true
+    log: true,
 });
+
 const consoleMethods = {
     log: "log",
     append: "log",
@@ -11,8 +12,9 @@ const consoleMethods = {
     debug: "debug",
     info: "info",
     warn: "warn",
-    error: "error"
+    error: "error",
 };
+
 export const outputChannel: LogOutputChannel = new Proxy(internalOutputChannel, {
     get(target, p, r) {
         if (p in consoleMethods) {
@@ -24,5 +26,5 @@ export const outputChannel: LogOutputChannel = new Proxy(internalOutputChannel, 
         return function () {
             return target[p].apply(r, arguments);
         };
-    }
+    },
 });

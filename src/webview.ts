@@ -10,17 +10,19 @@ import { extensionPath, extensionUri } from "./extension";
 import { commands, Disposable, Uri, ViewColumn, WebviewPanel, window } from "vscode";
 
 type Patch = { patch: EvaledPatch; };
+
 type PluginName = { pluginName: string; };
-type Diff = { oldModule: string, newModule: string; };
+
+type Diff = { oldModule: string;
+    newModule: string; };
+
 // TODO: add persistant state
 export class ReporterPanel {
     /**
      * Track the currently panel. Only allow a single panel to exist at a time.
      */
     public static currentPanel: ReporterPanel | undefined;
-
     private static readonly viewType = "vencordReporter";
-
     private readonly _panel: WebviewPanel;
     private readonly _extensionUri: Uri;
     private readonly _extensionPath: string;
@@ -49,9 +51,7 @@ export class ReporterPanel {
             enableScripts: true,
 
             // And restric the webview to only loading content from our extension's `media` directory.
-            localResourceRoots: [
-                Uri.joinPath(extensionUri, "dist/webview")
-            ]
+            localResourceRoots: [Uri.joinPath(extensionUri, "dist/webview")],
         });
 
         // Set the webview's initial html content
@@ -67,18 +67,20 @@ export class ReporterPanel {
                 switch (message.type) {
                     case "disable": {
                         const { pluginName, enabled }: PluginName & { enabled: boolean; } = message.data;
+
                         // DISABLE PLUGIN
                         await sendAndGetData({
                             type: "disable",
                             data: {
                                 pluginName,
-                                enabled
-                            }
+                                enabled,
+                            },
                         });
                         break;
                     }
                     case "jumpToPatch": {
                         const { patch }: Patch & PluginName = message.data;
+
                         // any attempt to get this to open without user interaction is a complete shitshow
                         // just use the builtin fuzzy finder and the patch find
                         // while there might be more than one find, the user can deal with that
@@ -87,6 +89,7 @@ export class ReporterPanel {
                     }
                     case "extract": {
                         const { patch }: Patch = message.data;
+
                         if (Number.isNaN(Number(patch.id))) {
                             window.showErrorMessage("Module ID is not a number");
                             return;
@@ -97,9 +100,10 @@ export class ReporterPanel {
                                 data: {
                                     extractType: "id",
                                     idOrSearch: Number(patch.id),
-                                    usePatched: null
-                                }
+                                    usePatched: null,
+                                },
                             });
+
                             handleExtractPayload(r);
                         } catch (e) {
                             window.showErrorMessage(String(e));
@@ -110,6 +114,7 @@ export class ReporterPanel {
                         const { oldModule, newModule, id }: Diff & EvaledPatch = message.data;
                         // we cant format code with syntax errors
                         let sourceUri, patchedUri;
+
                         try {
                             sourceUri = mkStringUri(await format(oldModule));
                             patchedUri = mkStringUri(await format(newModule));
@@ -140,6 +145,7 @@ export class ReporterPanel {
 
         while (this._disposables.length) {
             const x = this._disposables.pop();
+
             if (x) {
                 x.dispose();
             }
@@ -150,9 +156,7 @@ export class ReporterPanel {
         const scriptPathOnDisk = Uri.joinPath(this._extensionUri, "dist/webview/index.js");
         const scriptUri = this._panel.webview.asWebviewUri(scriptPathOnDisk);
         const stylePathOnDisk = Uri.joinPath(this._extensionUri, "dist/webview/index.css");
-        const styleUri = this._panel.webview.asWebviewUri(stylePathOnDisk);
-
-        // Use a nonce to whitelist which scripts can be run
+        const styleUri = this._panel.webview.asWebviewUri(stylePathOnDisk); // Use a nonce to whitelist which scripts can be run
         const nonce = getNonce();
 
         return `<!DOCTYPE html>
@@ -182,6 +186,7 @@ export class ReporterPanel {
 function getNonce() {
     let text = "";
     const possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
     for (let i = 0; i < 32; i++) {
         text += possible.charAt(Math.floor(Math.random() * possible.length));
     }

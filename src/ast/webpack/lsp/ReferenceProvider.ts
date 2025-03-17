@@ -4,13 +4,11 @@ import { ModuleCache, ModuleDepManager } from "@modules/cache";
 import { outputChannel } from "@modules/logging";
 import { References } from "@type/ast";
 
-import { CancellationToken, Position, ReferenceContext, ReferenceProvider as IReferenceProvider, TextDocument, window } from "vscode";
+import { Position, ReferenceProvider as IReferenceProvider, TextDocument, window } from "vscode";
 
 
 export class ReferenceProvider implements IReferenceProvider {
-    // from API
-    // eslint-disable-next-line max-params, @stylistic/max-len
-    async provideReferences(document: TextDocument, position: Position, _context: ReferenceContext, _token: CancellationToken): References {
+    async provideReferences(document: TextDocument, position: Position): References {
         if (!isWebpackModule(document.getText()))
             return;
         if (!await ModuleCache.hasCache()) {

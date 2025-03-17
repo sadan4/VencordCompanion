@@ -99,8 +99,7 @@ export class WebpackAstParser extends AstParser {
      * @param start finds a webpack arg from the source tree
      * @returns the indenfiier of the param if found or undef
      */
-    findWebpackArg(paramIndex = 2,
-        start: Node = this.sourceFile): Identifier | undefined {
+    findWebpackArg(paramIndex = 2, start: Node = this.sourceFile): Identifier | undefined {
         for (const n of start.getChildren()) {
             if (isSyntaxList(n) || isExpressionStatement(n) || isBinaryExpression(n))
                 return this.findWebpackArg(paramIndex, n);

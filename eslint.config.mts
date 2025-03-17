@@ -145,7 +145,6 @@ const ESLintRules: IESLintRules = {
             enforceForIfStatements: true,
         },
     ],
-    "max-params": "error",
     "no-caller": "error",
     "no-case-declarations": "error",
     "no-delete-var": "error",

@@ -118,6 +118,8 @@ export class WebpackAstParser extends AstParser {
         }
     }
 
+    // FIXME: THIS RETURNS TWO DIFFERENT THINGS BASED ON WHETHER THE CACHE IS INITIALIZED OR NOT
+    // THAT ARE UNRELATED
     @Cache()
     public getDeps(): ModuleDeps | null {
         if (!this.wreq || !this.uses)

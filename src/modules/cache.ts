@@ -211,6 +211,7 @@ export class ModuleDepManager {
     modmap!: Record<string, string>;
     private readyPromise;
     currentFolder: string;
+    static defaultFolder = ".modules";
 
     public static getModDeps(moduleid: string) {
         if (this.hasModDeps()) {
@@ -236,7 +237,7 @@ export class ModuleDepManager {
         if ("modmap" in opts) {
             this.modmap = opts.modmap;
         } else if (opts.fromDisk) {
-            this.readyPromise = this.generateModmap(opts.folder || ".modules")
+            this.readyPromise = this.generateModmap(opts.folder || ModuleDepManager.defaultFolder)
                 .then((v) => (this.modmap = v));
         }
     }

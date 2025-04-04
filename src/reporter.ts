@@ -19,6 +19,7 @@ export async function startReporter() {
         }
 
         running = true;
+
         const task = await getReporterTask();
 
         // used to kill watch tasks
@@ -26,10 +27,10 @@ export async function startReporter() {
 
         await tasks.executeTask(task);
         // cant find a way to await the vscode task finish
-        await new Promise(r => setTimeout(r, 1000));
+        await new Promise((r) => setTimeout(r, 1000));
         await sendToSockets({
             type: "reload",
-            data: null
+            data: null,
         });
     } catch (e) {
         window.showErrorMessage(String(e));
@@ -41,14 +42,15 @@ export async function handleReporterData(data: ReporterData) {
     running = false;
     try {
         const task = await getNormalBuildTask();
+
         ensureOnlyTask();
 
         await tasks.executeTask(task);
         // FIXME: cant find a way to await the vscode task finish
-        await new Promise(r => setTimeout(r, 1000));
+        await new Promise((r) => setTimeout(r, 1000));
         await sendToSockets({
             type: "reload",
-            data: null
+            data: null,
         });
         ReporterPanel.createOrShow(data);
     } catch (error) {
@@ -56,7 +58,8 @@ export async function handleReporterData(data: ReporterData) {
     }
 }
 async function getNormalBuildTask() {
-    const task = (await tasks.fetchTasks()).filter(t => t.execution instanceof ShellExecution && t.execution.commandLine?.includes("build") && t.execution.commandLine?.includes("--dev") && !t.execution.commandLine?.includes("--companion-test"));
+    const task = (await tasks.fetchTasks()).filter((t) => t.execution instanceof ShellExecution && t.execution.commandLine?.includes("build") && t.execution.commandLine?.includes("--dev") && !t.execution.commandLine?.includes("--companion-test"));
+
     if (task.length === 0)
         throw new Error("No build task found");
     if (task.length > 1)
@@ -64,7 +67,10 @@ async function getNormalBuildTask() {
     return task[0];
 }
 async function getReporterTask() {
-    const task = (await tasks.fetchTasks()).filter(t => t.execution instanceof ShellExecution && String(t.execution.commandLine).includes("--companion-test"));
+    const task = (await tasks.fetchTasks())
+        .filter((t) => t.execution instanceof ShellExecution && String(t.execution.commandLine)
+            .includes("--companion-test"));
+
     if (task.length === 0)
         throw new Error("No build task found");
     if (task.length > 1)
@@ -78,5 +84,5 @@ async function getReporterTask() {
 function ensureOnlyTask() {
     if (tasks.taskExecutions.length === 0)
         return;
-    tasks.taskExecutions.forEach(t => t.terminate());
+    tasks.taskExecutions.forEach((t) => t.terminate());
 }

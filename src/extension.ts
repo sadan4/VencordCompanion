@@ -33,25 +33,26 @@ export function activate(context: ExtensionContext) {
         window.tabGroups.onDidChangeTabs(PatchHelper.onTabClose),
         languages.registerCodeLensProvider(
             { pattern: "**/{plugins,userplugins,plugins/_*}/{*.ts,*.tsx,**/index.ts,**/index.tsx}" },
-            new PluginDefCodeLensProvider()
+            new PluginDefCodeLensProvider(),
         ),
         languages.registerCodeLensProvider(
             { pattern: "**/{plugins,userplugins,plugins/_*}/{*.ts,*.tsx,**/index.ts,**/index.tsx}" },
-            new PatchCodeLensProvider()
+            new PatchCodeLensProvider(),
         ),
-        languages.registerDefinitionProvider({ language: "javascript" }, new DefinitionProvider),
-        languages.registerReferenceProvider({ language: "javascript" }, new ReferenceProvider),
+        languages.registerDefinitionProvider({ language: "javascript" }, new DefinitionProvider()),
+        languages.registerReferenceProvider({ language: "javascript" }, new ReferenceProvider()),
 
         languages.registerCodeLensProvider({ language: "typescript" }, WebpackCodeLensProvider),
         languages.registerCodeLensProvider({ language: "typescriptreact" }, WebpackCodeLensProvider),
-        languages.registerCodeLensProvider({ language: "javascript" }, new PartialModuleJumpCodeLensProvider),
+        languages.registerCodeLensProvider({ language: "javascript" }, new PartialModuleJumpCodeLensProvider()),
         languages.registerHoverProvider({ language: "typescript" }, new I18nHover()),
         languages.registerHoverProvider({ language: "typescriptreact" }, new I18nHover()),
         workspace.registerTextDocumentContentProvider("vencord-patchhelper", PatchHelper),
         workspace.registerTextDocumentContentProvider("vencord-companion", {
-            async provideTextDocumentContent(uri) {
+            provideTextDocumentContent(uri) {
                 // FIXME: full uri shows up in title bar
                 const newLocal = Buffer.from(uri.path.substring(1, uri.path.lastIndexOf("/")), "base64url");
+
                 return newLocal.toString();
             },
         }),
@@ -61,39 +62,54 @@ export function activate(context: ExtensionContext) {
                 window.showErrorMessage("Could not find source document");
                 return;
             }
+
             const helper = await PatchHelper.create(doc, patch);
+
             helper.openModuleWindow();
         }),
         commands.registerCommand("vencord-companion.runReporter", startReporter),
-        commands.registerCommand("vencord-companion.diffModule", async args => {
+        commands.registerCommand("vencord-companion.diffModule", async (args) => {
             if (args) {
                 try {
                     const r = await sendAndGetData<"diff">({
                         type: "diff",
                         data: {
                             extractType: "id",
-                            idOrSearch: args
-                        }
+                            idOrSearch: args,
+                        },
                     });
+
                     handleDiffPayload(r);
                 } catch (e) {
                     outputChannel.error(String(e));
                     window.showErrorMessage(String(e));
-                } finally {
-                    return;
                 }
+                return;
             }
+
             // FIXME: refactor to generic quicpick class with these features
             const quickPick = window.createQuickPick();
+
             quickPick.placeholder = "module ID";
             quickPick.canSelectMany = false;
-            const items: QuickPickItem[] = [{ label: "", alwaysShow: false }, { label: "", kind: -1 }, ...(moduleCache.map(m => ({ label: m })))];
+
+            const items: QuickPickItem[] = [
+                {
+                    label: "",
+                    alwaysShow: false,
+                },
+                {
+                    label: "",
+                    kind: -1,
+                },
+                ...moduleCache.map((m) => ({ label: m })),
+            ];
+
             quickPick.items = items;
             quickPick.onDidChangeValue(() => {
                 if (!moduleCache.includes(quickPick.value)) {
                     items[0].label = quickPick.value;
                     items[0].alwaysShow = true;
-
                 } else {
                     items[0].alwaysShow = false;
                 }
@@ -102,6 +118,7 @@ export function activate(context: ExtensionContext) {
             quickPick.show();
             quickPick.onDidAccept(async () => {
                 const modId = quickPick.value;
+
                 quickPick.dispose();
                 if (!modId || isNaN(+modId))
                     return vscWindow.showErrorMessage("No Module ID provided");
@@ -110,17 +127,16 @@ export function activate(context: ExtensionContext) {
                         type: "diff",
                         data: {
                             extractType: "id",
-                            idOrSearch: +modId
+                            idOrSearch: +modId,
                         },
                     });
+
                     handleDiffPayload(r);
                 } catch (error) {
                     outputChannel.error(String(error));
                     vscWindow.showErrorMessage(String(error));
                 }
             });
-
-
         }),
         commands.registerCommand("vencord-companion.diffModuleSearch", async (args: string, findType: "string" | "regex") => {
             if (args) {
@@ -130,18 +146,20 @@ export function activate(context: ExtensionContext) {
                         data: {
                             extractType: "search",
                             findType,
-                            idOrSearch: args
-                        }
+                            idOrSearch: args,
+                        },
                     });
+
                     handleDiffPayload(r);
                 } catch (e) {
                     outputChannel.error(String(e));
                     window.showErrorMessage(String(e));
-                } finally {
-                    return;
                 }
+                return;
             }
+
             const input = await window.showInputBox();
+
             if (!input) {
                 outputChannel.warn("No Input Provided");
                 return window.showErrorMessage("No Input Provided");
@@ -152,9 +170,10 @@ export function activate(context: ExtensionContext) {
                     data: {
                         extractType: "search",
                         findType: "string",
-                        idOrSearch: input
-                    }
+                        idOrSearch: input,
+                    },
                 });
+
                 handleDiffPayload(r);
             } catch (e) {
                 outputChannel.error(String(e));
@@ -169,6 +188,7 @@ export function activate(context: ExtensionContext) {
             }
             try {
                 const r = await sendAndGetData<"extract">(args);
+
                 handleExtractPayload(r);
             } catch (e) {
                 outputChannel.error(String(e));
@@ -183,27 +203,42 @@ export function activate(context: ExtensionContext) {
                         data: {
                             extractType: "id",
                             idOrSearch: args,
-                            usePatched: null
-                        }
+                            usePatched: null,
+                        },
                     });
+
                     handleExtractPayload(r);
                 } catch (e) {
                     outputChannel.error(String(e));
                     window.showErrorMessage(String(e));
-                } finally {
-                    return;
                 }
+                return;
             }
+
             const quickPick = window.createQuickPick();
+
             quickPick.placeholder = "module ID";
             quickPick.canSelectMany = false;
-            const items: QuickPickItem[] = [{ label: "", alwaysShow: false }, { label: "", kind: -1 }, ...(moduleCache.map(m => { return { label: m }; }))];
+
+            const items: QuickPickItem[] = [
+                {
+                    label: "",
+                    alwaysShow: false,
+                },
+                {
+                    label: "",
+                    kind: -1,
+                },
+                ...moduleCache.map((m) => {
+                    return { label: m };
+                }),
+            ];
+
             quickPick.items = items;
             quickPick.onDidChangeValue(() => {
                 if (!moduleCache.includes(quickPick.value)) {
                     items[0].label = quickPick.value;
                     items[0].alwaysShow = true;
-
                 } else {
                     items[0].alwaysShow = false;
                 }
@@ -212,6 +247,7 @@ export function activate(context: ExtensionContext) {
             quickPick.show();
             quickPick.onDidAccept(async () => {
                 const modId = quickPick.value;
+
                 quickPick.dispose();
                 if (!modId || isNaN(+modId))
                     return vscWindow.showErrorMessage("No Module ID provided");
@@ -221,16 +257,16 @@ export function activate(context: ExtensionContext) {
                         data: {
                             extractType: "id",
                             idOrSearch: +modId,
-                            usePatched: null
+                            usePatched: null,
                         },
                     });
+
                     handleExtractPayload(r);
                 } catch (e) {
                     outputChannel.error(String(e));
                     vscWindow.showErrorMessage(String(e));
                 }
             });
-
         }),
         commands.registerCommand("vencord-companion.extractSearch", async (args: string, findType: "string" | "regex") => {
             if (args) {
@@ -241,18 +277,20 @@ export function activate(context: ExtensionContext) {
                             extractType: "search",
                             findType,
                             idOrSearch: args,
-                            usePatched: null
-                        }
+                            usePatched: null,
+                        },
                     });
+
                     handleExtractPayload(r);
                 } catch (e) {
                     outputChannel.error(String(e));
                     window.showErrorMessage(String(e));
-                } finally {
-                    return;
                 }
+                return;
             }
+
             const input = await window.showInputBox();
+
             if (!input)
                 return window.showErrorMessage("No Input Provided");
             try {
@@ -262,9 +300,10 @@ export function activate(context: ExtensionContext) {
                         extractType: "search",
                         findType: "string",
                         idOrSearch: input,
-                        usePatched: null
-                    }
+                        usePatched: null,
+                    },
                 });
+
                 handleExtractPayload(r);
             } catch (e) {
                 outputChannel.error(String(e));
@@ -273,10 +312,11 @@ export function activate(context: ExtensionContext) {
         }),
         commands.registerCommand("vencord-companion.disablePlugin", async (data: DisablePluginData) => {
             try {
-                if (!data) throw new Error("No args passed.");
+                if (!data)
+                    throw new Error("No args passed.");
                 await sendAndGetData({
                     type: "disable",
-                    data
+                    data,
                 });
             } catch (e) {
                 outputChannel.error(String(e));
@@ -317,5 +357,7 @@ export function activate(context: ExtensionContext) {
 export function deactivate() {
     stopWebSocketServer();
 }
-export { outputChannel };
+export {
+    outputChannel,
+};
 

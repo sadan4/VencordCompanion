@@ -11,10 +11,11 @@ export type WithParent<N, P> = N & {
 /**
  * a parsed patch, as it appears in a source file
  */
-export type SourcePatch = (PatchData & { range: Range; origIndex: number; });
+export type SourcePatch = (PatchData & { range: Range;
+    origIndex: number; });
 export type FindUse = {
     range: Range;
-    use: TestFind
+    use: TestFind;
 };
 
 export type Import = {

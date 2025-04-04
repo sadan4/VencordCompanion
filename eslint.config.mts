@@ -255,7 +255,7 @@ const styleRules: Partial<_RuleOptions> = {
     "@stylistic/eol-last": ["error", "always"],
     "@stylistic/function-call-spacing": ["error", "never"],
     "@stylistic/function-call-argument-newline": ["error", "consistent"],
-    "@stylistic/function-paren-newline": ["error", "never"],
+    "@stylistic/function-paren-newline": ["error", "multiline"],
     "@stylistic/generator-star-spacing": [
         "error",
         {

@@ -369,10 +369,12 @@ export class testProgressBar {
         });
 
         await bar.start();
-        timeouts.push(setTimeout(() => bar.increment(), 0),
+        timeouts.push(
+            setTimeout(() => bar.increment(), 0),
             setTimeout(() => bar.increment(), 1000),
             setTimeout(() => bar.increment(), 2000),
-            setTimeout(() => bar.increment(), 3000));
+            setTimeout(() => bar.increment(), 3000),
+        );
     }
 }
 

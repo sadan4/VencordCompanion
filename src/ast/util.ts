@@ -224,8 +224,7 @@ export function tryParseRegularExpressionLiteral(node: Node): RegexNode | null {
 }
 
 
-export const zeroRange = new Range(new Position(0, 0),
-    new Position(0, 0));
+export const zeroRange = new Range(new Position(0, 0), new Position(0, 0));
 
 export function isDefaultKeyword(n: Node): n is DefaultKeyword {
     return n.kind === SyntaxKind.DefaultKeyword;
@@ -289,8 +288,14 @@ export const lastChild: CBAssertion<undefined> = (node, func) => {
 };
 
 // FIXME: this seems really stupid
-function one<T, F extends (t: T) => t is T, R extends T = AssertedType<F, T>>(arr: readonly T[],
-    func: F extends (t: T) => t is R ? F : never): R | undefined {
+function one<
+    T,
+    F extends (t: T) => t is T,
+    R extends T = AssertedType<F, T>,
+>(
+    arr: readonly T[],
+    func: F extends (t: T) => t is R ? F : never,
+): R | undefined {
     const filter = arr.filter<R>(func);
 
     return (filter.length === 1 || undefined) && filter[0];
@@ -338,8 +343,10 @@ export function isSyntaxList(node: Node): node is SyntaxList {
  * }
  * @param prop exprop
  */
-export function findObjectLiteralByKey(object: ObjectLiteralExpression,
-    prop: string): ObjectLiteralElementLike | undefined {
+export function findObjectLiteralByKey(
+    object: ObjectLiteralExpression,
+    prop: string,
+): ObjectLiteralElementLike | undefined {
     return object.properties.find((x) => x.name?.getText() === prop);
 }
 
@@ -408,8 +415,7 @@ function _findReturnPropertyAccessExpression(func: Block): PropertyAccessExpress
  *  @param text the document that node is in
  */
 export function makeRange(node: ReadonlyTextRange, text: string): Range {
-    return new Range(makeLocation(node.pos, text),
-        makeLocation(node.end, text));
+    return new Range(makeLocation(node.pos, text), makeLocation(node.end, text));
 }
 
 /**
@@ -473,7 +479,7 @@ export function getImportName(node: Identifier): Pick<Import, "orig" | "as"> {
 }
 
 export function isStringLiteralLikeOrTemplateLiteralFragmentOrRegexLiteral(node: Node):
-node is TemplateLiteralLikeNode | StringLiteral | RegularExpressionLiteral {
+    node is TemplateLiteralLikeNode | StringLiteral | RegularExpressionLiteral {
     if (isStringLiteral(node))
         return true;
     if (isTemplateLiteralToken(node))
@@ -498,8 +504,12 @@ export function Cache(invalidate?: (() => void)[]) {
 
     return function <
         P extends () => any,
-    >(target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<_<P>>):
-    TypedPropertyDescriptor<_<P>> | void {
+    >(
+        target: Object,
+        propertyKey: string | symbol,
+        descriptor: TypedPropertyDescriptor<_<P>>,
+    ):
+        TypedPropertyDescriptor<_<P>> | void {
         const sym = Symbol(`cache-${propertyKey.toString()}`);
 
         target[sym] = SYM_UNCACHED;
@@ -528,8 +538,12 @@ export function Cache(invalidate?: (() => void)[]) {
  * Same thing as {@link Cache} but for getters.
  */
 export function CacheGetter(invalidate?: (() => void)[]) {
-    return function <T>(target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>):
-    TypedPropertyDescriptor<T> | void {
+    return function <T>(
+        target: Object,
+        propertyKey: string | symbol,
+        descriptor: TypedPropertyDescriptor<T>,
+    ):
+        TypedPropertyDescriptor<T> | void {
         const sym = Symbol(`cache-${propertyKey.toString()}`);
 
         target[sym] = SYM_UNCACHED;

@@ -122,11 +122,13 @@ export class AstParser {
      */
     @Cache()
     protected createSourceFile(): SourceFile {
-        return createSourceFile("file.tsx",
+        return createSourceFile(
+            "file.tsx",
             this.text,
             ScriptTarget.ESNext,
             true,
-            ScriptKind.TSX);
+            ScriptKind.TSX,
+        );
     }
 
     /** Returns the token at or following the specified position or undefined if none is found inside `parent`. */
@@ -156,8 +158,7 @@ export class AstParser {
      * @param pos zero-based offset
      */
     public makeLocation(pos: number): Position {
-        const { lineNumber, column } = getNumberAndColumnFromPos(this.text,
-            pos);
+        const { lineNumber, column } = getNumberAndColumnFromPos(this.text, pos);
 
         return new Position(lineNumber - 1, column - 1);
     }
@@ -230,8 +231,7 @@ export class AstParser {
                 ? lineOffsets[position.line + 1]
                 : this.text.length;
 
-        const offset = Math.min(lineOffset + position.character,
-            nextLineOffset);
+        const offset = Math.min(lineOffset + position.character, nextLineOffset);
 
         return this.ensureBeforeEOL(offset, lineOffset);
     }
@@ -249,8 +249,7 @@ export class AstParser {
         return offset;
     }
 
-    private computeLineOffsets(isAtLineStart: boolean,
-        textOffset = 0): number[] {
+    private computeLineOffsets(isAtLineStart: boolean, textOffset = 0): number[] {
         const { text } = this;
         const result: number[] = isAtLineStart ? [textOffset] : [];
 

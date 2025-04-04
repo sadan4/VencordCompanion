@@ -276,8 +276,7 @@ export class PatchHelper {
     private static changeEmitter = new EventEmitter<Uri>();
     public static onDidChange: Event<Uri> = PatchHelper.changeEmitter.event;
 
-    public static async provideTextDocumentContent(uri: Uri,
-        _token: CancellationToken): PromiseProivderResult<string> {
+    public static async provideTextDocumentContent(uri: Uri, _token: CancellationToken): PromiseProivderResult<string> {
         try {
             const helper = PatchHelper.activeWindowsById.get(PatchHelper.idFromUri(uri));
 

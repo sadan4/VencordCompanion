@@ -55,8 +55,10 @@ async function makePatchDiagnostic(doc: VencordAstParser): Promise<Diagnostic[]>
                         type: "testPatch",
                         data,
                     })
-                        .then(() => { },
-                            (e: string | Error) => (typeof e === "string" ? e : e?.message)),
+                        .then(
+                            () => { },
+                            (e: string | Error) => (typeof e === "string" ? e : e?.message),
+                        ),
                 })))
         )
             .filter((e): e is {
@@ -82,8 +84,10 @@ async function makeFindDiagnostic(doc: VencordAstParser): Promise<Diagnostic[]> 
                 .map(async ({ range, use }) => ({
                     range,
                     message: await sendAndGetData(use)
-                        .then(() => { },
-                            (e: string | Error) => (typeof e === "string" ? e : e?.message)),
+                        .then(
+                            () => { },
+                            (e: string | Error) => (typeof e === "string" ? e : e?.message),
+                        ),
                 })))
         )
             .filter((e): e is {

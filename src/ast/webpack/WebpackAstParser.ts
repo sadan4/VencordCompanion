@@ -180,8 +180,7 @@ export class WebpackAstParser extends AstParser {
         // map the assignment of required modules to their uses
         const modules = new Map([...this.vars.entries()].filter(([k]) => {
             return this.uses!.uses.some((e) => {
-                const node = findParrent(e.location,
-                    isVariableDeclaration);
+                const node = findParrent(e.location, isVariableDeclaration);
 
                 return node?.name === k;
             });
@@ -238,8 +237,7 @@ export class WebpackAstParser extends AstParser {
         if (dec.declarations.length !== 1)
             return undefined;
 
-        const init = findParrent(dec.declarations[0],
-            isVariableDeclaration)?.initializer;
+        const init = findParrent(dec.declarations[0], isVariableDeclaration)?.initializer;
 
         if (!init || !isCallExpression(init))
             return undefined;
@@ -530,8 +528,7 @@ export class WebpackAstParser extends AstParser {
                 return undefined;
 
             // the a: function(){return b;} of wreq.d
-            const exportCallAssignment = findObjectLiteralByKey(wreq_dCall.arguments[1],
-                exportName);
+            const exportCallAssignment = findObjectLiteralByKey(wreq_dCall.arguments[1], exportName);
 
             if (!exportCallAssignment
               || !isPropertyAssignment(exportCallAssignment)
@@ -609,8 +606,7 @@ export class WebpackAstParser extends AstParser {
         if (!exportAssignment)
             return undefined;
 
-        const exportObject = findParrent(exportAssignment.location,
-            isBinaryExpression)?.right;
+        const exportObject = findParrent(exportAssignment.location, isBinaryExpression)?.right;
 
         if (!exportObject || !isObjectLiteralExpression(exportObject))
             return undefined;

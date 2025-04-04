@@ -29,8 +29,10 @@ export class treeDataProvider implements TreeDataProvider<TNode> {
             ) => Promisable<Item>) { }
 
             async getNode(): Promise<Item> {
-                return (this.lastNode = await this._getNode(() => provider._onDidChangeTreeData.fire(this),
-                    this.lastNode));
+                return (this.lastNode = await this._getNode(
+                    () => provider._onDidChangeTreeData.fire(this),
+                    this.lastNode,
+                ));
             }
         };
     })();

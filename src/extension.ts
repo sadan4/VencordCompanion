@@ -23,17 +23,22 @@ export function activate(context: ExtensionContext) {
     extensionUri = context.extensionUri;
     extensionPath = context.extensionPath;
     startWebSocketServer();
-    context.subscriptions.push(window.registerTreeDataProvider("vencordSettings", new treeDataProvider()),
+    context.subscriptions.push(
+        window.registerTreeDataProvider("vencordSettings", new treeDataProvider()),
         workspace.onDidChangeTextDocument(onEditCallback),
         workspace.onDidOpenTextDocument(onOpenCallback),
         workspace.onDidCloseTextDocument(PatchHelper.onCloseDocument),
         workspace.onDidChangeTextDocument(PatchHelper.changeDocument),
         window.onDidChangeActiveTextEditor(PatchHelper.changeActiveEditor),
         window.tabGroups.onDidChangeTabs(PatchHelper.onTabClose),
-        languages.registerCodeLensProvider({ pattern: "**/{plugins,userplugins,plugins/_*}/{*.ts,*.tsx,**/index.ts,**/index.tsx}" },
-            new PluginDefCodeLensProvider()),
-        languages.registerCodeLensProvider({ pattern: "**/{plugins,userplugins,plugins/_*}/{*.ts,*.tsx,**/index.ts,**/index.tsx}" },
-            new PatchCodeLensProvider()),
+        languages.registerCodeLensProvider(
+            { pattern: "**/{plugins,userplugins,plugins/_*}/{*.ts,*.tsx,**/index.ts,**/index.tsx}" },
+            new PluginDefCodeLensProvider(),
+        ),
+        languages.registerCodeLensProvider(
+            { pattern: "**/{plugins,userplugins,plugins/_*}/{*.ts,*.tsx,**/index.ts,**/index.tsx}" },
+            new PatchCodeLensProvider(),
+        ),
         languages.registerDefinitionProvider({ language: "javascript" }, new DefinitionProvider()),
         languages.registerReferenceProvider({ language: "javascript" }, new ReferenceProvider()),
 
@@ -342,7 +347,8 @@ export function activate(context: ExtensionContext) {
                 outputChannel.info(`Find bad: ${e}`);
                 vscWindow.showErrorMessage(`Find bad: ${e}`);
             }
-        }));
+        }),
+    );
     if (window.activeTextEditor) {
         onOpenCallback(window.activeTextEditor.document);
     }

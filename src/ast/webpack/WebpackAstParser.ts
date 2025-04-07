@@ -118,23 +118,29 @@ export class WebpackAstParser extends AstParser {
         }
     }
 
+    public async getModulesThatRequireThisModule(): Promise<ModuleDeps | null> {
+        if (!this.moduleId) {
+            return null;
+        }
+
+        if (!ModuleDepManager.hasModDeps()) {
+            await ModuleDepManager.initModDeps({ fromDisk: true });
+        }
+
+        const guh = ModuleDepManager.getModDeps(this.moduleId);
+
+        return {
+            lazy: guh.lazyUses,
+            sync: guh.syncUses,
+        };
+    }
+
     // FIXME: THIS RETURNS TWO DIFFERENT THINGS BASED ON WHETHER THE CACHE IS INITIALIZED OR NOT
     // THAT ARE UNRELATED
     @Cache()
-    public getDeps(): ModuleDeps | null {
+    public getModulesThatThisModuleRequires(): ModuleDeps | null {
         if (!this.wreq || !this.uses)
             return null;
-
-        // check if we're in the cache first
-        if (ModuleDepManager.hasModDeps() && this.moduleId) {
-            // FIXME: horror
-            const guh = ModuleDepManager.getModDeps(this.moduleId);
-
-            return {
-                lazy: guh.lazyUses,
-                sync: guh.syncUses,
-            };
-        }
 
         // flatmaps because .map(...).filter(x => x !== false) isn't a valid typeguard
         /**
@@ -255,8 +261,12 @@ export class WebpackAstParser extends AstParser {
         if (!this.moduleId)
             throw new Error("Could not find module id of module to search for references of");
 
+        if (!ModuleDepManager.hasModDeps()) {
+            await ModuleDepManager.initModDeps({ fromDisk: true });
+        }
+
         const moduleExports = this.getExportMap();
-        const where = this.getDeps();
+        const where = await this.getModulesThatRequireThisModule();
         const locs: Location[] = [];
 
         // TODO: support jumping from object literals
@@ -273,7 +283,7 @@ export class WebpackAstParser extends AstParser {
                     continue;
 
                 const uses = new WebpackAstParser(modText)
-                    .getUsesOfExport(this.moduleId, name);
+                    .getUsesOfImport(this.moduleId, name);
 
                 locs.push(...uses.map((x) => new Location(ModuleCache.getModuleURI(mod), x)));
             }
@@ -291,12 +301,12 @@ export class WebpackAstParser extends AstParser {
     }
 
     /**
-     * @param moduleId the module id that the export is from
-     * @param exportName the string of the export
+     * @param moduleId the imported module id where {@link exportName} is used
+     * @param exportName the string of the exported name
      * TODO: support nested exports eg: `wreq(123).ZP.storeMethod()`
      * @returns the ranges where the export is used in this file
      */
-    getUsesOfExport(moduleId: string, exportName: string): Range[] {
+    getUsesOfImport(moduleId: string, exportName: string): Range[] {
         if (!this.wreq)
             throw new Error("Wreq is not used in this file");
 

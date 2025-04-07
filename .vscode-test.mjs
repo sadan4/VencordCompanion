@@ -1,5 +1,6 @@
+// @ts-check
 import { defineConfig } from "@vscode/test-cli";
-import { dirname, resolve } from "path";
+import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 // build the tests before running them
 
@@ -24,7 +25,10 @@ export default defineConfig({
     },
     mocha: {
         ui: "bdd",
-        color: true
+        color: true,
+        require: [
+            join(__dirname, "scripts", "fixture.cjs"),
+        ]
     },
     launchArgs: [
         "--disable-extensions"

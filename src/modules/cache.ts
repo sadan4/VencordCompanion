@@ -11,8 +11,12 @@ import { ProgressLocation, Uri, window } from "vscode";
 
 class _ModuleCache {
     folder: string;
+    baseFolder: string | undefined;
 
     get workspaceFolder() {
+        if (this.baseFolder)
+            return this.baseFolder;
+
         const toRet = getCurrentFolder();
 
         if (toRet == null) {
@@ -25,8 +29,10 @@ class _ModuleCache {
         return join(this.workspaceFolder, this.folder);
     }
 
-    constructor(folder?: string) {
-        this.folder = folder || ".modules";
+    constructor({ folder = ".modules", baseFolder }: { folder?: string;
+        baseFolder?: string; }) {
+        this.baseFolder = baseFolder;
+        this.folder = folder;
     }
 
     public getModuleURI(id: string) {
@@ -190,6 +196,7 @@ type DepsGeneratorOpts =
   | {
       fromDisk: true;
       folder?: string;
+      baseFolder?: string;
   };
 
 type AllDeps = Record<string, {
@@ -231,7 +238,7 @@ export class ModuleDepManager {
     }
 
     constructor(opts: DepsGeneratorOpts) {
-        this.currentFolder = getCurrentFolder()!;
+        this.currentFolder = ("baseFolder" in opts && opts.baseFolder) || getCurrentFolder()!;
         if (this.currentFolder == null)
             throw new Error("No folder found, please make sure you are in a workspace");
         if ("modmap" in opts) {
@@ -263,7 +270,7 @@ export class ModuleDepManager {
             }
             try {
                 const deps = new WebpackAstParser(text)
-                    .getDeps();
+                    .getModulesThatThisModuleRequires();
 
                 for (const syncDep of deps?.sync ?? []) {
                     toRet[syncDep].syncUses.push(id);
@@ -379,4 +386,6 @@ export class testProgressBar {
     }
 }
 
-export const ModuleCache = new _ModuleCache(".modules");
+export const ModuleCache = new _ModuleCache({
+    folder: ".modules",
+});

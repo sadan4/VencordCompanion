@@ -156,11 +156,11 @@ describe("WebpackAstParser", function () {
             });
         });
     });
-    describe("gets the correct location for an export", function () {
-        const simpleExport_oneUse = require("test://ast/.modules/222222.js");
-
-        it("gets the correct location for wreq.d that has no indirection", function () {
-            const parser = new WebpackAstParser(simpleExport_oneUse);
+    describe("import parsing", function () {
+        it("parses re-exports properly", function () {
+            const module = require("test://ast/webpack/imports/reExport.js");
+            const parser = 
         });
+
     });
 });

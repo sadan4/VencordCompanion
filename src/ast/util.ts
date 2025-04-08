@@ -233,7 +233,9 @@ export function isDefaultKeyword(n: Node): n is DefaultKeyword {
 /**
  * first parent
  */
-export const findParrent: CBAssertion = (node, func) => {
+export const findParrent: CBAssertion<undefined, undefined> = (node, func) => {
+    if (!node)
+        return undefined;
     while (!func(node)) {
         if (!node.parent)
             return undefined;
@@ -247,7 +249,9 @@ export const findParrent: CBAssertion = (node, func) => {
  * @param node the node to start from
  * @param func a function to check if the parent matches
  */
-export const lastParrent: CBAssertion = (node, func) => {
+export const lastParrent: CBAssertion<undefined, undefined> = (node, func) => {
+    if (!node)
+        return undefined;
     if (!node.parent)
         return undefined;
     while (func(node.parent)) {

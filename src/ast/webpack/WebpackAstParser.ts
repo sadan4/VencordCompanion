@@ -8,18 +8,20 @@ import {
     findReturnPropertyAccessExpression,
     getLeadingIdentifier,
     isSyntaxList,
+    lastParrent,
     zeroRange,
 } from "@ast/util";
 import { outputChannel } from "@extension";
 import { ModuleCache, ModuleDepManager } from "@modules/cache";
 import { format } from "@modules/format";
 import { formatModule, mkStringUri, sendAndGetData } from "@server/index";
-import { AssertedType, Definitions, ExportMap, ModuleDeps, References } from "@type/ast";
+import { AssertedType, Definitions, ExportMap, ModuleDeps, RawExportMap, References } from "@type/ast";
 
 import { VariableInfo } from "tsutils/util/usage";
 import {
     CallExpression,
     createSourceFile,
+    Expression,
     Identifier,
     isArrowFunction,
     isBinaryExpression,
@@ -37,6 +39,7 @@ import {
     LiteralToken,
     Node,
     ObjectLiteralExpression,
+    PropertyAccessExpression,
     PropertyAssignment,
     ScriptKind,
     ScriptTarget,
@@ -270,25 +273,188 @@ export class WebpackAstParser extends AstParser {
         const locs: Location[] = [];
 
         // TODO: support jumping from object literals
-        for (const [name] of Object.entries(moduleExports)
+        for (const [exportedName] of Object.entries(moduleExports)
             .filter(([, v]) => Array.isArray(v) && v.some((x) => {
                 if (!x)
                     return;
                 return x.contains(position);
             }))) {
-            for (const mod of where?.sync ?? []) {
-                const modText = await ModuleCache.getModuleFromNum(mod);
+            const seen: Record<string, Set<String>> = {};
 
+            // the module id that is being searched for uses
+            // the ID of the module that exportName will be imported from
+            // the exported name to search
+            type ElementType = [moduleId: string, importedId: string, exportName: string | symbol];
+
+            const left: ElementType[]
+                = where?.sync.map((x) => [x, this.moduleId!, exportedName] as const) ?? [];
+
+            let cur: ElementType | undefined;
+
+            while ((cur = left.pop())) {
+                const [modId, importedId, exportedName] = cur;
+                const modText = await ModuleCache.getModuleFromNum(modId);
+
+                if (seen[importedId]?.has(modId)) {
+                    continue;
+                }
+                (seen[importedId] ||= new Set()).add(modId);
                 if (!modText)
                     continue;
 
-                const uses = new WebpackAstParser(modText)
-                    .getUsesOfImport(this.moduleId, name);
+                const parser = new WebpackAstParser(modText);
+                const uses = parser.getUsesOfImport(importedId, exportedName);
+                const exportedAs = parser.doesReExport(importedId, exportedName);
 
-                locs.push(...uses.map((x) => new Location(ModuleCache.getModuleURI(mod), x)));
+                if (exportedAs) {
+                    const where = await parser.getModulesThatRequireThisModule();
+
+                    left.push(...where?.sync.map((x) => [x, parser.moduleId!, exportedAs] as ElementType) ?? []);
+                }
+
+                locs.push(...uses.map((x) => new Location(ModuleCache.getModuleURI(modId), x)));
             }
         }
         return locs;
+    }
+
+    /**
+     * @param moduleId the module id that {@link exportName} is from
+     * @param exportName the name of the re-exported export
+     */
+    public doesReExport(moduleId: string, exportName: string | symbol):
+      | string | symbol
+      | undefined {
+        // we can't re-export anything if we don't import anything
+        if (!this.wreq || !this.moduleId)
+            return;
+
+        const decl = this.getImportedVar(moduleId);
+
+        if (!decl)
+            return;
+
+        // FIXME: handle re-exports as cjs default, Object.entries ignores symbols
+        const maybeReExports = Object.entries(this.getExportMapRaw())
+            .filter(([, v]) => {
+                if (isIdentifier(v)) {
+                    return this.isUseOf(v, decl);
+                } else if (isPropertyAccessExpression(v)) {
+                    const [module, reExport] = getLeadingIdentifier(v);
+
+                    if (!module)
+                        return false;
+                    // you cant discriminate against destructured unions
+                    return this.isUseOf(module, decl) && reExport!.text === exportName;
+                }
+                outputChannel.warn(`Unhandled type for reExport: ${v.kind}`);
+                return false;
+            })
+            .map(([k]) => k);
+
+        if (maybeReExports.length !== 1) {
+            if (maybeReExports.length > 1) {
+                throw new Error(`Found more than one reExport for wreq(${moduleId}).${String(exportName)} in ${this.moduleId}`);
+            }
+            return;
+        }
+        return maybeReExports[0];
+    }
+
+    // TODO: add tests for this func
+    /**
+     * @returns a map of exported names to the nodes that they are exported from
+     */
+    @Cache()
+    getExportMapRaw() {
+        return {
+            ...this.getExportMapRawWreq_d() ?? {},
+            ...this.getExportMapRawWreq_t() ?? {},
+            ...this.getExportMapRawWreq_e() ?? {},
+        };
+    }
+
+    @Cache()
+    public getExportMapRawWreq_d(): RawExportMap<Identifier | PropertyAccessExpression> | undefined {
+        const wreqD = this.findWreq_d();
+
+        if (!wreqD)
+            return;
+
+        const [, exports] = wreqD.arguments;
+
+        return Object.fromEntries(exports.properties.map((x) => {
+            if (!isPropertyAssignment(x) || !(isArrowFunction(x.initializer) || isFunctionExpression(x.initializer)))
+                return false;
+
+            const ret = findReturnIdentifier(x.initializer) ?? findReturnPropertyAccessExpression(x.initializer);
+
+            return ret != null && [x.name.getText(), ret];
+        })
+            .filter((x) => x !== false));
+    }
+
+    @Cache()
+    public getExportMapRawWreq_e(): RawExportMap<Expression> | undefined {
+        const wreqE = this.findWreq_e();
+
+        if (!wreqE)
+            return;
+
+        const uses = this.vars.get(wreqE);
+
+        if (!uses)
+            return;
+
+        const exportAssignments = uses.uses
+            .filter(({ location }) => {
+                const [, moduleProp] = getLeadingIdentifier(location);
+
+                return moduleProp?.text === "exports";
+            })
+            .map((x) => x.location)
+            .map((x) => {
+                let name: string | symbol | undefined
+                    = this.flattenPropertyAccessExpression(lastParrent(x, isPropertyAccessExpression))?.[2]?.text;
+
+                name ||= WebpackAstParser.SYM_CJS_DEFAULT;
+
+                const ret = findParrent(x, isBinaryExpression)?.right;
+
+                return ret && [name, ret] as const;
+            })
+            .filter((x) => x !== undefined);
+
+        if (exportAssignments.length === 0)
+            return;
+        return Object.fromEntries(exportAssignments);
+    }
+
+    @Cache()
+    public getExportMapRawWreq_t(): RawExportMap<Expression> | undefined {
+        const wreqT = this.findWreq_t();
+
+        if (!wreqT)
+            return;
+
+        const uses = this.vars.get(wreqT);
+
+        if (!uses)
+            return;
+
+        return Object.fromEntries(uses.uses.map(({ location }): readonly [string, Expression] | undefined => {
+            const [, exportAssignment] = getLeadingIdentifier(location);
+            const binary = findParrent(location, isBinaryExpression);
+
+            if (exportAssignment && binary?.right) {
+                return [
+                    exportAssignment.text,
+                    binary.right,
+                ];
+            }
+            return undefined;
+        })
+            .filter((x) => x !== undefined));
     }
 
     @Cache()
@@ -300,15 +466,34 @@ export class WebpackAstParser extends AstParser {
         };
     }
 
+    public getImportedVar(moduleId: string): Identifier | undefined {
+        if (!this.wreq)
+            throw new Error("Wreq is not used in this file");
+
+        const uses = this.uses!.uses.find(({ location }) => {
+            const call = findParrent(location, isCallExpression);
+
+            return call?.arguments.length === 1 && call.arguments[0].getText() === moduleId;
+        });
+
+        const ret = findParrent(uses?.location, isVariableDeclaration)?.name;
+
+        if (this.isIdentifier(ret))
+            return ret;
+    }
+
     /**
      * @param moduleId the imported module id where {@link exportName} is used
-     * @param exportName the string of the exported name
+     * @param exportName the string of the exported name or {@link SYM_CJS_DEFAULT} for the default export
      * TODO: support nested exports eg: `wreq(123).ZP.storeMethod()`
      * @returns the ranges where the export is used in this file
      */
-    getUsesOfImport(moduleId: string, exportName: string): Range[] {
+    getUsesOfImport(moduleId: string, exportName: string | symbol): Range[] {
         if (!this.wreq)
             throw new Error("Wreq is not used in this file");
+        if (typeof exportName === "symbol" && exportName !== WebpackAstParser.SYM_CJS_DEFAULT) {
+            throw new Error("Invalid symbol for exportName");
+        }
 
         const uses: Range[] = [];
 
@@ -325,6 +510,65 @@ export class WebpackAstParser extends AstParser {
                     continue;
 
                 const importUses = this.vars.get(norm.name);
+
+                // handle things like `var foo = wreq(1), bar = wreq.n(foo)`
+                nmd: {
+                    if (importUses?.uses.length === 1) {
+                        const loc = importUses.uses[0].location;
+                        const call = findParrent(loc, isCallExpression);
+
+                        if (!call || call.arguments.length !== 1 || call.arguments[0] !== loc)
+                            break nmd;
+
+                        // ensure the call is `n.n(...)`
+                        const funcExpr = call.expression;
+
+                        // ensure something like `foo.bar`
+                        if (!isPropertyAccessExpression(funcExpr)
+                          || !isIdentifier(funcExpr.name)
+                          || !isIdentifier(funcExpr.expression))
+                            break nmd;
+                        // ensure the first part is wreq
+                        if (!this.isUseOf(funcExpr.expression, this.wreq)
+                          || funcExpr.name.text !== "n")
+                            break nmd;
+
+                        const decl = findParrent(funcExpr, isVariableDeclaration)?.name;
+
+                        if (!decl || !isIdentifier(decl))
+                            break nmd;
+
+                        this.vars.get(decl)
+                            ?.uses
+                            ?.map((x) => x.location.parent)
+                            .filter(isCallExpression)
+                            .map((calledUse): Range[] | undefined => {
+                                if (exportName === WebpackAstParser.SYM_CJS_DEFAULT) {
+                                    // TODO: handle default exports other than just functions
+                                    return isCallExpression(calledUse.parent)
+                                        ? [this.makeRangeFromAstNode(calledUse)]
+                                        : undefined;
+                                } else if (typeof exportName === "string") {
+                                    const expr = findParrent(calledUse, isPropertyAccessExpression);
+
+                                    if (!(!!expr && expr.expression === calledUse && expr.name.text === exportName))
+                                        return undefined;
+
+                                    return [this.makeRangeFromAstNode(expr.name)];
+                                }
+                                throw new Error("Invalid exportName");
+                            })
+                            .filter((x) => x !== undefined)
+                            .forEach((use) => {
+                                const final = use.at(-1);
+
+                                if (!final)
+                                    throw new Error("Final is undefined, this should have been filtered out by the previous line as there should be no empty arrays");
+
+                                uses.push(final);
+                            });
+                    }
+                }
 
                 for (const { location } of importUses?.uses ?? []) {
                     if (!isPropertyAccessExpression(location.parent))
@@ -518,7 +762,7 @@ export class WebpackAstParser extends AstParser {
     }
 
     @Cache()
-    findWreq_d(): (CallExpression & { arguments: [Identifier, ObjectLiteralExpression, ...any]; }) | undefined {
+    findWreq_d(): (Omit<CallExpression, "arguments"> & { arguments: readonly [Identifier, ObjectLiteralExpression]; }) | undefined {
         if (this.uses) {
             const maybeWreqD = this.uses.uses.find((use) => getLeadingIdentifier(use.location)[1]?.text === "d")?.location.parent.parent;
 

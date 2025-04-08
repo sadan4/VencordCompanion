@@ -382,6 +382,7 @@ const styleRules: Partial<_RuleOptions> = {
             nestedBinaryExpressions: false,
             enforceForArrowConditionals: false,
             returnAssign: false,
+            conditionalAssign: false,
         },
     ],
     "@stylistic/no-extra-semi": ["error"],

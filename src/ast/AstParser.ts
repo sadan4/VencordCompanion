@@ -18,13 +18,18 @@ import {
     isFunctionDeclaration,
     isFunctionExpression,
     isFunctionLike,
+    isIdentifier,
     isJsxText,
     isNumericLiteral,
+    isPropertyAccessExpression,
     isRegularExpressionLiteral,
     isStringLiteralLike,
     isVariableDeclaration,
+    LeftHandSideExpression,
     LiteralToken,
+    MemberName,
     Node,
+    PropertyAccessExpression,
     ReadonlyTextRange,
     ScriptKind,
     ScriptTarget,
@@ -56,6 +61,24 @@ export class AstParser {
             outputChannel.debug("getVarInfoFromUse: no variable info found for identifier");
         }
         return toRet;
+    }
+
+    // FIXME: add tests for this
+    /**
+     * @param use a use of a variable
+     * @param decl a declaration of a variable
+     * @returns true of the use is a use of the declaration, false otherwise
+     */
+    public isUseOf(use: Identifier, decl: Identifier): boolean {
+        if (!decl || !use)
+            return false;
+
+        const varInfo = this.vars.get(decl);
+
+        if (!varInfo)
+            return false;
+
+        return varInfo.uses.some(({ location }) => location === use);
     }
 
     public constructor(text: string) {
@@ -113,6 +136,40 @@ export class AstParser {
         if (!isVariableDeclaration(dec))
             return;
         return dec.initializer;
+    }
+
+    // TODO: add tests for this
+    /**
+     * @param expr the property access expression to flatten
+     *
+     * given a property access expression like `foo.bar.baz.qux`
+     * 
+     * @returns the identifiers [`foo`, `bar`, `baz`, `qux`]
+     * 
+     * given another property access expression like `foo.bar.baz[0].qux.abc`
+     * 
+     * @returns the elementAccessExpression, followed by the identifiers [`foo.bar.baz[0]`, `qux`, `abc`]
+     */
+    public flattenPropertyAccessExpression(expr: PropertyAccessExpression | undefined):
+      | readonly [LeftHandSideExpression, ...MemberName[]]
+      | undefined {
+        if (!expr)
+            return undefined;
+
+        const toRet = [] as any as [LeftHandSideExpression, ...MemberName[]];
+        let cur = expr;
+
+        do {
+            toRet.unshift(cur.name);
+            if (isIdentifier(cur.expression)) {
+                toRet.unshift(cur.expression);
+                return toRet;
+            }
+            if (!isPropertyAccessExpression(cur.expression)) {
+                toRet.unshift(cur.expression);
+                return;
+            }
+        } while ((cur = cur.expression));
     }
 
     /**
@@ -200,6 +257,10 @@ export class AstParser {
 
     public isFunctionLike(node: Node): node is FunctionDeclaration | ArrowFunction | FunctionExpression {
         return isArrowFunction(node) || isFunctionDeclaration(node) || isFunctionExpression(node);
+    }
+
+    public isIdentifier(node: Node | undefined): node is Identifier {
+        return !!node && isIdentifier(node);
     }
 
     /**

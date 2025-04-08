@@ -2,7 +2,8 @@ import { WebpackAstParser } from "@ast/webpack";
 import { ExportMap } from "@type/ast";
 
 import { expect } from "chai";
-import { Range } from "vscode";
+import { resolve } from "node:path";
+import { Location, Position, Range, Uri } from "vscode";
 
 describe("WebpackAstParser", function () {
     const normalModule: string = require("test://ast/webpack/module.js");
@@ -18,6 +19,7 @@ describe("WebpackAstParser", function () {
     });
 
     describe("export parsing", function () {
+        // TODO: add length check for wreq.d args
         it("parses a module with only wreq.d", function () {
             const parser = new WebpackAstParser(normalModule);
             const map: ExportMap = parser.getExportMap();
@@ -157,10 +159,123 @@ describe("WebpackAstParser", function () {
         });
     });
     describe("import parsing", function () {
-        it("parses re-exports properly", function () {
-            const module = require("test://ast/webpack/imports/reExport.js");
-            const parser = 
-        });
+        it("parses an only re-exported export properly", function () {
+            const parser = new WebpackAstParser(require("test://ast/webpack/imports/reExport.js"));
+            const test = parser.getUsesOfImport("999001", "foo");
 
+            expect(test).to.deep.equal([new Range(5, 21, 5, 24)]);
+        });
+        it("parses a re-export with other uses", function () {
+            const parser = new WebpackAstParser(require("test://ast/webpack/imports/reExport.js"));
+            const test = parser.getUsesOfImport("999001", "bar");
+
+            expect(test).to.have.deep.members([new Range(6, 22, 6, 25), new Range(10, 18, 10, 21)]);
+        });
+        it("returns [] when there are no uses of that export for that module", function () {
+            const parser = new WebpackAstParser(require("test://ast/webpack/imports/reExport.js"));
+            const test = parser.getUsesOfImport("999001", "baz");
+
+            expect(test).to.deep.equal([]);
+        });
+        it("returns [] when the module ID is not imported", function () {
+            const parser = new WebpackAstParser(require("test://ast/webpack/imports/reExport.js"));
+            const text = parser.getUsesOfImport("999003", "foo");
+
+            expect(text).to.deep.equal([]);
+        });
+        it("returns [] when there are no uses of that export for that module 2", function () {
+            const parser = new WebpackAstParser(require("test://ast/webpack/imports/indirectCall.js"));
+            const test = parser.getUsesOfImport("999002", "bar");
+
+            expect(test).to.deep.equal([]);
+        });
+        it("returns [] when the module ID is not imported 2", function () {
+            const parser = new WebpackAstParser(require("test://ast/webpack/imports/indirectCall.js"));
+            const text = parser.getUsesOfImport("999004", "foo");
+
+            expect(text).to.deep.equal([]);
+        });
+        it("parses an indirect call properly", function () {
+            const parser = new WebpackAstParser(require("test://ast/webpack/imports/indirectCall.js"));
+            const test = parser.getUsesOfImport("999002", "foo");
+
+            expect(test).to.deep.equal([new Range(9, 22, 9, 25)]);
+        });
+        it("throws when wreq is not used", function () {
+            const parser = new WebpackAstParser(require("test://ast/webpack/imports/noWreq.js"));
+
+            // args should not matter as it should throw before
+            expect(parser.getUsesOfImport.bind(parser)).to.throw("Wreq is not used in this file");
+        });
+        it("parses node default exports correctly", function () {
+            const parser = new WebpackAstParser(require("test://ast/webpack/imports/nodeModule.js"));
+            const test = parser.getUsesOfImport("999005", WebpackAstParser.SYM_CJS_DEFAULT);
+
+            expect(test).to.have.deep.members([new Range(20, 15, 20, 19), new Range(15, 8, 15, 12)]);
+        });
+        it("parsed named node exports correctly", function () {
+            const parser = new WebpackAstParser(require("test://ast/webpack/imports/nodeModule.js"));
+            const test = parser.getUsesOfImport("999005", "qux");
+
+            expect(test).to.have.deep.members([new Range(19, 13, 19, 16), new Range(16, 20, 16, 23)]);
+        });
+    });
+    // INFO: this assumes that the cache is working properly
+    // TODO: add septate testing for the cache
+    describe("cache parsing", function () {
+        function makeModulePath(file: string): string {
+            return resolve(
+                __dirname,
+                "..",
+                "..",
+                "..",
+                "assets",
+                "test",
+                "ast",
+                ".modules",
+                file,
+            );
+        }
+        describe("re-export handling", function () {
+            it("handles re-exports across wreq.d", async function () {
+                const parser = new WebpackAstParser(require("test://ast/.modules/333333.js"));
+                const locs = await parser.generateReferences(new Position(5, 8));
+
+                console.log(locs);
+            });
+        });
+        it("finds a simple use in only one file", async function () {
+            const parser = new WebpackAstParser(require("test://ast/.modules/222222.js"));
+            const locs = await parser.generateReferences(new Position(6, 8));
+
+            expect(locs).to.deep.equal([
+                new Location(
+                    Uri.file(makeModulePath("111111.js")),
+                    new Range(13, 26, 13, 27),
+                ),
+            ]);
+        });
+        it("finds a simple export in more than one file", async function () {
+            const parser = new WebpackAstParser(require("test://ast/.modules/222222.js"));
+            const locs = await parser.generateReferences(new Position(5, 8));
+
+            expect(locs).to.have.deep.members([
+                ...[[13, 18], [13, 40]]
+                    .map(([y1, x1]) => new Location(
+                        Uri.file(makeModulePath("111111.js")),
+                        new Range(y1, x1, y1, x1 + 1),
+                    )),
+                new Location(
+                    Uri.file(makeModulePath("999999.js")),
+                    new Range(13, 41, 13, 42),
+                ),
+            ]);
+        });
+        it.skip("finds all uses across multiple files", function () {
+
+        });
+        it.skip("finds all uses when e.exports is used", function () {
+
+        });
     });
 });

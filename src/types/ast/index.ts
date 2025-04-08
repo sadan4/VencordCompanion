@@ -34,6 +34,13 @@ export interface ExportMap {
     [exposedName: string | symbol]: (Range | undefined)[] | ExportMap;
 }
 
+/**
+ * {@link ExportMap}, but only has the first level of exports, and they are stored as nodes(most of the time)
+ */
+export interface RawExportMap<T> {
+    [exposedName: string | symbol]: T;
+}
+
 export interface ModuleDeps {
     lazy: string[];
     sync: string[];
@@ -64,11 +71,11 @@ export type AssertedType<T extends Function, E = any> = T extends (
     a: any
 ) => a is infer R ? R extends E ? R : never : never;
 
-export type CBAssertion<U = undefined> = <
+export type CBAssertion<U = undefined, N = never> = <
     F extends (n: Node) => n is Node,
     R extends Node = AssertedType<F, Node>,
 >(
-    node: Node,
+    node: Node | N,
     func: F extends (n: Node) => n is R ? F : never
 ) => R | U;
 

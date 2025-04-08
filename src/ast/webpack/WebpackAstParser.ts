@@ -15,7 +15,7 @@ import { outputChannel } from "@extension";
 import { ModuleCache, ModuleDepManager } from "@modules/cache";
 import { format } from "@modules/format";
 import { formatModule, mkStringUri, sendAndGetData } from "@server/index";
-import { AssertedType, Definitions, ExportMap, ModuleDeps, RawExportMap, References } from "@type/ast";
+import { AssertedType, Definitions, ExportMap, ModuleDeps, RawExportMap, References, Store } from "@type/ast";
 
 import { VariableInfo } from "tsutils/util/usage";
 import {
@@ -26,17 +26,23 @@ import {
     isArrowFunction,
     isBinaryExpression,
     isCallExpression,
+    isClassDeclaration,
+    isConstructorDeclaration,
     isExpressionStatement,
     isFunctionDeclaration,
     isFunctionExpression,
     isIdentifier,
+    isMethodDeclaration,
+    isNewExpression,
     isNumericLiteral,
     isObjectLiteralExpression,
+    isParenthesizedExpression,
     isPropertyAccessExpression,
     isPropertyAssignment,
     isStringLiteral,
     isVariableDeclaration,
     LiteralToken,
+    NewExpression,
     Node,
     ObjectLiteralExpression,
     PropertyAccessExpression,
@@ -734,23 +740,200 @@ export class WebpackAstParser extends AstParser {
 
         return Object.fromEntries(exports.properties.map((x): false | [string, ExportMap[string]] => {
             if (!isPropertyAssignment(x) || !(isArrowFunction(x.initializer) || isFunctionExpression(x.initializer)))
-                return false as const;
+                return false;
 
-            let ret: Node | undefined = findReturnIdentifier(x.initializer);
+            let lastNode: Node | undefined = findReturnIdentifier(x.initializer);
 
-            ret ??= findReturnPropertyAccessExpression(x.initializer);
-            return ret != null
-                ? [
-                    x.name.getText(),
-                    [
-                        this.makeRangeFromAstNode(x.name),
-                        isIdentifier(ret) ? this.makeRangeFromFunctionDef(ret) : undefined,
-                    ],
-                ]
-                : false as const;
+            lastNode ??= findReturnPropertyAccessExpression(x.initializer);
+
+            let ret: ExportMap[keyof ExportMap] | undefined = this.tryParseStoreForExport(lastNode);
+
+            if (!ret)
+                if (this.isIdentifier(lastNode))
+                    ret = [this.makeRangeFromAstNode(x.name), this.makeRangeFromFunctionDef(lastNode)];
+                else
+                    ret = [undefined];
+
+            return lastNode != null
+                ? [x.name.getText(), ret]
+                : false;
         })
             .filter((x) => x !== false) as any);
     }
+
+    tryParseStoreForExport(node: Node | undefined): ExportMap | undefined {
+        if (!node)
+            return;
+
+        if (!isIdentifier(node)) {
+            outputChannel.debug("Could not find identifier for store export");
+            return;
+        }
+
+        const decl = this.getVarInfoFromUse(node);
+
+        if (!decl)
+            return;
+
+        const allUses = decl.uses
+            .map(({ location }) => location)
+            .concat(...decl.declarations);
+
+        // find where it's set to the new store
+        // there should never be more than one assignment
+        const uses = allUses.filter((ident) => {
+            return this.isVariableAssignmentLike(node.parent);
+        });
+
+        if (uses.length === 0) {
+            return;
+        } else if (uses.length > 1) {
+            outputChannel.warn(`Found more than one store assignment in module ${this.moduleId}, this should not happen`);
+            return;
+        }
+
+        const [use] = uses;
+
+        const initializer = (() => {
+            if (isVariableDeclaration(use.parent)) {
+                if (!use.parent.initializer) {
+                    throw new Error("Variable declaration has no initializer, this should be filtered out by the previous isVariableAssignmentLike check");
+                }
+                return use.parent.initializer;
+            } else if (this.isAssignmentExpression(use.parent)) {
+                return use.parent.right;
+            }
+            throw new Error("Unexpected type for use, this should not happen");
+        })();
+
+        if (!isNewExpression(initializer))
+            return;
+
+        const store = this.parseStore(initializer);
+    }
+
+    parseStore(storeInit: NewExpression): Store | undefined {
+        const ret: Store = {
+            store: [],
+            fluxEvents: {},
+            methods: {},
+            props: {},
+        };
+
+        const storeVar = storeInit.expression;
+        const args = storeInit.arguments;
+
+        if (!args || args.length !== 2) {
+            outputChannel.warn(`Incorrect number of arguments for a store instantiation, expected 2, found ${args.length}`);
+            return;
+        }
+
+        const [,events] = args;
+
+        if (!isObjectLiteralExpression(events)) {
+            outputChannel.warn("Expected the flux events to be an object literal expression");
+            return;
+        }
+        for (const prop of events.properties) {
+            if (!isPropertyAssignment(prop)) {
+                outputChannel.debug("found prob that is not a property assignment, this should be handled");
+                continue;
+            }
+            ret.fluxEvents[prop.name.getText()] = [prop.initializer];
+            if (isIdentifier(prop.initializer)) {
+                const trail = this.unwrapVariableDeclaration(prop.initializer)
+                    ?.toReversed();
+
+                if (trail)
+                    ret.fluxEvents[prop.name.getText()].push(...trail);
+            }
+        }
+        if (!isIdentifier(storeVar)) {
+            // TODO: parse this
+            outputChannel.debug("anything than an identifier is not supported for store instantiations yet");
+            return;
+        }
+        ret.store.push(storeVar);
+
+        const storeVarInfo = this.getVarInfoFromUse(storeVar);
+
+        if (!storeVarInfo || storeVarInfo.declarations.length === 0) {
+            outputChannel.debug("Could not find store declaration");
+            return;
+        }
+        if (storeVarInfo.declarations.length > 1) {
+            outputChannel.warn("Found more than one store declaration, this should not happen");
+            return;
+        }
+
+        const [decl] = storeVarInfo.declarations;
+
+        ret.store.push(decl);
+
+        const classDecl = decl.parent;
+
+        if (!isClassDeclaration(classDecl)) {
+            outputChannel.warn("Store decl is not a class");
+            return;
+        }
+
+        // check if any of the extends clauses extend Store
+        const extendsStore = (() => {
+            return classDecl.heritageClauses?.some((_clause) => {
+                return _clause.types.some((clause) => {
+                    const parenExpr: Node = clause.expression;
+
+                    if (!isParenthesizedExpression(parenExpr))
+                        return false;
+
+                    const binaryExpr = parenExpr.expression;
+
+                    if (!this.isAssignmentExpression(binaryExpr)) {
+                        return false;
+                    }
+
+                    const lastIdent = (() => {
+                        if (isPropertyAccessExpression(binaryExpr.right)) {
+                            return binaryExpr.right.name;
+                        } else if (isIdentifier(binaryExpr.right)) {
+                            return binaryExpr.right;
+                        }
+                        outputChannel.warn("Unknown expresison for store inheritance");
+                        return;
+                    })();
+
+                    if (!lastIdent)
+                        return false;
+                    if (lastIdent.text === "Store") {
+                        return true;
+                    }
+                    outputChannel.debug(`Unknown store superclass name. got: ${lastIdent.text}`);
+                    return false;
+                });
+            });
+        })();
+
+        if (!extendsStore) {
+            outputChannel.debug("Store class does not extend Store");
+            return;
+        }
+
+        for (const member of classDecl.members) {
+            if (isMethodDeclaration(member)) {
+                if (!member.body)
+                    continue;
+                ret.methods[member.name.getText()] = member;
+                continue;
+            } else if (isConstructorDeclaration(member)) {
+                ret.store.push(member);
+            } else if (isPropertyAssignment(member)) {
+                ret.props[member.name.getText()] = member.initializer;
+            }
+        }
+
+        return ret;
+    }
+
 
     findExportLocation(exportName: string): Range {
         return (

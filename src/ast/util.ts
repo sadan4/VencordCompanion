@@ -292,7 +292,7 @@ export const lastChild: CBAssertion<undefined> = (node, func) => {
 };
 
 // FIXME: this seems really stupid
-function one<
+export function one<
     T,
     F extends (t: T) => t is T,
     R extends T = AssertedType<F, T>,
@@ -583,5 +583,8 @@ export const enum CharCode {
 
 export function isEOL(char: number) {
     return char === CharCode.CarriageReturn || char === CharCode.LineFeed;
+}
+export function TAssert<T>(thing: T): void {
+    return void thing;
 }
 

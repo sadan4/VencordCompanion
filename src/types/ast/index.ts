@@ -1,11 +1,20 @@
 import { PatchData, TestFind } from "@type/server";
 
-import { ArrowFunction, FunctionExpression, Identifier, ModuleExportName, Node } from "typescript";
+import {
+    ArrowFunction,
+    ConstructorDeclaration,
+    FunctionExpression,
+    FunctionLikeDeclaration,
+    Identifier,
+    ModuleExportName,
+    Node,
+    PropertyAssignment,
+} from "typescript";
 import { Definition, Location, LocationLink, Range } from "vscode";
 
 export type AnyFunction = FunctionExpression | ArrowFunction;
 
-export type WithParent<N, P> = N & {
+export type WithParent<N, P> = Omit<N, "parent"> & {
     parent: P;
 };
 /**
@@ -79,3 +88,23 @@ export type CBAssertion<U = undefined, N = never> = <
     func: F extends (n: Node) => n is R ? F : never
 ) => R | U;
 
+export interface Store {
+    fluxEvents: {
+        [name: string]: Node[];
+    };
+    /**
+     * the store itself
+     * starts with the foo from `new foo(a, {b})`
+     * 
+     * then has the class name itself (most likely foo again)
+     * 
+     * ends with the constructor/initialize function (if any)
+     */
+    store: (Identifier | ConstructorDeclaration)[];
+    methods: {
+        [name: string]: FunctionLikeDeclaration;
+    };
+    props: {
+        [name: string]: PropertyAssignment["initializer"];
+    };
+}

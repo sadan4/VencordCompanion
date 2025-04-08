@@ -7,6 +7,8 @@ import { collectVariableUsage, VariableInfo } from "tsutils/util/usage";
 import { getTokenAtPosition } from "tsutils/util/util";
 import {
     ArrowFunction,
+    AssignmentExpression,
+    AssignmentOperatorToken,
     CallExpression,
     createSourceFile,
     Expression,
@@ -15,6 +17,7 @@ import {
     Identifier,
     isArrowFunction,
     isBigIntLiteral,
+    isBinaryExpression,
     isFunctionDeclaration,
     isFunctionExpression,
     isFunctionLike,
@@ -35,6 +38,7 @@ import {
     ScriptTarget,
     SourceFile,
     SyntaxKind,
+    VariableDeclaration,
 } from "typescript";
 import { Position, Range } from "vscode";
 
@@ -136,6 +140,56 @@ export class AstParser {
         if (!isVariableDeclaration(dec))
             return;
         return dec.initializer;
+    }
+
+    public isVariableAssignmentLike(node: Node | undefined):
+    node is
+    | (
+      & Omit<VariableDeclaration, "name" | "initializer">
+      & {
+          name: Identifier;
+          initilizer: Exclude<VariableDeclaration["initializer"], undefined>;
+      }
+    )
+    | (Omit<AssignmentExpression<AssignmentOperatorToken>, "left"> & { left: Identifier; }) {
+        if (!node)
+            return false;
+
+        if (isVariableDeclaration(node)) {
+            return isIdentifier(node.name) && !!node.initializer;
+        } else if (isBinaryExpression(node)) {
+            return this.isAssignmentExpression(node);
+        }
+        return false;
+    }
+
+    public isAssignmentExpression(node: Node | undefined):
+     node is AssignmentExpression<AssignmentOperatorToken> {
+        if (!node || !isBinaryExpression(node) || !isIdentifier(node.left))
+            return false;
+
+
+        switch (node.operatorToken.kind) {
+            case SyntaxKind.EqualsToken:
+            case SyntaxKind.PlusEqualsToken:
+            case SyntaxKind.MinusEqualsToken:
+            case SyntaxKind.AsteriskAsteriskEqualsToken:
+            case SyntaxKind.AsteriskEqualsToken:
+            case SyntaxKind.SlashEqualsToken:
+            case SyntaxKind.PercentEqualsToken:
+            case SyntaxKind.AmpersandEqualsToken:
+            case SyntaxKind.BarEqualsToken:
+            case SyntaxKind.CaretEqualsToken:
+            case SyntaxKind.LessThanLessThanEqualsToken:
+            case SyntaxKind.GreaterThanGreaterThanGreaterThanEqualsToken:
+            case SyntaxKind.GreaterThanGreaterThanEqualsToken:
+            case SyntaxKind.BarBarEqualsToken:
+            case SyntaxKind.AmpersandAmpersandEqualsToken:
+            case SyntaxKind.QuestionQuestionEqualsToken:
+                return true;
+            default:
+                return false;
+        }
     }
 
     // TODO: add tests for this

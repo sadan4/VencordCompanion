@@ -259,6 +259,10 @@ describe("WebpackAstParser", function () {
                     makeLineRange(5, 17, 30),
                 ]);
             });
+            it.skip("handles re-exports across wreq.t", async function () {
+            });
+            it.skip("handles re-exports across wreq.e", async function () {
+            });
         });
         it("finds a simple use in only one file", async function () {
             const parser = new WebpackAstParser(require("test://ast/.modules/222222.js"));
@@ -276,10 +280,26 @@ describe("WebpackAstParser", function () {
                 makeLineRange(9, 13, 41),
             ]);
         });
-        it.skip("finds all uses across multiple files", function () {
+        it("finds all uses when e.exports is used", async function () {
+            const parser = new WebpackAstParser(require("test://ast/.modules/888888.js"));
+            const locs = await parser.generateReferences(new Position(10, 15));
+
+            console.log(locs);
+        });
+        it.skip("finds all uses of a default e.exports", function () {
 
         });
-        it.skip("finds all uses when e.exports is used", function () {
+        /**
+         * ```js
+         * function foo() {
+         * }
+         * function bar() {
+         * }
+         * foo.bar = bar;
+         * e.exports = foo;
+         * ```
+         */
+        it.skip("finds all uses of a default e.exports where the exports are assigned to the default export first", function () {
 
         });
     });

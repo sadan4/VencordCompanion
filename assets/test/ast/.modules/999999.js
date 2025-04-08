@@ -4,7 +4,7 @@ function(e, t, n) {
     n.d(t, {
         ZP: () => h
     });
-    var r, i, a = n(555002),
+    var r, i, l, a = n(555002),
         _2 = n(222222);
     class p extends (l = a.ZP.Store) {
         initialize() {
@@ -12,6 +12,9 @@ function(e, t, n) {
         }
         getFoo() {
             return window.doThing() + _2.H(9, 7);
+        }
+        getBar() {
+            return 2;
         }
     }
     i = "MyTestingStore",
@@ -22,10 +25,8 @@ function(e, t, n) {
         writable: !0
     }) : p[r] = i;
     let h = new p(o.Z,{
-        CONNECTION_OPEN: d,
-        GLOBAL_DISCOVERY_SERVERS_SEARCH_LAYOUT_RESET: d,
-        GLOBAL_DISCOVERY_SERVERS_SEARCH_COUNT_SUCCESS: function(e) {
-            window.doThing(e);
+        FLUX_EVENT_HANDLER(e) {
+            update_state_123(e)
         }
     })
 }

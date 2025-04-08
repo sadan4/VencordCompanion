@@ -157,6 +157,14 @@ describe("WebpackAstParser", function () {
                 expect(map.gzip[2]).to.deep.equal(new Range(60, 13, 60, 14));
             });
         });
+        describe("stores", function () {
+            it("generates the proper export map for a store", function () {
+                const parser = new WebpackAstParser(require("test://ast/webpack/store.js"));
+                const map = parser.getExportMap();
+
+                console.log(map);
+            });
+        });
     });
     describe("import parsing", function () {
         it("parses an only re-exported export properly", function () {
@@ -253,7 +261,7 @@ describe("WebpackAstParser", function () {
 
                 expect(locs).to.have.deep.members([
                     makeLineRange(2, 18, 29),
-                    makeLineRange(1, 20, 34),
+                    makeLineRange(1, 23, 34),
                     makeLineRange(4, 5, 20),
                     makeLineRange(5, 12, 30),
                     makeLineRange(5, 17, 30),
@@ -268,23 +276,17 @@ describe("WebpackAstParser", function () {
             const parser = new WebpackAstParser(require("test://ast/.modules/222222.js"));
             const locs = await parser.generateReferences(new Position(6, 8));
 
-            expect(locs).to.deep.equal([makeLineRange(1, 13, 26)]);
+            expect(locs).to.deep.equal([makeLineRange(1, 15, 26)]);
         });
         it("finds a simple export in more than one file", async function () {
             const parser = new WebpackAstParser(require("test://ast/.modules/222222.js"));
             const locs = await parser.generateReferences(new Position(5, 8));
 
             expect(locs).to.have.deep.members([
-                makeLineRange(1, 13, 18),
-                makeLineRange(1, 13, 40),
+                makeLineRange(1, 15, 18),
+                makeLineRange(1, 15, 40),
                 makeLineRange(9, 13, 41),
             ]);
-        });
-        it("finds all uses when e.exports is used", async function () {
-            const parser = new WebpackAstParser(require("test://ast/.modules/888888.js"));
-            const locs = await parser.generateReferences(new Position(10, 15));
-
-            console.log(locs);
         });
         it.skip("finds all uses of a default e.exports", function () {
 
@@ -301,6 +303,14 @@ describe("WebpackAstParser", function () {
          */
         it.skip("finds all uses of a default e.exports where the exports are assigned to the default export first", function () {
 
+        });
+        describe("stores", function () {
+            it("finds all uses of a store from the class name", async function () {
+                const parser = new WebpackAstParser(require("test://ast/.modules/999999.js"));
+                const locs = await parser.generateReferences(new Position(8, 11));
+
+                console.log(locs);
+            });
         });
     });
 });

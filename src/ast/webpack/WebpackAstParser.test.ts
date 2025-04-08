@@ -223,8 +223,8 @@ describe("WebpackAstParser", function () {
     // INFO: this assumes that the cache is working properly
     // TODO: add septate testing for the cache
     describe("cache parsing", function () {
-        function makeModulePath(file: string): string {
-            return resolve(
+        function makeModulePath(file: string): Uri {
+            return Uri.file(resolve(
                 __dirname,
                 "..",
                 "..",
@@ -234,6 +234,16 @@ describe("WebpackAstParser", function () {
                 "ast",
                 ".modules",
                 file,
+            ));
+        }
+
+        function makeLineRange(file: string | number, y1, x1: number, len = 1) {
+            if (typeof file === "number") {
+                file = `${file * 111111}.js`;
+            }
+            return new Location(
+                makeModulePath(file),
+                new Range(y1, x1, y1, x1 + len),
             );
         }
         describe("re-export handling", function () {
@@ -241,34 +251,29 @@ describe("WebpackAstParser", function () {
                 const parser = new WebpackAstParser(require("test://ast/.modules/333333.js"));
                 const locs = await parser.generateReferences(new Position(5, 8));
 
-                console.log(locs);
+                expect(locs).to.have.deep.members([
+                    makeLineRange(2, 18, 29),
+                    makeLineRange(1, 20, 34),
+                    makeLineRange(4, 5, 20),
+                    makeLineRange(5, 12, 30),
+                    makeLineRange(5, 17, 30),
+                ]);
             });
         });
         it("finds a simple use in only one file", async function () {
             const parser = new WebpackAstParser(require("test://ast/.modules/222222.js"));
             const locs = await parser.generateReferences(new Position(6, 8));
 
-            expect(locs).to.deep.equal([
-                new Location(
-                    Uri.file(makeModulePath("111111.js")),
-                    new Range(13, 26, 13, 27),
-                ),
-            ]);
+            expect(locs).to.deep.equal([makeLineRange(1, 13, 26)]);
         });
         it("finds a simple export in more than one file", async function () {
             const parser = new WebpackAstParser(require("test://ast/.modules/222222.js"));
             const locs = await parser.generateReferences(new Position(5, 8));
 
             expect(locs).to.have.deep.members([
-                ...[[13, 18], [13, 40]]
-                    .map(([y1, x1]) => new Location(
-                        Uri.file(makeModulePath("111111.js")),
-                        new Range(y1, x1, y1, x1 + 1),
-                    )),
-                new Location(
-                    Uri.file(makeModulePath("999999.js")),
-                    new Range(13, 41, 13, 42),
-                ),
+                makeLineRange(1, 13, 18),
+                makeLineRange(1, 13, 40),
+                makeLineRange(9, 13, 41),
             ]);
         });
         it.skip("finds all uses across multiple files", function () {

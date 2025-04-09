@@ -1,3 +1,4 @@
+import { TypeAssert } from "@ast/util";
 import { WebpackAstParser } from "@ast/webpack";
 import { ExportMap } from "@type/ast";
 
@@ -158,11 +159,27 @@ describe("WebpackAstParser", function () {
             });
         });
         describe("stores", function () {
-            it("generates the proper export map for a store", function () {
+            it("generates the proper export map for a store exported with wreq.d", function () {
                 const parser = new WebpackAstParser(require("test://ast/webpack/store.js"));
                 const map = parser.getExportMap();
 
-                console.log(map);
+                expect(map).to.have.keys("Z");
+
+                expect(map.Z).to.have.keys(["initialize", "isVisible", WebpackAstParser.SYM_CJS_DEFAULT]);
+                TypeAssert<ExportMap>(map.Z);
+                expect(map.Z[WebpackAstParser.SYM_CJS_DEFAULT]).to.deep.equal([
+                    new Range(4, 8, 4, 9),
+                    new Range(32, 16, 32, 17),
+                    new Range(10, 10, 10, 11),
+                ]);
+                expect(map.Z.initialize).to.deep.equal([new Range(11, 8, 11, 18)]);
+                expect(map.Z.isVisible).to.deep.equal([new Range(18, 8, 18, 17)]);
+            });
+            it.skip("generates the proper export map for a store exported with wreq.t", function () {
+                // I've never seen a store exported with wreq.t
+            });
+            it.skip("generates the proper export map for a store exported with wreq.e", function () {
+                // I've never seen a store exported with wreq.e
             });
         });
     });

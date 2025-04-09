@@ -21,6 +21,7 @@
     },
     "cSpell.words": [
         "flatmaps",
+        "Functionish",
         "intrnl",
         "jsxs",
         "Literalish",
@@ -30,7 +31,4 @@
         "Vencord",
         "wreq"
     ],
-    "editor.codeActionsOnSave": {
-        "source.fixAll.eslint": "explicit"
-    }
 }

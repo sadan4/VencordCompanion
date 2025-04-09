@@ -292,7 +292,7 @@ export const lastChild: CBAssertion<undefined> = (node, func) => {
 };
 
 // FIXME: this seems really stupid
-function one<
+export function one<
     T,
     F extends (t: T) => t is T,
     R extends T = AssertedType<F, T>,
@@ -585,3 +585,30 @@ export function isEOL(char: number) {
     return char === CharCode.CarriageReturn || char === CharCode.LineFeed;
 }
 
+export function TAssert<T>(thing: T): void {
+    return void thing;
+}
+
+
+// TODO: add tests for this
+export function allEntries<T extends object, K extends keyof T & (string | symbol)>(obj: T): (readonly [K, T[K]])[] {
+    const SYM_NON_ENUMERABLE = Symbol("non-enumerable");
+    const keys: (string | symbol)[] = Object.getOwnPropertyNames(obj);
+
+    keys.push(...Object.getOwnPropertySymbols(obj));
+
+    return keys.map((key) => {
+        const descriptor = Object.getOwnPropertyDescriptor(obj, key);
+
+        if (!descriptor)
+            throw new Error("Descriptor is undefined");
+
+        if (!descriptor.enumerable)
+            return SYM_NON_ENUMERABLE;
+
+        return [key as K, obj[key] as T[K]] as const;
+    })
+        .filter((x) => x !== SYM_NON_ENUMERABLE);
+}
+export function TypeAssert<T>(v: any): asserts v is T {
+}

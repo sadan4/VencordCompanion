@@ -610,3 +610,5 @@ export function allEntries<T extends object, K extends keyof T & (string | symbo
     })
         .filter((x) => x !== SYM_NON_ENUMERABLE);
 }
+export function TypeAssert<T>(v: any): asserts v is T {
+}

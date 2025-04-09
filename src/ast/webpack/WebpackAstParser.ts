@@ -745,7 +745,8 @@ export class WebpackAstParser extends AstParser {
 
             lastNode ??= findReturnPropertyAccessExpression(x.initializer);
 
-            let ret: ExportMap | ExportRange | undefined = this.tryParseStoreForExport(lastNode);
+            let ret: ExportMap | ExportRange | undefined
+                = this.tryParseStoreForExport(lastNode, [this.makeRangeFromAstNode(x.name)]);
 
             if (!ret)
                 if (this.isIdentifier(lastNode))
@@ -760,7 +761,7 @@ export class WebpackAstParser extends AstParser {
             .filter((x) => x !== false) as any);
     }
 
-    tryParseStoreForExport(node: Node | undefined): ExportMap | undefined {
+    tryParseStoreForExport(node: Node | undefined, extraStoreLocs: Range[] = []): ExportMap | undefined {
         if (!node)
             return;
 
@@ -816,8 +817,11 @@ export class WebpackAstParser extends AstParser {
         }
 
         const ret: ExportMap = {};
+        const def: Range[] = [];
 
-        ret[WebpackAstParser.SYM_CJS_DEFAULT] = store.store.map((x) => this.makeRangeFromAstNode(x));
+        def.push(...extraStoreLocs);
+        def.push(...store.store.map((x) => this.makeRangeFromAstNode(x)));
+        ret[WebpackAstParser.SYM_CJS_DEFAULT] = def;
         for (const [name, loc] of allEntries(store.methods)) {
             const ranges = this.makeExportMapRecursive(loc)
                 .filter((x) => x !== undefined);

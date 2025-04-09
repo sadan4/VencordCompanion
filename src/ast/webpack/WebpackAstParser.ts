@@ -1,5 +1,6 @@
 import { AstParser } from "@ast/AstParser";
 import {
+    allEntries,
     Cache,
     CacheGetter,
     findObjectLiteralByKey,
@@ -15,7 +16,7 @@ import { outputChannel } from "@extension";
 import { ModuleCache, ModuleDepManager } from "@modules/cache";
 import { format } from "@modules/format";
 import { formatModule, mkStringUri, sendAndGetData } from "@server/index";
-import { AssertedType, Definitions, ExportMap, ModuleDeps, RawExportMap, References, Store } from "@type/ast";
+import { Definitions, ExportMap, ExportRange, Functionish, ModuleDeps, RawExportMap, References, Store } from "@type/ast";
 
 import { VariableInfo } from "tsutils/util/usage";
 import {
@@ -29,7 +30,6 @@ import {
     isClassDeclaration,
     isConstructorDeclaration,
     isExpressionStatement,
-    isFunctionDeclaration,
     isFunctionExpression,
     isIdentifier,
     isMethodDeclaration,
@@ -641,11 +641,12 @@ export class WebpackAstParser extends AstParser {
     /**
      * takes an expression, and maps it to ranges which it is in
      */
-    makeExportMapRecursive(node: PropertyAssignment): ExportMap[keyof ExportMap];
-    makeExportMapRecursive(node: LiteralToken): ExportMap[keyof ExportMap];
     makeExportMapRecursive(node: ObjectLiteralExpression): ExportMap;
-    makeExportMapRecursive(node: AssertedType<AstParser["isFunctionLike"]>): ExportMap[keyof ExportMap];
-    makeExportMapRecursive(node: Node): ExportMap[keyof ExportMap] | ExportMap;
+    makeExportMapRecursive(node: LiteralToken): ExportRange;
+    makeExportMapRecursive(node: PropertyAssignment): ExportRange;
+    makeExportMapRecursive(node: Functionish): ExportRange;
+    makeExportMapRecursive(node: CallExpression): ExportRange;
+    makeExportMapRecursive(node: Node): ExportRange;
     makeExportMapRecursive(node: Node): ExportMap | ExportMap[keyof ExportMap] {
         if (isObjectLiteralExpression(node)) {
             return Object.fromEntries(node.properties.map((x): false | [string, ExportMap[string]] => {
@@ -661,11 +662,9 @@ export class WebpackAstParser extends AstParser {
             return [
                 this.makeRangeFromAstNode(node.name),
                 ...[this.makeExportMapRecursive(node.initializer)].flat(),
-            ] as ExportMap[keyof ExportMap];
-        } else if (this.isFunctionLike(node)) {
-            if (isFunctionDeclaration(node)) {
-                if (!node.name)
-                    throw new Error("Function declaration has no name, and is not anonymous function");
+            ];
+        } else if (this.isFunctionish(node)) {
+            if (node.name) {
                 return [this.makeRangeFromAstNode(node.name)];
             }
             return [this.makeRangeFromAnonFunction(node)];
@@ -746,7 +745,7 @@ export class WebpackAstParser extends AstParser {
 
             lastNode ??= findReturnPropertyAccessExpression(x.initializer);
 
-            let ret: ExportMap[keyof ExportMap] | undefined = this.tryParseStoreForExport(lastNode);
+            let ret: ExportMap | ExportRange | undefined = this.tryParseStoreForExport(lastNode);
 
             if (!ret)
                 if (this.isIdentifier(lastNode))
@@ -782,7 +781,7 @@ export class WebpackAstParser extends AstParser {
         // find where it's set to the new store
         // there should never be more than one assignment
         const uses = allUses.filter((ident) => {
-            return this.isVariableAssignmentLike(node.parent);
+            return this.isVariableAssignmentLike(ident.parent);
         });
 
         if (uses.length === 0) {
@@ -809,10 +808,32 @@ export class WebpackAstParser extends AstParser {
         if (!isNewExpression(initializer))
             return;
 
-        const store = this.parseStore(initializer);
+        const store = this.tryParseStore(initializer);
+
+        if (!store) {
+            outputChannel.debug("Failed to parse store");
+            return;
+        }
+
+        const ret: ExportMap = {};
+
+        ret[WebpackAstParser.SYM_CJS_DEFAULT] = store.store.map((x) => this.makeRangeFromAstNode(x));
+        for (const [name, loc] of allEntries(store.methods)) {
+            const ranges = this.makeExportMapRecursive(loc)
+                .filter((x) => x !== undefined);
+
+            ret[name] = ranges;
+        }
+        for (const [name, loc] of allEntries(store.props)) {
+            const ranges = this.makeExportMapRecursive(loc)
+                .filter((x) => x !== undefined);
+
+            ret[name] = ranges;
+        }
+        return ret;
     }
 
-    parseStore(storeInit: NewExpression): Store | undefined {
+    tryParseStore(storeInit: NewExpression): Store | undefined {
         const ret: Store = {
             store: [],
             fluxEvents: {},
@@ -824,7 +845,7 @@ export class WebpackAstParser extends AstParser {
         const args = storeInit.arguments;
 
         if (!args || args.length !== 2) {
-            outputChannel.warn(`Incorrect number of arguments for a store instantiation, expected 2, found ${args.length}`);
+            outputChannel.warn(`Incorrect number of arguments for a store instantiation, expected 2, found ${args?.length}`);
             return;
         }
 
@@ -928,6 +949,8 @@ export class WebpackAstParser extends AstParser {
                 ret.store.push(member);
             } else if (isPropertyAssignment(member)) {
                 ret.props[member.name.getText()] = member.initializer;
+            } else {
+                outputChannel.warn("Unhandled store member type. This should be handled");
             }
         }
 

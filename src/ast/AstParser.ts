@@ -1,31 +1,33 @@
 import { getNumberAndColumnFromPos } from "@ast/lineUtil";
 import { outputChannel } from "@modules/logging";
+import { Functionish } from "@type/ast";
 
 import { Cache, CacheGetter, CharCode, isEOL } from "./util";
 
 import { collectVariableUsage, VariableInfo } from "tsutils/util/usage";
 import { getTokenAtPosition } from "tsutils/util/util";
 import {
-    ArrowFunction,
     AssignmentExpression,
     AssignmentOperatorToken,
     CallExpression,
     createSourceFile,
     Expression,
-    FunctionDeclaration,
-    FunctionExpression,
     Identifier,
     isArrowFunction,
     isBigIntLiteral,
     isBinaryExpression,
+    isConstructorDeclaration,
     isFunctionDeclaration,
     isFunctionExpression,
     isFunctionLike,
+    isGetAccessorDeclaration,
     isIdentifier,
     isJsxText,
+    isMethodDeclaration,
     isNumericLiteral,
     isPropertyAccessExpression,
     isRegularExpressionLiteral,
+    isSetAccessorDeclaration,
     isStringLiteralLike,
     isVariableDeclaration,
     LeftHandSideExpression,
@@ -274,8 +276,8 @@ export class AstParser {
         return new Position(lineNumber - 1, column - 1);
     }
 
-    public makeRangeFromAnonFunction(func: FunctionExpression | ArrowFunction): Range {
-        const { body: { pos } } = func;
+    public makeRangeFromAnonFunction(func: Functionish): Range {
+        const { pos } = func.body ?? { pos: func.getEnd() };
 
         return this.makeRange({
             pos: func.getStart(),
@@ -309,8 +311,16 @@ export class AstParser {
           || isRegularExpressionLiteral(node);
     }
 
-    public isFunctionLike(node: Node): node is FunctionDeclaration | ArrowFunction | FunctionExpression {
-        return isArrowFunction(node) || isFunctionDeclaration(node) || isFunctionExpression(node);
+    public isFunctionish(node: Node): node is Functionish {
+        return (
+            isFunctionDeclaration(node)
+            || isMethodDeclaration(node)
+            || isGetAccessorDeclaration(node)
+            || isSetAccessorDeclaration(node)
+            || isConstructorDeclaration(node)
+            || isFunctionExpression(node)
+            || isArrowFunction(node)
+        );
     }
 
     public isIdentifier(node: Node | undefined): node is Identifier {

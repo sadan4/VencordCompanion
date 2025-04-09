@@ -35,12 +35,14 @@ export type Import = {
     as: Identifier;
 };
 
+export type ExportRange = (Range | undefined)[];
+
 export interface ExportMap {
     // ranges of code that will count as references to this export
     /**
      * the name of the export => array of ranges where it is defined, with the last one being the most specific
      */
-    [exposedName: string | symbol]: (Range | undefined)[] | ExportMap;
+    [exposedName: string | symbol]: ExportRange | ExportMap;
 }
 
 /**
@@ -108,3 +110,4 @@ export interface Store {
         [name: string]: PropertyAssignment["initializer"];
     };
 }
+export type Functionish = FunctionLikeDeclaration | ArrowFunction | FunctionExpression;

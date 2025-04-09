@@ -837,6 +837,7 @@ export class WebpackAstParser extends AstParser {
         return ret;
     }
 
+    // TODO: test this
     tryParseStore(storeInit: NewExpression): Store | undefined {
         const ret: Store = {
             store: [],
@@ -848,29 +849,35 @@ export class WebpackAstParser extends AstParser {
         const storeVar = storeInit.expression;
         const args = storeInit.arguments;
 
-        if (!args || args.length !== 2) {
-            outputChannel.warn(`Incorrect number of arguments for a store instantiation, expected 2, found ${args?.length}`);
-            return;
-        }
+        parseArgs: {
+            if (!args)
+                break parseArgs;
 
-        const [,events] = args;
-
-        if (!isObjectLiteralExpression(events)) {
-            outputChannel.warn("Expected the flux events to be an object literal expression");
-            return;
-        }
-        for (const prop of events.properties) {
-            if (!isPropertyAssignment(prop)) {
-                outputChannel.debug("found prob that is not a property assignment, this should be handled");
-                continue;
+            if (args.length !== 2) {
+                outputChannel.warn(`Incorrect number of arguments for a store instantiation, expected 2, found ${args?.length}`);
+                break parseArgs;
             }
-            ret.fluxEvents[prop.name.getText()] = [prop.initializer];
-            if (isIdentifier(prop.initializer)) {
-                const trail = this.unwrapVariableDeclaration(prop.initializer)
-                    ?.toReversed();
 
-                if (trail)
-                    ret.fluxEvents[prop.name.getText()].push(...trail);
+            const [,events] = args;
+
+            if (!isObjectLiteralExpression(events)) {
+                outputChannel.warn("Expected the flux events to be an object literal expression");
+                break parseArgs;
+            }
+            // FIXME: extract into function
+            for (const prop of events.properties) {
+                if (!isPropertyAssignment(prop)) {
+                    outputChannel.debug("found prob that is not a property assignment, this should be handled");
+                    continue;
+                }
+                ret.fluxEvents[prop.name.getText()] = [prop.initializer];
+                if (isIdentifier(prop.initializer)) {
+                    const trail = this.unwrapVariableDeclaration(prop.initializer)
+                        ?.toReversed();
+
+                    if (trail)
+                        ret.fluxEvents[prop.name.getText()].push(...trail);
+                }
             }
         }
         if (!isIdentifier(storeVar)) {
@@ -903,42 +910,10 @@ export class WebpackAstParser extends AstParser {
         }
 
         // check if any of the extends clauses extend Store
-        const extendsStore = (() => {
-            return classDecl.heritageClauses?.some((_clause) => {
-                return _clause.types.some((clause) => {
-                    const parenExpr: Node = clause.expression;
+        // TODO: make sure it does not extend a component
+        const doesExtend = (classDecl.heritageClauses?.length ?? -1) > 0;
 
-                    if (!isParenthesizedExpression(parenExpr))
-                        return false;
-
-                    const binaryExpr = parenExpr.expression;
-
-                    if (!this.isAssignmentExpression(binaryExpr)) {
-                        return false;
-                    }
-
-                    const lastIdent = (() => {
-                        if (isPropertyAccessExpression(binaryExpr.right)) {
-                            return binaryExpr.right.name;
-                        } else if (isIdentifier(binaryExpr.right)) {
-                            return binaryExpr.right;
-                        }
-                        outputChannel.warn("Unknown expresison for store inheritance");
-                        return;
-                    })();
-
-                    if (!lastIdent)
-                        return false;
-                    if (lastIdent.text === "Store") {
-                        return true;
-                    }
-                    outputChannel.debug(`Unknown store superclass name. got: ${lastIdent.text}`);
-                    return false;
-                });
-            });
-        })();
-
-        if (!extendsStore) {
+        if (!doesExtend) {
             outputChannel.debug("Store class does not extend Store");
             return;
         }
@@ -957,7 +932,11 @@ export class WebpackAstParser extends AstParser {
                 outputChannel.warn("Unhandled store member type. This should be handled");
             }
         }
-
+        // since we cannot test if it extends a store, check if it has the required initialize method
+        if (!("initialize" in ret.methods)) {
+            outputChannel.warn("Store class does not have an initialize method");
+            return;
+        }
         return ret;
     }
 

@@ -175,6 +175,14 @@ describe("WebpackAstParser", function () {
                 expect(map.Z.initialize).to.deep.equal([new Range(11, 8, 11, 18)]);
                 expect(map.Z.isVisible).to.deep.equal([new Range(18, 8, 18, 17)]);
             });
+            it("generates the proper export map for a store constrected with no arguments", function () {
+                const parser = new WebpackAstParser(require("test://ast/webpack/store2.js"));
+                const map = parser.getExportMap();
+
+                expect(map).to.have.keys("default", "mergeUser", "ASSISTANT_WUMPUS_VOICE_USER");
+
+                console.log(map);
+            });
             it.skip("generates the proper export map for a store exported with wreq.t", function () {
                 // I've never seen a store exported with wreq.t
             });

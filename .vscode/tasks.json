@@ -4,28 +4,13 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "type": "npm",
-      "script": "watch",
-      "problemMatcher": "$esbuild-watch",
-      "isBackground": true,
-      "presentation": {
-        "reveal": "never",
-        "revealProblems": "never"
-      },
-
-      "group": {
-        "kind": "build",
-        "isDefault": true
-      }
-    },
-    {
         "type": "shell",
-        "command": "npm",
+        "command": "pnpm",
         "args": [
             "run",
-            "pretest"
+            "watch:test"
         ],
-        "label": "preTest",
+        "label": "watch:test",
         "isBackground": true,
         "presentation": {
             "echo": true,
@@ -35,7 +20,61 @@
             "showReuseMessage": false,
             "clear": true
         },
-
+        "problemMatcher": []
+    },
+    {
+        "type": "shell",
+        "command": "pnpm",
+        "args": [
+            "run",
+            "test"
+        ],
+        "label": "test",
+        "presentation": {
+            "echo": true,
+            "reveal": "always",
+            "focus": false,
+            "panel": "shared",
+            "showReuseMessage": false,
+            "clear": true
+        }
+    },
+    {
+        "type": "shell",
+        "command": "pnpm",
+        "args": [
+            "run",
+            "watch"
+        ],
+        "label": "watch",
+        "isBackground": true,
+        "presentation": {
+            "echo": true,
+            "reveal": "silent",
+            "focus": false,
+            "panel": "shared",
+            "showReuseMessage": false,
+            "clear": true
+        }
+    },
+    {
+        "type": "shell",
+        "command": "pnpm",
+        "args": [
+            "run",
+            "build"
+        ],
+        "label": "build",
+        "presentation": {
+            "echo": true,
+            "reveal": "always",
+            "close": true,
+            "focus": false,
+            "panel": "new",
+            "showReuseMessage": false,
+            "clear": true
+        },
+        "problemMatcher": []
     }
-  ]
+]
 }

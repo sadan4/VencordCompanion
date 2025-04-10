@@ -17,7 +17,7 @@
     },
     "extension-test-runner.debugOptions": {
         "outFiles": ["${workspaceFolder}/dist.test/**/*.js"],
-        "pauseForSourceMap": true
+        "pauseForSourceMap": true,
     },
     "cSpell.words": [
         "flatmaps",
@@ -25,10 +25,13 @@
         "intrnl",
         "jsxs",
         "Literalish",
+        "mapstrace",
         "moduleid",
         "outdir",
         "typeguard",
         "Vencord",
-        "wreq"
+        "wreq",
+        "WUMPUS"
     ],
+    "npm.autoDetect": "off"
 }

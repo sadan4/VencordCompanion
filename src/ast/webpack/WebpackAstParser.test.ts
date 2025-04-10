@@ -218,9 +218,29 @@ describe("WebpackAstParser", function () {
                     new Range(118, 13, 118, 14),
                 ]);
             });
-            it.skip("generates the proper export map for a store with no initialize method", function () {
+            it("generates the proper export map for a store with no initialize method", function () {
                 const parser = new WebpackAstParser(require("test://ast/webpack/store3.js"));
                 const map = parser.getExportMap();
+
+                expect(map).to.have.keys("Z");
+                expect(map.Z).to.deep.equal({
+                    getGuild: [new Range(199, 8, 199, 16)],
+                    getGuilds: [new Range(203, 8, 203, 17)],
+                    getGuildIds: [new Range(206, 8, 206, 19)],
+                    // getGuildCount: [new Range(209, 8, 209, 21)],
+                    getGuildCount: [new Range(4, 8, 4, 9)],
+                    // isLoaded: [new Range(212, 8, 212, 16)],
+                    isLoaded: [new Range(52, 12, 52, 14)],
+                    getGeoRestrictedGuilds: [new Range(53, 12, 53, 14)],
+                    getAllGuildsRoles: [new Range(218, 8, 218, 25)],
+                    getRoles: [new Range(221, 8, 221, 16)],
+                    getRole: [new Range(225, 8, 225, 15)],
+                    [WebpackAstParser.SYM_CJS_DEFAULT]: [
+                        new Range(6, 8, 6, 9),
+                        new Range(231, 16, 231, 17),
+                        new Range(198, 10, 198, 11),
+                    ],
+                });
             });
             it.skip("generates the proper export map for a store exported with wreq.t", function () {
                 // I've never seen a store exported with wreq.t

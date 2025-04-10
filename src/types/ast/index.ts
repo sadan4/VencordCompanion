@@ -35,7 +35,7 @@ export type Import = {
     as: Identifier;
 };
 
-export type ExportRange = (Range | undefined)[];
+export type ExportRange = (Range)[];
 
 export interface ExportMap {
     // ranges of code that will count as references to this export

@@ -191,7 +191,36 @@ describe("WebpackAstParser", function () {
 
                 expect(map).to.have.keys("default", "mergeUser", "ASSISTANT_WUMPUS_VOICE_USER");
 
-                console.log(map);
+                expect(map.default).to.deep.equal({
+                    initialize: [new Range(212, 8, 212, 18)],
+                    takeSnapshot: [new Range(215, 8, 215, 20)],
+                    handleLoadCache: [new Range(224, 8, 224, 23)],
+                    getUserStoreVersion: [new Range(38, 12, 38, 13)],
+                    getUser: [new Range(241, 8, 241, 15)],
+                    getUsers: [new Range(245, 8, 245, 16)],
+                    forEach: [new Range(248, 8, 248, 15)],
+                    findByTag: [new Range(253, 8, 253, 17)],
+                    filter: [new Range(260, 8, 260, 14)],
+                    getCurrentUser: [new Range(270, 8, 270, 22)],
+                    [WebpackAstParser.SYM_CJS_DEFAULT]: [
+                        new Range(7, 8, 7, 15),
+                        new Range(286, 17, 286, 19),
+                        new Range(211, 10, 211, 12),
+                        new Range(273, 8, 282, 9),
+                    ],
+                });
+                expect(map.ASSISTANT_WUMPUS_VOICE_USER).to.deep.equal([
+                    new Range(6, 8, 6, 35),
+                    new Range(39, 12, 39, 31),
+                ]);
+                expect(map.mergeUser).to.deep.equal([
+                    new Range(8, 8, 8, 17),
+                    new Range(118, 13, 118, 14),
+                ]);
+            });
+            it.skip("generates the proper export map for a store with no initialize method", function () {
+                const parser = new WebpackAstParser(require("test://ast/webpack/store3.js"));
+                const map = parser.getExportMap();
             });
             it.skip("generates the proper export map for a store exported with wreq.t", function () {
                 // I've never seen a store exported with wreq.t

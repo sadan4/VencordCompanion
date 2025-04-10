@@ -21,29 +21,39 @@ describe("WebpackAstParser", function () {
 
     describe("export parsing", function () {
         // TODO: add length check for wreq.d args
-        it("parses a module with only wreq.d", function () {
-            const parser = new WebpackAstParser(normalModule);
-            const map: ExportMap = parser.getExportMap();
+        describe("wreq.d", function () {
+            it("parses a simple module", function () {
+                const parser = new WebpackAstParser(normalModule);
+                const map: ExportMap = parser.getExportMap();
 
-            expect(map).to.have.keys("TB", "VY", "ZP");
-            for (const expName in map) {
-                expect(map[expName]).to.have.length(2);
-                // both should be truthy
-                expect(map[expName][0] || map[expName][1], "Both are not truthy").to.be.ok;
-            }
-            // the `ZP` of
-            // ```js
-            // n.d(t, {
-            //     ZP: () => ident
-            // })
-            // ```
-            expect(map.TB[0]).to.deep.equal(new Range(4, 8, 4, 10));
-            expect(map.VY[0]).to.deep.equal(new Range(5, 8, 5, 10));
-            expect(map.ZP[0]).to.deep.equal(new Range(6, 8, 6, 10));
-            // the identifier where its used
-            expect(map.TB[1]).to.deep.equal(new Range(162, 13, 162, 14));
-            expect(map.VY[1]).to.deep.equal(new Range(183, 13, 183, 14));
-            expect(map.ZP[1]).to.deep.equal(new Range(87, 13, 87, 14));
+                expect(map).to.have.keys("TB", "VY", "ZP");
+                for (const expName in map) {
+                    expect(map[expName]).to.have.length(2);
+                    // both should be truthy
+                    expect(map[expName][0] || map[expName][1], "Both are not truthy").to.be.ok;
+                }
+                // the `ZP` of
+                // ```js
+                // n.d(t, {
+                //     ZP: () => ident
+                // })
+                // ```
+                expect(map.TB[0]).to.deep.equal(new Range(4, 8, 4, 10));
+                expect(map.VY[0]).to.deep.equal(new Range(5, 8, 5, 10));
+                expect(map.ZP[0]).to.deep.equal(new Range(6, 8, 6, 10));
+                // the identifier where its used
+                expect(map.TB[1]).to.deep.equal(new Range(162, 13, 162, 14));
+                expect(map.VY[1]).to.deep.equal(new Range(183, 13, 183, 14));
+                expect(map.ZP[1]).to.deep.equal(new Range(87, 13, 87, 14));
+            });
+            it("parses a module with a string literal export", function () {
+                const parser = new WebpackAstParser(require("test://ast/webpack/wreq.d/simpleString.js"));
+                const map = parser.getExportMap();
+
+                expect(map).to.have.keys("STRING_EXPORT");
+
+                expect(map.STRING_EXPORT).to.deep.equal([new Range(5, 8, 5, 21), new Range(7, 12, 7, 31)]);
+            });
         });
         describe("module.exports", function () {
             it("parses a module with an object literal export (class names)", function () {
@@ -175,7 +185,7 @@ describe("WebpackAstParser", function () {
                 expect(map.Z.initialize).to.deep.equal([new Range(11, 8, 11, 18)]);
                 expect(map.Z.isVisible).to.deep.equal([new Range(18, 8, 18, 17)]);
             });
-            it("generates the proper export map for a store constrected with no arguments", function () {
+            it("generates the proper export map for a store constructed with no arguments", function () {
                 const parser = new WebpackAstParser(require("test://ast/webpack/store2.js"));
                 const map = parser.getExportMap();
 

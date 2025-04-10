@@ -4,12 +4,12 @@ import {
     Cache,
     CacheGetter,
     findObjectLiteralByKey,
-    findParrent,
+    findParent,
     findReturnIdentifier,
     findReturnPropertyAccessExpression,
     getLeadingIdentifier,
     isSyntaxList,
-    lastParrent,
+    lastParent,
     zeroRange,
 } from "@ast/util";
 import { outputChannel } from "@extension";
@@ -26,6 +26,7 @@ import {
     Identifier,
     isArrowFunction,
     isBinaryExpression,
+    isBlock,
     isCallExpression,
     isClassDeclaration,
     isConstructorDeclaration,
@@ -36,7 +37,6 @@ import {
     isNewExpression,
     isNumericLiteral,
     isObjectLiteralExpression,
-    isParenthesizedExpression,
     isPropertyAccessExpression,
     isPropertyAssignment,
     isStringLiteral,
@@ -157,7 +157,7 @@ export class WebpackAstParser extends AstParser {
          */
         const wreqCalls = this.uses.uses.map((x) => x.location)
             .flatMap((v) => {
-                const p = findParrent(v, isCallExpression);
+                const p = findParent(v, isCallExpression);
 
                 if (!p || p.expression !== v)
                     return [];
@@ -174,7 +174,7 @@ export class WebpackAstParser extends AstParser {
                 if (prop?.text !== "bind")
                     return [];
 
-                const call = findParrent(v, isCallExpression);
+                const call = findParent(v, isCallExpression);
 
                 if (!call)
                     return [];
@@ -197,7 +197,7 @@ export class WebpackAstParser extends AstParser {
         // map the assignment of required modules to their uses
         const modules = new Map([...this.vars.entries()].filter(([k]) => {
             return this.uses!.uses.some((e) => {
-                const node = findParrent(e.location, isVariableDeclaration);
+                const node = findParent(e.location, isVariableDeclaration);
 
                 return node?.name === k;
             });
@@ -254,7 +254,7 @@ export class WebpackAstParser extends AstParser {
         if (dec.declarations.length !== 1)
             return undefined;
 
-        const init = findParrent(dec.declarations[0], isVariableDeclaration)?.initializer;
+        const init = findParent(dec.declarations[0], isVariableDeclaration)?.initializer;
 
         if (!init || !isCallExpression(init))
             return undefined;
@@ -421,11 +421,11 @@ export class WebpackAstParser extends AstParser {
             .map((x) => x.location)
             .map((x) => {
                 let name: string | symbol | undefined
-                    = this.flattenPropertyAccessExpression(lastParrent(x, isPropertyAccessExpression))?.[2]?.text;
+                    = this.flattenPropertyAccessExpression(lastParent(x, isPropertyAccessExpression))?.[2]?.text;
 
                 name ||= WebpackAstParser.SYM_CJS_DEFAULT;
 
-                const ret = findParrent(x, isBinaryExpression)?.right;
+                const ret = findParent(x, isBinaryExpression)?.right;
 
                 return ret && [name, ret] as const;
             })
@@ -450,7 +450,7 @@ export class WebpackAstParser extends AstParser {
 
         return Object.fromEntries(uses.uses.map(({ location }): readonly [string, Expression] | undefined => {
             const [, exportAssignment] = getLeadingIdentifier(location);
-            const binary = findParrent(location, isBinaryExpression);
+            const binary = findParent(location, isBinaryExpression);
 
             if (exportAssignment && binary?.right) {
                 return [
@@ -477,12 +477,12 @@ export class WebpackAstParser extends AstParser {
             throw new Error("Wreq is not used in this file");
 
         const uses = this.uses!.uses.find(({ location }) => {
-            const call = findParrent(location, isCallExpression);
+            const call = findParent(location, isCallExpression);
 
             return call?.arguments.length === 1 && call.arguments[0].getText() === moduleId;
         });
 
-        const ret = findParrent(uses?.location, isVariableDeclaration)?.name;
+        const ret = findParent(uses?.location, isVariableDeclaration)?.name;
 
         if (this.isIdentifier(ret))
             return ret;
@@ -521,7 +521,7 @@ export class WebpackAstParser extends AstParser {
                 nmd: {
                     if (importUses?.uses.length === 1) {
                         const loc = importUses.uses[0].location;
-                        const call = findParrent(loc, isCallExpression);
+                        const call = findParent(loc, isCallExpression);
 
                         if (!call || call.arguments.length !== 1 || call.arguments[0] !== loc)
                             break nmd;
@@ -539,7 +539,7 @@ export class WebpackAstParser extends AstParser {
                           || funcExpr.name.text !== "n")
                             break nmd;
 
-                        const decl = findParrent(funcExpr, isVariableDeclaration)?.name;
+                        const decl = findParent(funcExpr, isVariableDeclaration)?.name;
 
                         if (!decl || !isIdentifier(decl))
                             break nmd;
@@ -555,7 +555,7 @@ export class WebpackAstParser extends AstParser {
                                         ? [this.makeRangeFromAstNode(calledUse)]
                                         : undefined;
                                 } else if (typeof exportName === "string") {
-                                    const expr = findParrent(calledUse, isPropertyAccessExpression);
+                                    const expr = findParent(calledUse, isPropertyAccessExpression);
 
                                     if (!(!!expr && expr.expression === calledUse && expr.name.text === exportName))
                                         return undefined;
@@ -621,7 +621,7 @@ export class WebpackAstParser extends AstParser {
 
         return Object.fromEntries(uses.uses.map(({ location }): [string, ExportMap[string]] | false => {
             const [, exportAssignment] = getLeadingIdentifier(location);
-            const binary = findParrent(location, isBinaryExpression);
+            const binary = findParent(location, isBinaryExpression);
 
             if (exportAssignment && binary && isIdentifier(binary?.right)) {
                 return [
@@ -644,10 +644,12 @@ export class WebpackAstParser extends AstParser {
     makeExportMapRecursive(node: ObjectLiteralExpression): ExportMap;
     makeExportMapRecursive(node: LiteralToken): ExportRange;
     makeExportMapRecursive(node: PropertyAssignment): ExportRange;
-    makeExportMapRecursive(node: Functionish): ExportRange;
+    makeExportMapRecursive(node: Functionish): ExportMap | ExportRange;
     makeExportMapRecursive(node: CallExpression): ExportRange;
     makeExportMapRecursive(node: Node): ExportRange;
-    makeExportMapRecursive(node: Node): ExportMap | ExportMap[keyof ExportMap] {
+    makeExportMapRecursive(node: Node | undefined): ExportMap | ExportMap[keyof ExportMap] {
+        if (!node)
+            throw new Error("node should not be undefined / falsy");
         if (isObjectLiteralExpression(node)) {
             return Object.fromEntries(node.properties.map((x): false | [string, ExportMap[string]] => {
                 // wreq.e is used for css class name exports
@@ -664,6 +666,22 @@ export class WebpackAstParser extends AstParser {
                 ...[this.makeExportMapRecursive(node.initializer)].flat(),
             ];
         } else if (this.isFunctionish(node)) {
+            // check if it's a simple wrapper function eg: 
+            // `function(){return foo;}` or `() => foo` or `() => {return foo;}
+            wrapperFuncCheck: {
+                if (!node.body)
+                    break wrapperFuncCheck;
+                // if the arrow function returns a simple identifier, use that
+                if (isIdentifier(node.body) || isPropertyAccessExpression(node.body)) {
+                    return this.makeExportMapRecursive(node.body);
+                }
+                if (isBlock(node.body) && node.body.statements.length === 1) {
+                    const ident = findReturnIdentifier(node);
+
+                    if (ident)
+                        return this.makeExportMapRecursive(ident);
+                }
+            }
             if (node.name) {
                 return [this.makeRangeFromAstNode(node.name)];
             }
@@ -678,11 +696,11 @@ export class WebpackAstParser extends AstParser {
                 return [];
             }
 
-            const last = this.getVariableInitializer(trail.at(-1)!);
+            let last = this.getVariableInitializer(trail.at(-1)!);
 
             if (!last) {
                 outputChannel.warn("Could not find initializer of identifier");
-                return [];
+                return [this.makeRangeFromAstNode(trail.at(-1)!)];
             }
             return this.makeExportMapRecursive(last);
         }
@@ -711,7 +729,7 @@ export class WebpackAstParser extends AstParser {
         if (!exportAssignment)
             return undefined;
 
-        const exportObject = findParrent(exportAssignment.location, isBinaryExpression)?.right;
+        const exportObject = findParent(exportAssignment.location, isBinaryExpression)?.right;
 
         if (!exportObject) {
             outputChannel.debug("Could not find export object");
@@ -748,11 +766,7 @@ export class WebpackAstParser extends AstParser {
             let ret: ExportMap | ExportRange | undefined
                 = this.tryParseStoreForExport(lastNode, [this.makeRangeFromAstNode(x.name)]);
 
-            if (!ret)
-                if (this.isIdentifier(lastNode))
-                    ret = [this.makeRangeFromAstNode(x.name), this.makeRangeFromFunctionDef(lastNode)];
-                else
-                    ret = [undefined];
+            ret ||= this.makeExportMapRecursive(x);
 
             return lastNode != null
                 ? [x.name.getText(), ret]
@@ -823,10 +837,9 @@ export class WebpackAstParser extends AstParser {
         def.push(...store.store.map((x) => this.makeRangeFromAstNode(x)));
         ret[WebpackAstParser.SYM_CJS_DEFAULT] = def;
         for (const [name, loc] of allEntries(store.methods)) {
-            const ranges = this.makeExportMapRecursive(loc)
-                .filter((x) => x !== undefined);
+            const map = this.makeExportMapRecursive(loc);
 
-            ret[name] = ranges;
+            ret[name] = map;
         }
         for (const [name, loc] of allEntries(store.props)) {
             const ranges = this.makeExportMapRecursive(loc)
@@ -1051,7 +1064,7 @@ export class WebpackAstParser extends AstParser {
         if (!exportAssignment)
             return undefined;
 
-        const exportObject = findParrent(exportAssignment.location, isBinaryExpression)?.right;
+        const exportObject = findParent(exportAssignment.location, isBinaryExpression)?.right;
 
         if (!exportObject || !isObjectLiteralExpression(exportObject))
             return undefined;

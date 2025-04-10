@@ -1,4 +1,4 @@
-import { AnyFunction, AssertedType, CBAssertion, FunctionNode, Import, RegexNode, StringNode, WithParent } from "@type/ast";
+import { AnyFunction, AssertedType, CBAssertion, Functionish, FunctionNode, Import, RegexNode, StringNode, WithParent } from "@type/ast";
 import { IFindType, IReplacement, PatchData } from "@type/server";
 
 import { getNumberAndColumnFromPos } from "./lineUtil";
@@ -233,7 +233,7 @@ export function isDefaultKeyword(n: Node): n is DefaultKeyword {
 /**
  * first parent
  */
-export const findParrent: CBAssertion<undefined, undefined> = (node, func) => {
+export const findParent: CBAssertion<undefined, undefined> = (node, func) => {
     if (!node)
         return undefined;
     while (!func(node)) {
@@ -249,7 +249,7 @@ export const findParrent: CBAssertion<undefined, undefined> = (node, func) => {
  * @param node the node to start from
  * @param func a function to check if the parent matches
  */
-export const lastParrent: CBAssertion<undefined, undefined> = (node, func) => {
+export const lastParent: CBAssertion<undefined, undefined> = (node, func) => {
     if (!node)
         return undefined;
     if (!node.parent)
@@ -320,7 +320,7 @@ export function getLeadingIdentifier(node: Node | undefined):
         return [node, undefined];
 
     const { expression: module, name: wpExport } = (() => {
-        const lastP = lastParrent(node, isPropertyAccessExpression);
+        const lastP = lastParent(node, isPropertyAccessExpression);
 
         return lastP && lastChild(lastP, isPropertyAccessExpression);
     })() ?? {};
@@ -338,14 +338,14 @@ export function isSyntaxList(node: Node): node is SyntaxList {
 }
 
 /**
- * given an object literal, returns the property assignment for `prop` if it exsists
+ * given an object literal, returns the property assignment for `prop` if it exists
  *
  * if prop is defined more than once, returns the first
  * @example
  * {
- *  exprop: "examplePropValue"
+ *  exProp: "examplePropValue"
  * }
- * @param prop exprop
+ * @param prop exProp
  */
 export function findObjectLiteralByKey(
     object: ObjectLiteralExpression,
@@ -363,7 +363,9 @@ export function findObjectLiteralByKey(
  * @param func a function to get the return value of
  * @returns the return identifier, if any
  */
-export function findReturnIdentifier(func: AnyFunction): Identifier | undefined {
+export function findReturnIdentifier(func: Functionish): Identifier | undefined {
+    if (!func.body)
+        return undefined;
     if (isBlock(func.body))
         return _findReturnIdentifier(func.body);
     if (isIdentifier(func.body))
@@ -434,7 +436,7 @@ export function makeLocation(pos: number, text: string): Position {
 }
 
 export function isInImportStatment(x: Node): boolean {
-    return findParrent(x, isImportDeclaration) != null;
+    return findParent(x, isImportDeclaration) != null;
 }
 
 /**
@@ -447,7 +449,7 @@ export function isInImportStatment(x: Node): boolean {
  * @returns "source"
  */
 export function getImportSource(x: Identifier): string {
-    const clause = findParrent(x, isImportDeclaration);
+    const clause = findParent(x, isImportDeclaration);
 
     if (!clause)
         throw new Error("x is not in an import statment");
@@ -472,7 +474,7 @@ export function getImportName(node: Identifier): Pick<Import, "orig" | "as"> {
     if (isDefaultImport(node) || isNamespaceImport(node))
         return { as: node };
 
-    const specifier = findParrent(node, isImportSpecifier);
+    const specifier = findParent(node, isImportSpecifier);
 
     if (!specifier)
         throw new Error("x is not in an import statment");

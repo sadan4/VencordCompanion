@@ -39,7 +39,7 @@ import {
     isObjectLiteralExpression,
     isPropertyAccessExpression,
     isPropertyAssignment,
-    isStringLiteral,
+    isSpreadAssignment,
     isVariableDeclaration,
     LiteralToken,
     NewExpression,
@@ -661,13 +661,31 @@ export class WebpackAstParser extends AstParser {
         if (!node)
             throw new Error("node should not be undefined / falsy");
         if (isObjectLiteralExpression(node)) {
-            return Object.fromEntries(node.properties.map((x): false | [string, ExportMap[string]] => {
+            return Object.fromEntries(node.properties
+                .map((x): false | [string, ExportMap[string]][] => {
                 // wreq.e is used for css class name exports
-                if (!isPropertyAssignment(x) || (!isStringLiteral(x.initializer) && !isIdentifier(x.initializer)))
-                    return false;
-                return [x.name.getText(), this.makeExportMapRecursive(x)];
-            })
-                .filter((x) => x !== false) as any);
+                // if (!isPropertyAssignment(x) || (!isStringLiteral(x.initializer) && !isIdentifier(x.initializer)))
+                //     return false;
+                    if (isSpreadAssignment(x)) {
+                        if (!isIdentifier(x.expression)) {
+                            outputChannel.error("Spread assignment is not an identifier, this should be handled");
+                        }
+
+                        const spread = this.makeExportMapRecursive(x.expression);
+
+                        if (Array.isArray(spread)) {
+                            outputChannel.warn("Identifier in object spread is not an object, this should be handled");
+                            return false;
+                        }
+
+                        const { [WebpackAstParser.SYM_CJS_DEFAULT]: _default, ...rest } = spread;
+
+                        return Object.entries(rest);
+                    }
+                    return [[x.name.getText(), this.makeExportMapRecursive(x)]];
+                })
+                .filter((x) => x !== false)
+                .flat());
         } else if (this.isLiteralish(node)) {
             return [this.makeRangeFromAstNode(node)];
         } else if (isPropertyAssignment(node)) {
@@ -792,6 +810,13 @@ export class WebpackAstParser extends AstParser {
                 = this.tryParseStoreForExport(lastNode, [this.makeRangeFromAstNode(x.name)]);
 
             ret ||= this.makeExportMapRecursive(x);
+            // ensure we arent nested
+            if (!Array.isArray(ret)) {
+                const keys = allEntries(ret);
+
+                if (keys.length === 1 && ret[x.name.getText()])
+                    ret = ret[x.name.getText()];
+            }
 
             return lastNode != null
                 ? [x.name.getText(), ret]

@@ -54,6 +54,55 @@ describe("WebpackAstParser", function () {
 
                 expect(map.STRING_EXPORT).to.deep.equal([new Range(5, 8, 5, 21), new Range(7, 12, 7, 31)]);
             });
+            it("parses a module with an object literal export", function () {
+                const parser = new WebpackAstParser(require("test://ast/webpack/wreq.d/objectExport.js"));
+                const map = parser.getExportMap();
+
+                expect(map).to.deep.equal({
+                    EO: [
+                        new Range(5, 8, 5, 10),
+                        new Range(124, 13, 124, 14),
+                    ],
+                    ZP: {
+                        getName: [
+                            new Range(156, 8, 156, 15),
+                            new Range(53, 13, 53, 14),
+                        ],
+                        useName: [
+                            new Range(157, 8, 157, 15),
+                            new Range(62, 13, 62, 14),
+                        ],
+                        isNameConcealed: [
+                            new Range(158, 8, 158, 23),
+                            new Range(158, 25, 158, 29),
+                        ],
+                        getUserTag: [
+                            new Range(159, 8, 159, 18),
+                            new Range(142, 13, 142, 14),
+                        ],
+                        useUserTag: [
+                            new Range(160, 8, 160, 18),
+                            new Range(160, 20, 160, 34),
+                        ],
+                        getFormattedName: [
+                            new Range(164, 8, 164, 24),
+                            new Range(81, 13, 81, 14),
+                        ],
+                        getGlobalName: [
+                            new Range(165, 8, 165, 21),
+                            new Range(72, 13, 72, 14),
+                        ],
+                        humanizeStatus: [
+                            new Range(166, 8, 166, 22),
+                            new Range(90, 13, 90, 14),
+                        ],
+                        useDirectMessageRecipient: [
+                            new Range(167, 8, 167, 33),
+                            new Range(147, 13, 147, 14),
+                        ],
+                    },
+                });
+            });
         });
         describe("module.exports", function () {
             it("parses a module with an object literal export (class names)", function () {

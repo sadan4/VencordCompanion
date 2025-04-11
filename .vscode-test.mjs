@@ -27,6 +27,7 @@ export default defineConfig({
         ui: "bdd",
         color: true,
         require: [
+            "source-map-support/register",
             join(__dirname, "scripts", "fixture.cjs"),
         ]
     },

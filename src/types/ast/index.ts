@@ -111,3 +111,42 @@ export interface Store {
     };
 }
 export type Functionish = FunctionLikeDeclaration | ArrowFunction | FunctionExpression;
+export interface ReExport {
+    /**
+     * `1` in
+     * ```js
+     * var foo = wreq(1);
+     * // ...
+     * ```
+     */
+    fromModule: string;
+    /**
+     * the `foo` in
+     * ```js
+     * var foo = wreq(1);
+     * foo.bar.baz.qux();
+     * ```
+     */
+    importedName: string;
+    /**
+     * the `bar` in
+     * ```js
+     * var foo = wreq(1);
+     * foo.bar.baz.qux();
+     * ```
+     */
+    usedExport: string;
+    /**
+     * [`baz`, `qux`] in
+     * ```js
+     * var foo = wreq(1);
+     * foo.bar.baz.qux();
+     * ```
+     * `undefined` in
+     * ```js
+     * var foo = wreq(2);
+     * foo.bar();
+     * ```
+     */
+    chain: string[] | undefined;
+}

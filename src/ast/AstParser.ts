@@ -1,5 +1,6 @@
 import { getNumberAndColumnFromPos } from "@ast/lineUtil";
 import { outputChannel } from "@modules/logging";
+import { mkStringUri } from "@server/index";
 import { Functionish } from "@type/ast";
 
 import { Cache, CacheGetter, CharCode, isEOL } from "./util";
@@ -42,7 +43,7 @@ import {
     SyntaxKind,
     VariableDeclaration,
 } from "typescript";
-import { Position, Range } from "vscode";
+import { Position, Range, Uri } from "vscode";
 
 export class AstParser {
     public readonly text: string;
@@ -124,6 +125,14 @@ export class AstParser {
 
     public isCallExpression(node: Node | undefined): node is CallExpression {
         return node?.kind === SyntaxKind.CallExpression;
+    }
+
+    /**
+     * Returns an {@link Uri} for this file that can be used
+     * to open this file.
+     */
+    public mkStringUri(): Uri {
+        return mkStringUri(this.text);
     }
 
     /**

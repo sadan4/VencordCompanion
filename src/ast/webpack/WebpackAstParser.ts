@@ -21,7 +21,6 @@ import {
     Definitions,
     ExportMap,
     ExportRange,
-    Functionish,
     ModuleDeps,
     OLD_RawExportMap,
     RawExportMap,
@@ -53,12 +52,10 @@ import {
     isPropertyAssignment,
     isSpreadAssignment,
     isVariableDeclaration,
-    LiteralToken,
     NewExpression,
     Node,
     ObjectLiteralExpression,
     PropertyAccessExpression,
-    PropertyAssignment,
     ScriptKind,
     ScriptTarget,
     SourceFile,
@@ -832,102 +829,11 @@ export class WebpackAstParser extends AstParser {
     /**
    * takes an expression, and maps it to ranges which it is in
    */
-    makeExportMapRecursive(node: ObjectLiteralExpression): ExportMap;
-    makeExportMapRecursive(node: LiteralToken): ExportRange;
-    makeExportMapRecursive(node: PropertyAssignment): ExportMap | ExportRange;
-    makeExportMapRecursive(node: Functionish): ExportMap | ExportRange;
-    makeExportMapRecursive(node: CallExpression): ExportRange;
-    makeExportMapRecursive(node: Node): ExportRange | ExportMap;
-    makeExportMapRecursive(node: Node | undefined): ExportMap | ExportMap[keyof ExportMap] {
+    makeExportMapRecursive(node: Node): ExportMap | ExportRange;
+    makeExportMapRecursive(node: Node | undefined): ExportMap | ExportRange {
         if (!node)
             throw new Error("node should not be undefined / falsy");
         return this.rawMapToExportMap(this.rawMakeExportMapRecursive(node));
-        // if (isObjectLiteralExpression(node)) {
-        //     return Object.fromEntries(node.properties
-        //         .map((x): false | [string, ExportMap[string]][] => {
-        //             // wreq.e is used for css class name exports
-        //             // if (!isPropertyAssignment(x) || (!isStringLiteral(x.initializer) && !isIdentifier(x.initializer)))
-        //             //     return false;
-        //             if (isSpreadAssignment(x)) {
-        //                 if (!isIdentifier(x.expression)) {
-        //                     outputChannel.error("Spread assignment is not an identifier, this should be handled");
-        //                 }
-
-        //                 const spread = this.makeExportMapRecursive(x.expression);
-
-        //                 if (Array.isArray(spread)) {
-        //                     outputChannel.warn("Identifier in object spread is not an object, this should be handled");
-        //                     return false;
-        //                 }
-
-        //                 const { [WebpackAstParser.SYM_CJS_DEFAULT]: _default, ...rest }
-        //         = spread;
-
-        //                 return Object.entries(rest);
-        //             }
-        //             return [[x.name.getText(), this.makeExportMapRecursive(x)]];
-        //         })
-        //         .filter((x) => x !== false)
-        //         .flat());
-        // } else if (this.isLiteralish(node)) {
-        //     return [this.makeRangeFromAstNode(node)];
-        // } else if (isPropertyAssignment(node)) {
-        //     const objRange = this.makeExportMapRecursive(node.initializer);
-
-        //     if (Array.isArray(objRange))
-        //         return [this.makeRangeFromAstNode(node.name), ...[objRange].flat()];
-        //     return {
-        //         [node.name.getText()]: objRange,
-        //     };
-        // } else if (this.isFunctionish(node)) {
-        //     // check if it's a simple wrapper function eg:
-        //     // `function(){return foo;}` or `() => foo` or `() => {return foo;}
-        //     // TODO: also check that if it's a non-mutable constant,
-        //     wrapperFuncCheck: {
-        //         if (!node.body)
-        //             break wrapperFuncCheck;
-        //         // if the arrow function returns a simple identifier, use that
-        //         if (isIdentifier(node.body) || isPropertyAccessExpression(node.body)) {
-        //             const ret = this.makeExportMapRecursive(node.body);
-
-        //             if (allEntries(ret).length > 0)
-        //                 return ret;
-        //         }
-        //         if (isBlock(node.body) && node.body.statements.length === 1) {
-        //             const ident = findReturnIdentifier(node);
-
-        //             if (!ident)
-        //                 break wrapperFuncCheck;
-
-        //             const ret = this.makeExportMapRecursive(ident);
-
-        //             if (allEntries(ret).length > 0)
-        //                 return ret;
-        //         }
-        //     }
-        //     if (node.name) {
-        //         return [this.makeRangeFromAstNode(node.name)];
-        //     }
-        //     return [this.makeRangeFromAnonFunction(node)];
-        // } else if (isCallExpression(node)) {
-        //     return [this.makeRangeFromAstNode(node)];
-        // } else if (isIdentifier(node)) {
-        //     const trail = this.unwrapVariableDeclaration(node);
-
-        //     if (!trail || trail.length === 0) {
-        //         outputChannel.warn("Could not find variable declaration for identifier");
-        //         return [];
-        //     }
-
-        //     const last = this.getVariableInitializer(trail.at(-1)!);
-
-        //     if (!last) {
-        //         outputChannel.warn("Could not find initializer of identifier");
-        //         return [this.makeRangeFromAstNode(trail.at(-1)!)];
-        //     }
-        //     return this.makeExportMapRecursive(last);
-        // }
-        // return [this.makeRangeFromAstNode(node)];
     }
 
     // FIXME: handle when there is more than one module.exports assignment, eg e = () => {}; e.foo = () => {};

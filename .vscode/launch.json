@@ -28,7 +28,7 @@
         "--disable-extensions"
       ],
       "outFiles": ["${workspaceFolder}/dist.test/**/*.js"],
-      "preLaunchTask": "preTest",
+      "preLaunchTask": "build:test",
       "pauseForSourceMap": true,
       "resolveSourceMapLocations": [
         "${workspaceFolder}/**",

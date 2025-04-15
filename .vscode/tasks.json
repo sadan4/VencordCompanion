@@ -83,6 +83,29 @@
             "clear": true
         },
         "problemMatcher": []
+    },
+    {
+        "type": "shell",
+        "command": "pnpm",
+        "args": [
+            "run",
+            "build:test"
+        ],
+        "label": "build:test",
+        "group": {
+            "kind": "build",
+            "isDefault": false
+        },
+        "presentation": {
+            "echo": true,
+            "reveal": "always",
+            "close": true,
+            "focus": false,
+            "panel": "new",
+            "showReuseMessage": false,
+            "clear": true
+        },
+        "problemMatcher": []
     }
 ]
 }

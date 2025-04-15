@@ -35,6 +35,12 @@ export type Import = {
     as: Identifier;
 };
 
+export type RawExportRange = Node[];
+
+export type RawExportMap = {
+    [exportedName: string | symbol]: RawExportRange | RawExportMap;
+};
+
 export type ExportRange = (Range)[];
 
 export interface ExportMap {
@@ -48,7 +54,7 @@ export interface ExportMap {
 /**
  * {@link ExportMap}, but only has the first level of exports, and they are stored as nodes(most of the time)
  */
-export interface RawExportMap<T> {
+export interface OLD_RawExportMap<T> {
     [exposedName: string | symbol]: T;
 }
 

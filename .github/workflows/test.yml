@@ -1,0 +1,35 @@
+name: test
+on:
+    push:
+    pull_request:
+jobs:
+    test:
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v4
+            - uses: pnpm/action-setup@v3 # Install pnpm using packageManager key in package.json
+
+            - name: Use Node.js 20
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 20
+                  cache: "pnpm"
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+
+            - name: Test if tests compile
+              run: pnpm build:test
+
+            - name: Test if it bundles
+              run: pnpm build
+
+            - name: run tests
+              run: pnpm test
+
+            - name: Test if linting passes
+              run: pnpm eslint
+
+            - name: Test if type checking passes
+              run: pnpm typecheck

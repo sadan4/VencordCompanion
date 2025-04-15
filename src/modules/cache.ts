@@ -2,7 +2,9 @@ import { WebpackAstParser } from "@ast/webpack";
 import { format } from "@modules/format";
 import { outputChannel } from "@modules/logging";
 import { BufferedProgressBar, exists, getCurrentFolder, isDirectory, ProgressBar, SecTo } from "@modules/util";
-import { formatModule, sendAndGetData } from "@server";
+import { sendAndGetData } from "@server";
+
+import { formatModule } from "./util";
 
 import { mkdir, readdir, readFile, rm, writeFile } from "fs/promises";
 import { join, resolve } from "path";

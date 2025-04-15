@@ -1,13 +1,14 @@
 import { makeRange } from "@ast/util";
 import { VencordAstParser } from "@ast/vencord";
 import { outputChannel } from "@modules/logging";
-import { formatModule, sendAndGetData } from "@server/index";
+import { sendAndGetData } from "@server/index";
 import { SourcePatch } from "@type/ast";
 import { PromiseProivderResult } from "@type/index";
 import { ExtractModuleR } from "@type/server";
 
 import { format } from "./format";
 import { canonicalizeMatch, canonicalizeReplace, parseMatch, parseReplace } from "./patches";
+import { formatModule } from "./util";
 
 import DiffFunc, { DELETE, Diff } from "fast-diff";
 import { nanoid } from "nanoid";

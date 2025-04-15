@@ -1,6 +1,6 @@
 import { getNumberAndColumnFromPos } from "@ast/lineUtil";
 import { outputChannel } from "@modules/logging";
-import { mkStringUri } from "@server/index";
+import { mkStringUri } from "@modules/util";
 import { Functionish } from "@type/ast";
 
 import { Cache, CacheGetter, CharCode, isEOL } from "./util";

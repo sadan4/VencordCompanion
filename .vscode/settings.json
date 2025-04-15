@@ -33,5 +33,6 @@
         "wreq",
         "WUMPUS"
     ],
-    "npm.autoDetect": "off"
+    "npm.autoDetect": "off",
+    "eslint.lintTask.options": "--cache",
 }

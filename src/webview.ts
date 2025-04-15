@@ -2,7 +2,8 @@
  * Manages react webview panels
  */
 import { format } from "@modules/format";
-import { handleExtractPayload, mkStringUri, sendAndGetData } from "@server";
+import { mkStringUri } from "@modules/util";
+import { handleExtractPayload, sendAndGetData } from "@server";
 import { EvaledPatch, ReporterData, WebviewMessage } from "@type/reporter";
 
 import { extensionPath, extensionUri } from "./extension";

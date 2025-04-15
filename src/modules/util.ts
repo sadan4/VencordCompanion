@@ -1,7 +1,7 @@
 import { PathLike } from "fs";
 import { stat } from "fs/promises";
 
-import { CancellationToken, Progress, ProgressLocation, ProgressOptions, window, workspace } from "vscode";
+import { CancellationToken, Progress, ProgressLocation, ProgressOptions, Uri, window, workspace } from "vscode";
 
 
 export class ProgressBar {
@@ -176,5 +176,40 @@ export async function exists(path: PathLike) {
  */
 export async function isDirectory(path: PathLike) {
     return (await stat(path)).isDirectory();
+}
+/**
+ * **does not** format the modules code see {@link format} for more code formating
+
+ * takes the raw contents of a module and prepends a header
+ * @param moduleContents the module
+ * @param moduleId the module id
+ * @param isFind if the module is coming from a find
+    eg: is it a partial module
+ * @returns a string with the formatted module
+ */
+
+export function formatModule(moduleContents: string, moduleId: string | number | undefined = "000000", isFind?: boolean): string {
+    if (isFind)
+        return `// Webpack Module ${moduleId} \n${isFind ? `//OPEN FULL MODULE: ${moduleId}\n` : ""}//EXTRACED WEPBACK MODULE ${moduleId}\n 0,\n${moduleContents}`;
+    return moduleContents;
+}
+/**
+ * converts a string into a URI that will resolve to a file with the contents of the string
+ * @param patched the contents of the file
+ * @param filename the name of the file
+ * @param filetype the file extension
+ * @returns the Uri for the file
+ */
+
+export function mkStringUri(patched: any, filename = "module", filetype = "js"): Uri {
+    const SUFFIX = `/${filename}.${filetype}`;
+
+    if (filename.indexOf("/") !== -1 || filetype.indexOf("/") !== -1)
+        throw new Error(`Filename and filetype must not contain \`/\`. Got: ${SUFFIX.substring(1)}`);
+
+    const PREFIX = "vencord-companion://b64string/";
+    const a = Buffer.from(patched);
+
+    return Uri.parse(PREFIX + a.toString("base64url") + SUFFIX);
 }
 

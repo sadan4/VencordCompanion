@@ -15,7 +15,8 @@ import {
 import { outputChannel } from "@extension";
 import { ModuleCache, ModuleDepManager } from "@modules/cache";
 import { format } from "@modules/format";
-import { formatModule, mkStringUri, sendAndGetData } from "@server/index";
+import { formatModule, mkStringUri } from "@modules/util";
+import { sendAndGetData } from "@server/index";
 import {
     Definitions,
     ExportMap,

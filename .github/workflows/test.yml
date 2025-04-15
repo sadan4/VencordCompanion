@@ -24,9 +24,16 @@ jobs:
 
             - name: Test if it bundles
               run: pnpm build
+              
+            - name:
+              uses: actions/cache@v3
+              with:
+                path: |
+                  ~/.cache/eslint
+                key: ${{ runner.os }}-node-${{ hashFiles('**/pnpm-lock.yaml', '**/.eslint.config.mts') }}
 
             - name: Test if linting passes
-              run: pnpm eslint
+              run: pnpm eslint --cache-strategy content --cache-location ~/.cache/eslint/sadan4-VencordCompanion
 
             - name: Test if type checking passes
               run: pnpm typecheck

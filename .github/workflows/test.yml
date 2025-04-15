@@ -25,11 +25,16 @@ jobs:
             - name: Test if it bundles
               run: pnpm build
 
-            - name: run tests
-              run: pnpm test
-
             - name: Test if linting passes
               run: pnpm eslint
 
             - name: Test if type checking passes
               run: pnpm typecheck
+
+            - name: run tests linux
+              run: xvfb-run -a pnpm test
+              if: runner.os == 'Linux'
+
+            - name: run tests (non-linux)
+              run: pnpm test
+              if: runner.os != 'Linux'

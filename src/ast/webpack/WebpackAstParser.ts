@@ -29,6 +29,7 @@ import {
     Store,
 } from "@type/ast";
 
+import { isAccessorDeclaration } from "tsutils";
 import { VariableInfo } from "tsutils/util/usage";
 import {
     CallExpression,
@@ -907,12 +908,29 @@ export class WebpackAstParser extends AstParser {
 
                 ret ||= this.makeExportMapRecursive(x);
                 // ensure we arent nested
-                if (!Array.isArray(ret)) {
-                    const keys = allEntries(ret);
+                ret = (function nestLoop(curName: string | symbol, obj: ExportMap | ExportRange):
+                    ExportMap | ExportRange {
+                    if (Array.isArray(obj)) {
+                        return obj;
+                    }
 
-                    if (keys.length === 1 && ret[x.name.getText()])
-                        ret = ret[x.name.getText()];
-                }
+                    const keys = allEntries(obj);
+
+                    if (keys.length === 1) {
+                        if (obj[curName]) {
+                            return nestLoop(curName, obj[curName]);
+                        }
+
+                        const key = keys[0][0];
+
+                        obj[key] = nestLoop(key, obj[key]);
+                        return obj;
+                    }
+                    for (const [k] of keys) {
+                        obj[k] = nestLoop(k, obj[k]);
+                    }
+                    return obj;
+                })(x.name.getText(), ret);
 
                 return lastNode != null ? [x.name.getText(), ret] : false;
             })
@@ -1088,6 +1106,10 @@ export class WebpackAstParser extends AstParser {
                 ret.store.push(member);
             } else if (isPropertyAssignment(member)) {
                 ret.props[member.name.getText()] = member.initializer;
+            } else if (isAccessorDeclaration(member)) {
+                if (!member.body)
+                    continue;
+                ret.methods[member.name.getText()] = member;
             } else {
                 outputChannel.warn("Unhandled store member type. This should be handled");
             }

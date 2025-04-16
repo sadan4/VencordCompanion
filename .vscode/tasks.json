@@ -66,9 +66,10 @@
         "command": "pnpm",
         "args": [
             "run",
-            "build"
+            "build",
+            "--dev"
         ],
-        "label": "build",
+        "label": "build:dev",
         "group": {
             "kind": "build",
             "isDefault": true

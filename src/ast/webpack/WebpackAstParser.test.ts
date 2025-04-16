@@ -103,6 +103,21 @@ describe("WebpackAstParser", function () {
                     },
                 });
             });
+            it("parses a module with an exported object with a computed property", function () {
+                const parser = new WebpackAstParser(require("test://ast/webpack/wreq.d/computedPropInObj.js"));
+                const map = parser.getExportMap();
+
+                expect(map).to.deep.equal({
+                    Z: {
+                        "[n(231338).Et.GET_PLATFORM_BEHAVIORS]": {
+                            handler: [
+                                new Range(8, 12, 8, 19),
+                                new Range(8, 21, 8, 26),
+                            ],
+                        },
+                    },
+                });
+            });
         });
         describe("module.exports", function () {
             it("parses a module with an object literal export (class names)", function () {
@@ -219,7 +234,7 @@ describe("WebpackAstParser", function () {
         });
         describe("stores", function () {
             it("generates the proper export map for a store exported with wreq.d", function () {
-                const parser = new WebpackAstParser(require("test://ast/webpack/store.js"));
+                const parser = new WebpackAstParser(require("test://ast/webpack/stores/store1.js"));
                 const map = parser.getExportMap();
 
                 expect(map).to.have.keys("Z");
@@ -235,7 +250,7 @@ describe("WebpackAstParser", function () {
                 expect(map.Z.isVisible).to.deep.equal([new Range(18, 8, 18, 17)]);
             });
             it("generates the proper export map for a store constructed with no arguments", function () {
-                const parser = new WebpackAstParser(require("test://ast/webpack/store2.js"));
+                const parser = new WebpackAstParser(require("test://ast/webpack/stores/store2.js"));
                 const map = parser.getExportMap();
 
                 expect(map).to.have.keys("default", "mergeUser", "ASSISTANT_WUMPUS_VOICE_USER");
@@ -268,7 +283,7 @@ describe("WebpackAstParser", function () {
                 ]);
             });
             it("generates the proper export map for a store with no initialize method", function () {
-                const parser = new WebpackAstParser(require("test://ast/webpack/store3.js"));
+                const parser = new WebpackAstParser(require("test://ast/webpack/stores/store3.js"));
                 const map = parser.getExportMap();
 
                 expect(map).to.have.keys("Z");
@@ -289,6 +304,23 @@ describe("WebpackAstParser", function () {
                         new Range(231, 16, 231, 17),
                         new Range(198, 10, 198, 11),
                     ],
+                });
+            });
+            it("generates the proper export map for a store with getters", function () {
+                const parser = new WebpackAstParser(require("test://ast/webpack/stores/getter.js"));
+                const map = parser.getExportMap();
+
+                // Change when parsing is fixed to only return to constants
+                expect(map).to.deep.equal({
+                    Z: {
+                        [WebpackAstParser.SYM_CJS_DEFAULT]: [
+                            new Range(4, 8, 4, 9),
+                            new Range(24, 16, 24, 17),
+                            new Range(9, 10, 9, 11),
+                        ],
+                        keepOpen: [new Range(8, 12, 8, 14)],
+                        enabled: [new Range(7, 12, 7, 14)],
+                    },
                 });
             });
             it.skip("generates the proper export map for a store exported with wreq.t", function () {

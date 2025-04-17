@@ -214,6 +214,16 @@ const TSLintRules: Partial<ExtractRules> = {
     ],
     "@typescript-eslint/require-await": "error",
     "@typescript-eslint/default-param-last": "error",
+    "@typescript-eslint/prefer-destructuring": [
+        "error",
+        {
+            object: true,
+            array: true,
+        },
+        {
+            enforceForRenamedProperties: false,
+        },
+    ],
 };
 
 const styleRules: Partial<_RuleOptions> = {

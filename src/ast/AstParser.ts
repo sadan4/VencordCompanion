@@ -376,6 +376,11 @@ export class AstParser {
         return this.computeLineOffsets(true);
     }
 
+    @CacheGetter()
+    public get lineCount() {
+        return this.lineOffsets.length;
+    }
+
     private ensureBeforeEOL(offset: number, lineOffset: number): number {
         while (offset > lineOffset && isEOL(this.text.charCodeAt(offset - 1))) {
             offset--;
@@ -402,5 +407,46 @@ export class AstParser {
             }
         }
         return result;
+    }
+
+    /**
+     * Converts a zero-based offset to a position.
+     *
+     * @param offset A zero-based offset.
+     * @return A valid {@link Position position}.
+     * @example The text document "ab\ncd" produces:
+     * position { line: 0, character: 0 } for `offset` 0.
+     * position { line: 0, character: 1 } for `offset` 1.
+     * position { line: 0, character: 2 } for `offset` 2.
+     * position { line: 1, character: 0 } for `offset` 3.
+     * position { line: 1, character: 1 } for `offset` 4.
+     */
+    public positionAt(offset: number): Position {
+        offset = Math.max(Math.min(offset, this.text.length), 0);
+
+        const { lineOffsets } = this;
+
+        let low = 0,
+            high = lineOffsets.length;
+
+        if (high === 0) {
+            return new Position(0, offset);
+        }
+        while (low < high) {
+            const mid = Math.floor((low + high) / 2);
+
+            if (lineOffsets[mid] > offset) {
+                high = mid;
+            } else {
+                low = mid + 1;
+            }
+        }
+
+        // low is the least x for which the line offset is larger than the current offset
+        // or array.length if no line offset is larger than the current offset
+        const line = low - 1;
+
+        offset = this.ensureBeforeEOL(offset, lineOffsets[line]);
+        return new Position(line, offset - lineOffsets[line]);
     }
 }

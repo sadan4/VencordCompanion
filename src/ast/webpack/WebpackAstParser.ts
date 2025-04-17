@@ -730,8 +730,8 @@ export class WebpackAstParser extends AstParser {
         if (!node)
             throw new Error("node should not be undefined");
         if (isObjectLiteralExpression(node)) {
-            return Object.fromEntries(node.properties
-                .map((x): false | [string, RawExportMap[PropertyKey]][] => {
+            const props = node.properties
+                .map((x): false | [string | symbol, RawExportMap[PropertyKey]][] => {
                     if (isSpreadAssignment(x)) {
                         if (!isIdentifier(x.expression)) {
                             outputChannel.error("Spread assignment is not an identifier, this should be handled");
@@ -751,7 +751,12 @@ export class WebpackAstParser extends AstParser {
                     return [[x.name.getText(), this.rawMakeExportMapRecursive(x)]];
                 })
                 .filter((x) => x !== false)
-                .flat());
+                .flat();
+
+            if (props.length !== 0)
+                props.push([WebpackAstParser.SYM_CJS_DEFAULT, [node.getChildAt(0)]]);
+
+            return Object.fromEntries(props);
         } else if (this.isLiteralish(node)) {
             return [node];
         } else if (isPropertyAssignment(node)) {

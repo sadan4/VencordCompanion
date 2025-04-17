@@ -100,6 +100,7 @@ describe("WebpackAstParser", function () {
                             new Range(167, 8, 167, 33),
                             new Range(147, 13, 147, 14),
                         ],
+                        [WebpackAstParser.SYM_CJS_DEFAULT]: [new Range(155, 12, 155, 13)],
                     },
                 });
             });
@@ -114,7 +115,9 @@ describe("WebpackAstParser", function () {
                                 new Range(8, 12, 8, 19),
                                 new Range(8, 21, 8, 26),
                             ],
+                            [WebpackAstParser.SYM_CJS_DEFAULT]: [new Range(7, 47, 7, 48)],
                         },
+                        [WebpackAstParser.SYM_CJS_DEFAULT]: [new Range(6, 12, 6, 13)],
                     },
                 });
             });
@@ -124,27 +127,33 @@ describe("WebpackAstParser", function () {
                 const parser = new WebpackAstParser(require("test://ast/webpack/e.exports/objLiteral.js"));
                 const map = parser.getExportMap();
 
-                expect(map).to.have.keys("addButton", "addButtonInner", "productListingsHeader", "productListings");
-                for (const k in map)
-                    expect(map[k]).to.have.length(2);
-                // props in th export
-                expect(map.productListingsHeader[0]).to.deep.equal(new Range(5, 8, 5, 29));
-                expect(map.productListings[0]).to.deep.equal(new Range(6, 8, 6, 23));
-                expect(map.addButton[0]).to.deep.equal(new Range(7, 8, 7, 17));
-                expect(map.addButtonInner[0]).to.deep.equal(new Range(8, 8, 8, 22));
-                // values in the export (string literals)
-                expect(map.productListingsHeader[1]).to.deep.equal(new Range(5, 31, 5, 61));
-                expect(map.productListings[1]).to.deep.equal(new Range(6, 25, 6, 49));
-                expect(map.addButton[1]).to.deep.equal(new Range(7, 19, 7, 37));
-                expect(map.addButtonInner[1]).to.deep.equal(new Range(8, 24, 8, 47));
+                expect(map).to.deep.equal({
+                    productListingsHeader: [
+                        new Range(5, 8, 5, 29),
+                        new Range(5, 31, 5, 61),
+                    ],
+                    productListings: [
+                        new Range(6, 8, 6, 23),
+                        new Range(6, 25, 6, 49),
+                    ],
+                    addButton: [
+                        new Range(7, 8, 7, 17),
+                        new Range(7, 19, 7, 37),
+                    ],
+                    addButtonInner: [
+                        new Range(8, 8, 8, 22),
+                        new Range(8, 24, 8, 47),
+                    ],
+                    [WebpackAstParser.SYM_CJS_DEFAULT]: [new Range(4, 16, 4, 17)],
+                });
             });
             it("parses a single string export", function () {
                 const parser = new WebpackAstParser(require("test://ast/webpack/e.exports/string.js"));
                 const map = parser.getExportMap();
 
-                expect(map).to.have.keys(WebpackAstParser.SYM_CJS_DEFAULT);
-                expect(map[WebpackAstParser.SYM_CJS_DEFAULT]).to.have.length(1);
-                expect(map[WebpackAstParser.SYM_CJS_DEFAULT][0]).to.deep.equal(new Range(4, 16, 4, 46));
+                expect(map).to.deep.equal({
+                    [WebpackAstParser.SYM_CJS_DEFAULT]: [new Range(4, 16, 4, 46)],
+                });
             });
             it("parses a re-export", function () {
                 const parser = new WebpackAstParser(require("test://ast/webpack/e.exports/identReExport.js"));
@@ -158,35 +167,45 @@ describe("WebpackAstParser", function () {
                 const parser = new WebpackAstParser(require("test://ast/webpack/e.exports/ident.js"));
                 const map = parser.getExportMap();
 
-                const keys = [
-                    "headerContainer",
-                    "closeContainer",
-                    "closeIcon",
-                    "headerImage",
-                    "headerImageContainer",
-                    "confirmationContainer",
-                    "purchaseConfirmation",
-                    "confirmationTitle",
-                    "confirmationSubtitle",
-                ];
-
-                expect(map).to.have.keys(keys);
-                keys.forEach((key) => {
-                    expect(map[key]).to.have.length(2);
+                expect(map).to.deep.equal({
+                    headerContainer: [
+                        new Range(5, 8, 5, 23),
+                        new Range(5, 25, 5, 49),
+                    ],
+                    closeContainer: [
+                        new Range(6, 8, 6, 22),
+                        new Range(6, 24, 6, 47),
+                    ],
+                    closeIcon: [
+                        new Range(7, 8, 7, 17),
+                        new Range(7, 19, 7, 37),
+                    ],
+                    headerImage: [
+                        new Range(8, 8, 8, 19),
+                        new Range(8, 21, 8, 41),
+                    ],
+                    headerImageContainer: [
+                        new Range(9, 8, 9, 28),
+                        new Range(9, 30, 9, 59),
+                    ],
+                    confirmationContainer: [
+                        new Range(10, 8, 10, 29),
+                        new Range(10, 31, 10, 61),
+                    ],
+                    purchaseConfirmation: [
+                        new Range(11, 8, 11, 28),
+                        new Range(11, 30, 11, 88),
+                    ],
+                    confirmationTitle: [
+                        new Range(12, 8, 12, 25),
+                        new Range(12, 27, 12, 53),
+                    ],
+                    confirmationSubtitle: [
+                        new Range(13, 8, 13, 28),
+                        new Range(13, 30, 13, 59),
+                    ],
+                    [WebpackAstParser.SYM_CJS_DEFAULT]: [new Range(4, 12, 4, 13)],
                 });
-                keys.filter((x) => typeof x === "string")
-                    .forEach((key, i) => {
-                        expect(map[key][0]).to.deep.equal(new Range(i + 5, 8, i + 5, key.length + 8));
-                    });
-
-                const stringPoints = [49, 47, 37, 41, 59, 61, 88, 53, 59];
-
-                keys.filter((x) => typeof x === "string")
-                    .forEach((key, i) => {
-                        const end = stringPoints[i];
-
-                        expect(map[key][1]).to.deep.equal(new Range(i + 5, key.length + 8 + 2, i + 5, end));
-                    });
             });
             it("parses a function expression", function () {
                 const parser = new WebpackAstParser(require("test://ast/webpack/e.exports/function.js"));

@@ -36,28 +36,28 @@ describe("AstParser", function () {
             it("correctly translates 0", function () {
                 const parser = new AstParser(file);
 
-                expect(parser.makeLocation(0)
+                expect(parser.positionAt(0)
                     .isEqual(new Position(0, 0))).to.be.true;
             });
 
             it("correctly translates pos 1", function () {
                 const parser = new AstParser(file);
 
-                expect(parser.makeLocation(68)
+                expect(parser.positionAt(68)
                     .isEqual(new Position(2, 11))).to.be.true;
             });
 
             it("correctly translates pos 2", function () {
                 const parser = new AstParser(file);
 
-                expect(parser.makeLocation(88)
+                expect(parser.positionAt(88)
                     .isEqual(new Position(3, 13))).to.be.true;
             });
 
             it("correctly translates the start of a line", function () {
                 const parser = new AstParser(file);
 
-                expect(parser.makeLocation(37)
+                expect(parser.positionAt(37)
                     .isEqual(new Position(1, 0))).to.be.true;
             });
         });

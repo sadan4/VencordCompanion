@@ -1,4 +1,3 @@
-import { getNumberAndColumnFromPos } from "@ast/lineUtil";
 import { outputChannel } from "@modules/logging";
 import { mkStringUri } from "@modules/util";
 import { Functionish } from "@type/ast";
@@ -268,21 +267,11 @@ export class AstParser {
      * @see makeRangeFromAstNode
      */
     public makeRange({ pos, end }: ReadonlyTextRange): Range {
-        return new Range(this.makeLocation(pos), this.makeLocation(end));
+        return new Range(this.positionAt(pos), this.positionAt(end));
     }
 
     public makeRangeFromAstNode(node: Node) {
-        return new Range(this.makeLocation(node.getStart(this.sourceFile)), this.makeLocation(node.end));
-    }
-
-    /**
-     * convert an offset to a position
-     * @param pos zero-based offset
-     */
-    public makeLocation(pos: number): Position {
-        const { lineNumber, column } = getNumberAndColumnFromPos(this.text, pos);
-
-        return new Position(lineNumber - 1, column - 1);
+        return new Range(this.positionAt(node.getStart(this.sourceFile)), this.positionAt(node.end));
     }
 
     public makeRangeFromAnonFunction(func: Functionish): Range {

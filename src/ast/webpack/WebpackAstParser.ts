@@ -116,7 +116,7 @@ export class WebpackAstParser extends AstParser {
     /**
      * @param paramIndex the index of the param 0, 1, 2 etc...
      * @param start finds a webpack arg from the source tree
-     * @returns the indenfiier of the param if found or undef
+     * @returns the identifier of the param if found or undef
      */
     findWebpackArg(paramIndex = 2, start: Node = this.sourceFile): Identifier | undefined {
         for (const n of start.getChildren()) {
@@ -926,7 +926,7 @@ export class WebpackAstParser extends AstParser {
                             return nestLoop(curName, obj[curName]);
                         }
 
-                        const key = keys[0][0];
+                        const [[key]] = keys;
 
                         obj[key] = nestLoop(key, obj[key]);
                         return obj;

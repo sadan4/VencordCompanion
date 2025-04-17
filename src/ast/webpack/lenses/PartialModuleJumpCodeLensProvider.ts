@@ -8,7 +8,7 @@ export class PartialModuleJumpCodeLensProvider implements CodeLensProvider {
             .includes("//OPEN FULL MODULE: ")))
             return;
 
-        const moduleId = (text.match(/^\/\/OPEN FULL MODULE: (\d{0,6})/m) ?? [])[1];
+        const [, moduleId] = text.match(/^\/\/OPEN FULL MODULE: (\d{0,6})/m) ?? [];
 
         if (!moduleId)
             return;

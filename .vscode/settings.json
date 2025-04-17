@@ -20,6 +20,8 @@
         "pauseForSourceMap": true,
     },
     "cSpell.words": [
+        "cpuprofile",
+        "eslintcache",
         "flatmaps",
         "Functionish",
         "intrnl",

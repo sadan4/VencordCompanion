@@ -217,8 +217,14 @@ const TSLintRules: Partial<ExtractRules> = {
     "@typescript-eslint/prefer-destructuring": [
         "error",
         {
-            object: true,
-            array: true,
+            VariableDeclarator: {
+                object: true,
+                array: true,
+            },
+            AssignmentExpression: {
+                object: false,
+                array: false,
+            },
         },
         {
             enforceForRenamedProperties: false,

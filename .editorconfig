@@ -7,3 +7,6 @@ root = true
 charset = utf-8
 trim_trailing_whitespace = false
 insert_final_newline = true
+
+[assets/test/ast/**]
+end_of_line = lf

@@ -71,30 +71,11 @@ export class WebpackAstParser {
      */
     static readonly SYM_CJS_DEFAULT: unique symbol = Symbol.for("CommonJS Default Export");
 
-    /**
-     * The webpack instance passed to this module
-     *
-     * The `n` of
-     * ```
-     * function (e, t, n) {
-     // webpack module contents
-     * }
-     * ```
-     */
-    get wreq(): Identifier | undefined {
-        return this.findWebpackArg();
-    }
-
     /** where {@link WebpackAstParser.wreq this.wreq} is used*/
     get uses(): VariableInfo | undefined {
         return this.wreq && this.vars.get(this.wreq);
     }
 
-
-
-    public constructor(text: string) {
-        // super(text);
-    }
 
     protected override createSourceFile(): SourceFile {
         return createSourceFile("module.js", this.text, ScriptTarget.ESNext, true, ScriptKind.JS);

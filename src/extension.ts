@@ -16,16 +16,13 @@ export let extensionPath: string;
 export function activate(context: ExtensionContext) {
     extensionUri = context.extensionUri;
     extensionPath = context.extensionPath;
-    startWebSocketServer();
     context.subscriptions.push(
 
         languages.registerReferenceProvider({ language: "javascript" }, new ReferenceProvider()),
 
 
     );
-    if (window.activeTextEditor) {
-        onOpenCallback(window.activeTextEditor.document);
-    }
+
 }
 
 export function deactivate() {

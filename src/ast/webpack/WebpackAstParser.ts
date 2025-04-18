@@ -336,7 +336,7 @@ export class WebpackAstParser extends AstParser {
 
         // TODO: support jumping from object literals
         for (const [exportedName] of []) {
-            const seen: Record<string, Set<String>> = {};
+            // const seen: Record<string, Set<String>> = {};
 
             // the module id that is being searched for uses
             // the ID of the module that exportName will be imported from

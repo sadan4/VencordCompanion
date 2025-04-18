@@ -16,7 +16,7 @@
       "resolveSourceMapLocations": [
         "${workspaceFolder}/**",
         "!**/node_modules/**"
-      ]
+      ],
     },
     {
       "name": "Extension Tests",

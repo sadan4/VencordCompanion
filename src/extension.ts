@@ -1,19 +1,13 @@
 import { onEditCallback, onOpenCallback } from "@ast/vencord/diagnostics";
-import { I18nHover } from "@ast/vencord/hover";
-import { PatchCodeLensProvider, PluginDefCodeLensProvider, WebpackCodeLensProvider } from "@ast/vencord/lenses";
-import { PartialModuleJumpCodeLensProvider } from "@ast/webpack/lenses";
+import { PatchCodeLensProvider, PluginDefCodeLensProvider } from "@ast/vencord/lenses";
 import { DefinitionProvider, ReferenceProvider } from "@ast/webpack/lsp";
 import { outputChannel } from "@modules/logging";
 import { PatchHelper } from "@modules/PatchHelper";
-import { handleDiffPayload, handleExtractPayload, moduleCache, sendAndGetData, startWebSocketServer, stopWebSocketServer } from "@server";
+import { startWebSocketServer, stopWebSocketServer } from "@server";
 import { treeDataProvider } from "@sidebar";
-import { SourcePatch } from "@type/ast";
-import { Discriminate } from "@type/server";
-import { DisablePluginData, FindData, OutgoingMessage, PatchData } from "@type/server/send";
 
-import { startReporter } from "./reporter";
 
-import { commands, ExtensionContext, languages, QuickPickItem, TextDocument, Uri, window as vscWindow, window, workspace } from "vscode";
+import { ExtensionContext, languages, Uri, window, workspace } from "vscode";
 
 export let extensionUri: Uri;
 export let extensionPath: string;

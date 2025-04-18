@@ -65,7 +65,7 @@ import { Location, Position, Range } from "vscode";
 
 // FIXME: rewrite to use module cache
 
-export class WebpackAstParser extends AstParser {
+export class WebpackAstParser {
     /**
      * This is set on {@link ExportMap} when the default export is commonjs and has no properties, eg, string literal, function
      */
@@ -106,7 +106,7 @@ export class WebpackAstParser extends AstParser {
     }
 
     public constructor(text: string) {
-        super(text);
+        // super(text);
     }
 
     protected override createSourceFile(): SourceFile {

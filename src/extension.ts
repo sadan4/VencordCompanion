@@ -1,13 +1,9 @@
-import { onEditCallback, onOpenCallback } from "@ast/vencord/diagnostics";
-import { PatchCodeLensProvider, PluginDefCodeLensProvider } from "@ast/vencord/lenses";
-import { DefinitionProvider, ReferenceProvider } from "@ast/webpack/lsp";
+import { ReferenceProvider } from "@ast/webpack/lsp";
 import { outputChannel } from "@modules/logging";
-import { PatchHelper } from "@modules/PatchHelper";
-import { startWebSocketServer, stopWebSocketServer } from "@server";
-import { treeDataProvider } from "@sidebar";
+import { stopWebSocketServer } from "@server";
 
 
-import { ExtensionContext, languages, Uri, window, workspace } from "vscode";
+import { ExtensionContext, languages, Uri } from "vscode";
 
 export let extensionUri: Uri;
 export let extensionPath: string;

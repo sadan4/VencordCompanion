@@ -1,5 +1,5 @@
 import esbuild from "esbuild";
-import { commonOpts, webviewOpts } from "./common.mjs";
+import { commonOpts } from "./common.mjs";
 
 //@ts-check
 const IS_DEV = process.argv.includes("--dev");
@@ -9,5 +9,5 @@ await Promise.all([
         sourcemap: "linked",
         minify: !IS_DEV
     }),
-    esbuild.build(webviewOpts)
+    // esbuild.build(webviewOpts)
 ])

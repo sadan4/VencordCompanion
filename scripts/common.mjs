@@ -1,5 +1,5 @@
 //@ts-check
-import { commonOpts as webviewCommonOpts } from "../src/webview/scripts/common.mjs"
+// import { commonOpts as webviewCommonOpts } from "../src/webview/scripts/common.mjs"
 import { join, relative } from "path";
 import { glob } from "glob";
 import { readFile } from "fs/promises";
@@ -100,15 +100,15 @@ export const commonOpts = {
     logLevel: "info",
     outfile: "dist/extension.js"
 }
-const webviewopts = {
-    ...webviewCommonOpts
-};
-if (!webviewopts.define || !Array.isArray(webviewopts.entryPoints))
-    throw new Error("how");
-webviewopts.entryPoints = webviewopts.entryPoints.map(x => join("src/webview", x))
-webviewopts.outdir = "./dist/webview"
-webviewopts.define.IS_DEV = "false"
+// const webviewopts = {
+//     ...webviewCommonOpts
+// };
+// if (!webviewopts.define || !Array.isArray(webviewopts.entryPoints))
+//     throw new Error("how");
+// webviewopts.entryPoints = webviewopts.entryPoints.map(x => join("src/webview", x))
+// webviewopts.outdir = "./dist/webview"
+// webviewopts.define.IS_DEV = "false"
 
 
-// ugly
-export const webviewOpts = webviewopts;
+// // ugly
+// export const webviewOpts = webviewopts;

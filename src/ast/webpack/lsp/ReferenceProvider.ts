@@ -1,11 +1,4 @@
-import { isWebpackModule } from "@ast/util";
 import { WebpackAstParser } from "@ast/webpack";
-import { ModuleCache, ModuleDepManager } from "@modules/cache";
-import { outputChannel } from "@modules/logging";
-import { References } from "@type/ast";
-
-import { Position, ReferenceProvider as IReferenceProvider, TextDocument, window } from "vscode";
-
 
 export class ReferenceProvider implements IReferenceProvider {
     async provideReferences(document: TextDocument, position: Position): References {
@@ -24,7 +17,7 @@ export class ReferenceProvider implements IReferenceProvider {
             return await new WebpackAstParser(document.getText())
                 .generateReferences(position);
         } catch (e) {
-            outputChannel.error(String(e));
+            console.error(String(e));
         }
     }
 }

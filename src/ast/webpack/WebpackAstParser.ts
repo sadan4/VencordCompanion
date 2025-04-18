@@ -81,29 +81,16 @@ export class WebpackAstParser {
      * }
      * ```
      */
-    @CacheGetter()
     get wreq(): Identifier | undefined {
         return this.findWebpackArg();
     }
 
     /** where {@link WebpackAstParser.wreq this.wreq} is used*/
-    @CacheGetter()
     get uses(): VariableInfo | undefined {
         return this.wreq && this.vars.get(this.wreq);
     }
 
-    /**
-     * The module id of the current module
-     */
-    @CacheGetter()
-    get moduleId(): string | null {
-        if (this.text.startsWith("// Webpack Module ")) {
-            const [, id] = this.text.match(/^\/\/ Webpack Module (\d+) /) ?? [];
 
-            return id || null;
-        }
-        return null;
-    }
 
     public constructor(text: string) {
         // super(text);
@@ -156,7 +143,6 @@ export class WebpackAstParser {
 
     // FIXME: THIS RETURNS TWO DIFFERENT THINGS BASED ON WHETHER THE CACHE IS INITIALIZED OR NOT
     // THAT ARE UNRELATED
-    @Cache()
     public getModulesThatThisModuleRequires(): ModuleDeps | null {
         if (!this.wreq || !this.uses)
             return null;
@@ -425,7 +411,6 @@ export class WebpackAstParser {
     /**
    * @returns a map of exported names to the nodes that they are exported from
    */
-    @Cache()
     getExportMapRaw() {
         return {
             ...this.getExportMapRawWreq_d() ?? {},
@@ -434,7 +419,6 @@ export class WebpackAstParser {
         };
     }
 
-    @Cache()
     public getExportMapRawWreq_d():
       | OLD_RawExportMap<Identifier | PropertyAccessExpression>
       | undefined {
@@ -465,7 +449,6 @@ export class WebpackAstParser {
             .filter((x) => x !== false));
     }
 
-    @Cache()
     public getExportMapRawWreq_e(): OLD_RawExportMap<Expression> | undefined {
         const wreqE = this.findWreq_e();
 
@@ -501,7 +484,6 @@ export class WebpackAstParser {
         return Object.fromEntries(exportAssignments);
     }
 
-    @Cache()
     public getExportMapRawWreq_t(): OLD_RawExportMap<Expression> | undefined {
         const wreqT = this.findWreq_t();
 
@@ -526,7 +508,6 @@ export class WebpackAstParser {
             .filter((x) => x !== undefined));
     }
 
-    @Cache()
     getExportMap(): ExportMap {
         return {
             ...this.getExportMapWreq_d() ?? {},
@@ -689,7 +670,6 @@ export class WebpackAstParser {
         return uses;
     }
 
-    @Cache()
     getExportMapWreq_t(): ExportMap | undefined {
         const wreqT = this.findWreq_t();
 
@@ -843,7 +823,6 @@ export class WebpackAstParser {
     }
 
     // FIXME: handle when there is more than one module.exports assignment, eg e = () => {}; e.foo = () => {};
-    @Cache()
     getExportMapWreq_e(): ExportMap | undefined {
         const wreqE = this.findWreq_e();
 
@@ -884,7 +863,6 @@ export class WebpackAstParser {
         return exports;
     }
 
-    @Cache()
     getExportMapWreq_d(): ExportMap | undefined {
         const wreqD = this.findWreq_d();
 
@@ -1156,7 +1134,6 @@ export class WebpackAstParser {
     // );
     }
 
-    @Cache()
     findWreq_d():
     | (Omit<CallExpression, "arguments"> & {
         arguments: readonly [Identifier, ObjectLiteralExpression];
@@ -1222,7 +1199,6 @@ export class WebpackAstParser {
         }
     }
 
-    @Cache()
     findWreq_t(): Identifier | undefined {
         return this.findWebpackArg(1);
     }

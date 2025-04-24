@@ -64,7 +64,7 @@ async function makePatchDiagnostic(doc: VencordAstParser): Promise<Diagnostic[]>
             .filter((e): e is {
                 range: Range;
                 message: string;
-            } => e.message !== null)
+            } => e.message != null)
             .map(({ range, message }) => ({
                 range,
                 message,
@@ -93,7 +93,7 @@ async function makeFindDiagnostic(doc: VencordAstParser): Promise<Diagnostic[]> 
             .filter((e): e is {
                 range: Range;
                 message: string;
-            } => e.message !== null)
+            } => e.message != null)
             .map(({ range, message }) => ({
                 range,
                 severity: DiagnosticSeverity.Error,

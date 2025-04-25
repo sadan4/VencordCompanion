@@ -1,0 +1,24 @@
+diff --git a/out/cli/coverage.mjs b/out/cli/coverage.mjs
+index 41bd8c168ff8e17dba9241f8ce74dc770c962349..381bd4c1f7a2102e09a6bca2baa67f4f928f527d 100644
+--- a/out/cli/coverage.mjs
++++ b/out/cli/coverage.mjs
+@@ -43,6 +43,7 @@ export class Coverage {
+                     ? this.args.coverageReporter.map(String)
+                     : defaultReporters,
+                 reporterOptions,
++                excludeAfterRemap: true,
+                 reportsDirectory: this.args.coverageOutput || join(this.config.dir, 'coverage'),
+                 src: this.getSourcesDirectories(),
+                 all: cfg.includeAll,
+diff --git a/out/runner.cjs b/out/runner.cjs
+index 8043afbedca0226c88e2d3a6603076a68dfce127..a690a50fc1aba529779716063a7fe0fb32622f09 100644
+--- a/out/runner.cjs
++++ b/out/runner.cjs
+@@ -30,6 +30,7 @@ async function run() {
+     for (const file of files) {
+         mocha.addFile(normalizeCasing(file));
+     }
++    await mocha.loadFilesAsync();
+     await new Promise((resolve, reject) => mocha.run((failures) => failures
+         ? reject(failures > 1 ? `${failures} tests failed.` : `${failures} test failed.`)
+         : resolve()));

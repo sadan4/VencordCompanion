@@ -4,20 +4,109 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "type": "npm",
-      "script": "watch",
-      "problemMatcher": "$esbuild-watch",
-      "isBackground": true,
-      "presentation": {
-        "reveal": "never",
-        "revealProblems": "never"
-      },
-
-      "group": {
-        "kind": "build",
-        "isDefault": true
-      }
-
+        "type": "shell",
+        "command": "pnpm",
+        "args": [
+            "run",
+            "watch:test"
+        ],
+        "label": "watch:test",
+        "isBackground": true,
+        "presentation": {
+            "echo": true,
+            "reveal": "silent",
+            "focus": false,
+            "panel": "shared",
+            "showReuseMessage": false,
+            "clear": true
+        },
+        "problemMatcher": []
+    },
+    {
+        "type": "shell",
+        "command": "pnpm",
+        "args": [
+            "run",
+            "test"
+        ],
+        "label": "test",
+        "group": {
+            "kind": "test",
+            "isDefault": true
+        },
+        "presentation": {
+            "echo": true,
+            "reveal": "always",
+            "focus": false,
+            "panel": "shared",
+            "showReuseMessage": false,
+            "clear": true
+        }
+    },
+    {
+        "type": "shell",
+        "command": "pnpm",
+        "args": [
+            "run",
+            "watch"
+        ],
+        "label": "watch",
+        "isBackground": true,
+        "presentation": {
+            "echo": true,
+            "reveal": "silent",
+            "focus": false,
+            "panel": "shared",
+            "showReuseMessage": false,
+            "clear": true
+        }
+    },
+    {
+        "type": "shell",
+        "command": "pnpm",
+        "args": [
+            "run",
+            "build",
+            "--dev"
+        ],
+        "label": "build:dev",
+        "group": {
+            "kind": "build",
+            "isDefault": true
+        },
+        "presentation": {
+            "echo": true,
+            "reveal": "always",
+            "close": true,
+            "focus": false,
+            "panel": "new",
+            "showReuseMessage": false,
+            "clear": true
+        },
+        "problemMatcher": []
+    },
+    {
+        "type": "shell",
+        "command": "pnpm",
+        "args": [
+            "run",
+            "build:test"
+        ],
+        "label": "build:test",
+        "group": {
+            "kind": "build",
+            "isDefault": false
+        },
+        "presentation": {
+            "echo": true,
+            "reveal": "always",
+            "close": true,
+            "focus": false,
+            "panel": "new",
+            "showReuseMessage": false,
+            "clear": true
+        },
+        "problemMatcher": []
     }
-  ]
+]
 }

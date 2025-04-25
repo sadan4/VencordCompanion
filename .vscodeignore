@@ -11,3 +11,4 @@ eslint.config.mjs
 **/*.ts
 scripts/**
 dist/meta.json
+assets/test

@@ -1,3 +1,4 @@
+/* eslint-disable */
 // MIT
 // https://github.com/dsherret/ts-ast-viewer/blob/main/src/utils/createLineNumberAndColumns.ts
 interface LineNumberAndColumn {

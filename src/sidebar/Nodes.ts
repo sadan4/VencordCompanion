@@ -12,15 +12,14 @@ export class Item extends TreeItem {
 export class Button extends Item {
     constructor(
         label: string,
-        private readonly action: (...args: any[]) => any
+        private readonly action: (...args: any[]) => any,
     ) {
         super(label, TreeItemCollapsibleState.None);
     }
+
     makeCommand(id: string) {
-        this.command = new RuntimeCommand(
-            `${id}${this.label}`,
-            this.action
-        ).asCommand();
+        this.command = new RuntimeCommand(`${id}${this.label}`, this.action)
+            .asCommand();
     }
 }
 export class Text extends Item {
@@ -31,14 +30,16 @@ export class Text extends Item {
 
 export class Section extends Item {
     public readonly children: TNode[];
+
     constructor(
         label: string,
         children: TNode[],
-        collapseableState = TreeItemCollapsibleState.Expanded
+        collapseableState = TreeItemCollapsibleState.Expanded,
     ) {
         super(label, collapseableState);
-        this.children = children.map(e => {
-            if (e instanceof Item) e.parrent = this;
+        this.children = children.map((e) => {
+            if (e instanceof Item)
+                e.parrent = this;
             return e;
         });
     }

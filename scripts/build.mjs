@@ -3,13 +3,12 @@ import { commonOpts, webviewOpts } from "./common.mjs";
 import { writeFile } from "fs/promises";
 
 //@ts-check
-
-await Promise.all([
-    esbuild.build(webviewOpts)
-])
+const IS_DEV = process.argv.includes("--dev");
 const res = await esbuild.build({
     ...commonOpts,
     sourcemap: "linked",
-    metafile: true
+    metafile: true,
+    minify: !IS_DEV
 });
 await writeFile("dist/meta.json", JSON.stringify(res.metafile));
+await esbuild.build(webviewOpts)

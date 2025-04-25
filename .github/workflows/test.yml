@@ -1,0 +1,47 @@
+name: test
+on:
+    push:
+    pull_request:
+jobs:
+    test:
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v4
+            - uses: pnpm/action-setup@v3 # Install pnpm using packageManager key in package.json
+
+            - name: Use Node.js 20
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 20
+                  cache: "pnpm"
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+
+            - name: Test if tests compile
+              run: pnpm build:test
+
+            - name: Test if it bundles
+              run: pnpm build
+              
+            - name:
+              uses: actions/cache@v3
+              with:
+                path: |
+                  ~/.cache/eslint
+                key: ${{ runner.os }}-node-${{ hashFiles('**/pnpm-lock.yaml', '**/.eslint.config.mts') }}
+
+            - name: Test if linting passes
+              run: pnpm eslint --cache-strategy content --cache-location ~/.cache/eslint/sadan4-VencordCompanion
+
+            - name: Test if type checking passes
+              run: pnpm typecheck
+
+            - name: run tests linux
+              run: xvfb-run -a pnpm test
+              if: runner.os == 'Linux'
+
+            - name: run tests (non-linux)
+              run: pnpm test
+              if: runner.os != 'Linux'

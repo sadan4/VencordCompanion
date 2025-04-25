@@ -38,9 +38,9 @@
         "watch:test": "npx nodemon",
         "eslint": "eslint --cache",
         "lint": "pnpm eslint && pnpm typecheck",
-        "package": "vsce package --no-dependencies",
-        "vscode:prepublish": "pnpm build && pnpm lint",
-        "publish": "vsce publish --no-dependencies",
+        "prepackage": "pnpm build && pnpm lint",
+        "package": "vsce pack",
+        "publish": "pnpm build && pnpm lint && vsce publish --no-dependencies",
         "typecheck": "tsc --noEmit",
         "postinstall": "(cd src/webview && pnpm i)",
         "pretest": "npm run build:test",
@@ -176,5 +176,10 @@
         "patchedDependencies": {
             "@vscode/test-cli@0.0.10": "patches/@vscode__test-cli@0.0.10.patch"
         }
+    },
+    "_vsce": "see https://github.com/microsoft/vscode-vsce/blob/main/src/main.ts for types",
+    "vsce": {
+        "dependencies": false,
+        "githubBranch": "selfPublish"
     }
 }

@@ -1,6 +1,6 @@
 import { TypeAssert } from "@ast/util";
 import { WebpackAstParser } from "@ast/webpack";
-import { ExportMap } from "@type/ast";
+import { RangeExportMap } from "@type/ast";
 
 import { expect } from "chai";
 import { resolve } from "node:path";
@@ -24,7 +24,7 @@ describe("WebpackAstParser", function () {
         describe("wreq.d", function () {
             it("parses a simple module", function () {
                 const parser = new WebpackAstParser(normalModule);
-                const map: ExportMap = parser.getExportMap();
+                const map: RangeExportMap = parser.getExportMap();
 
                 expect(map).to.have.keys("TB", "VY", "ZP");
                 for (const expName in map) {
@@ -259,7 +259,7 @@ describe("WebpackAstParser", function () {
                 expect(map).to.have.keys("Z");
 
                 expect(map.Z).to.have.keys(["initialize", "isVisible", WebpackAstParser.SYM_CJS_DEFAULT]);
-                TypeAssert<ExportMap>(map.Z);
+                TypeAssert<RangeExportMap>(map.Z);
                 expect(map.Z[WebpackAstParser.SYM_CJS_DEFAULT]).to.deep.equal([
                     new Range(4, 8, 4, 9),
                     new Range(32, 16, 32, 17),

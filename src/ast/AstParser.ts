@@ -1,3 +1,4 @@
+import { format } from "@modules/format";
 import { outputChannel } from "@modules/logging";
 import { mkStringUri } from "@modules/util";
 import { Functionish } from "@type/ast";
@@ -45,6 +46,10 @@ import {
 import { Position, Range, Uri } from "vscode";
 
 export class AstParser {
+    public static withFormattedText(text: string) {
+        return new this(format(text));
+    }
+
     public readonly text: string;
 
     @CacheGetter()

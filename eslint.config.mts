@@ -183,7 +183,7 @@ const ESLintRules: IESLintRules = {
     "prefer-const": [
         "error",
         {
-            destructuring: "any",
+            destructuring: "all",
         },
     ],
     "prefer-exponentiation-operator": "error",

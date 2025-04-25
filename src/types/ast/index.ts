@@ -35,28 +35,28 @@ export type Import = {
     as: Identifier;
 };
 
-export type RawExportRange = Node[];
-
-export type RawExportMap = {
-    [exportedName: string | symbol]: RawExportRange | RawExportMap;
+export type ExportMap<T> = {
+    [exportedName: string | symbol]: T[] | ExportMap<T>;
 };
 
-export type ExportRange = (Range)[];
+export type RawExportRange = Node[];
 
-export interface ExportMap {
-    // ranges of code that will count as references to this export
-    /**
-     * the name of the export => array of ranges where it is defined, with the last one being the most specific
-     */
-    [exposedName: string | symbol]: ExportRange | ExportMap;
-}
+export type RawExportMap = ExportMap<Node>;
+
+export type ExportRange = Range[];
+
+// ranges of code that will count as references to this export
+/**
+ * the name of the export => array of ranges where it is defined, with the last one being the most specific
+ */
+export type RangeExportMap = ExportMap<Range>;
 
 /**
- * {@link ExportMap}, but only has the first level of exports, and they are stored as nodes(most of the time)
+ * {@link RangeExportMap}, but only has the first level of exports, and they are stored as nodes(most of the time)
  */
-export interface OLD_RawExportMap<T> {
+export type OLD_RawExportMap<T> = {
     [exposedName: string | symbol]: T;
-}
+};
 
 export interface ModuleDeps {
     lazy: string[];

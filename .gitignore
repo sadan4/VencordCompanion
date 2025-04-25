@@ -1,5 +1,9 @@
 dist
+dist.test
 src/webview/dist
 node_modules
 .vscode-test/
 *.vsix
+.direnv
+.eslintcache
+*.cpuprofile

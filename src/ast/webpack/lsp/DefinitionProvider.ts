@@ -1,24 +1,18 @@
 import { isWebpackModule } from "@ast/util";
 import { WebpackAstParser } from "@ast/webpack";
-import { outputChannel } from "@extension";
+import { outputChannel } from "@modules/logging";
 import { Definitions } from "@type/ast";
 
 import { DefinitionProvider as IDefinitionProvider, Position, TextDocument } from "vscode";
 
 
 export class DefinitionProvider implements IDefinitionProvider {
-    async provideDefinition(
-        document: TextDocument,
-        position: Position
-    ): Definitions {
+    async provideDefinition(document: TextDocument, position: Position): Definitions {
         try {
-            // not sure if substring is a good idea here
-            // just dont want to search really long webpack modules
-            if (!isWebpackModule(document))
+            if (!isWebpackModule(document.getText()))
                 return;
-            return await new WebpackAstParser(document.getText()).generateDefinitions(
-                position
-            );
+            return await new WebpackAstParser(document.getText())
+                .generateDefinitions(position);
         } catch (e) {
             outputChannel.error(e);
         }

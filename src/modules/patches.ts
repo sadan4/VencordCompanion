@@ -44,9 +44,9 @@ export const intlRegex = /#{intl::([\w$+/]*)(?:::(\w+))?}/g;
 
 export function canonicalizeMatch<T extends RegExp | string>(match: T): T {
     let partialCanon = typeof match === "string" ? match : match.source;
+
     partialCanon = partialCanon.replaceAll(intlRegex, (_, key, modifier) => {
         const hashed = modifier === "raw" ? key : runtimeHashMessageKey(key);
-
         const isString = typeof match === "string";
         const hasSpecialChars = !Number.isNaN(Number(hashed[0])) || hashed.includes("+") || hashed.includes("/");
 
@@ -64,6 +64,7 @@ export function canonicalizeMatch<T extends RegExp | string>(match: T): T {
     }
 
     const canonSource = partialCanon.replaceAll("\\i", String.raw`(?:[A-Za-z_$][\w$]*)`);
+
     return new RegExp(canonSource, match.flags) as T;
 }
 
@@ -73,7 +74,8 @@ export function canonicalizeReplace<T extends string | VencordReplaceFn>(replace
     if (typeof replace !== "function")
         return replace.replaceAll("$self", self) as T;
 
-    return ((...args) => replace(...args).replaceAll("$self", self)) as T;
+    return ((...args) => replace(...args)
+        .replaceAll("$self", self)) as T;
 }
 
 export function parseMatch(node: FindNode): string | RegExp {
@@ -95,6 +97,6 @@ function parseNode(node: FindNode) {
             // since we're running in the browser sandbox, whereas the sender has host access
             return (0, eval)(node.value);
         default:
-            throw new Error("Unknown Node Type " + (node as any).type);
+            throw new Error(`Unknown Node Type ${(node as any).type}`);
     }
 }

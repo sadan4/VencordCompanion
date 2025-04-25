@@ -30,6 +30,7 @@ import {
 import { TextDocument, Uri, workspace } from "vscode";
 export class VencordAstParser extends AstParser {
     private doc: TextDocument;
+
     @CacheGetter()
     public get imports(): Map<Identifier, Import> {
         return this.listImports();
@@ -46,47 +47,72 @@ export class VencordAstParser extends AstParser {
 
     @Cache()
     private findDefinePlugin(): ObjectLiteralExpression | undefined {
-        const define = [...this.imports.values()].find(x => {
-            if (!x.default) return;
-            if (x.source !== "@utils/types") return;
+        const define = [...this.imports.values()].find((x) => {
+            if (!x.default)
+                return;
+            if (x.source !== "@utils/types")
+                return;
             return true;
         });
-        if (!define) return;
+
+        if (!define)
+            return;
+
         const uses = this.vars.get(define.as)?.uses;
-        if (!uses) return;
+
+        if (!uses)
+            return;
+
         const definePlugin = uses.find(({ location }) => {
-            if (!isCallExpression(location.parent)) return;
+            if (!isCallExpression(location.parent))
+                return;
             return location.parent.arguments.length === 1 && isObjectLiteralExpression(location.parent.arguments[0]);
         });
+
         return (definePlugin?.location.parent as CallExpression).arguments[0] as ObjectLiteralExpression;
     }
+
     // TODO: work on files in the plugin folder but not the root plugin file
     public getPluginName(): string | null {
         const definePlugin = this.findDefinePlugin();
-        if (!definePlugin) return null;
+
+        if (!definePlugin)
+            return null;
+
         const nameProp = findObjectLiteralByKey(definePlugin, "name");
-        if (!nameProp || !isPropertyAssignment(nameProp) || !isStringLiteral(nameProp.initializer)) return null;
+
+        if (!nameProp || !isPropertyAssignment(nameProp) || !isStringLiteral(nameProp.initializer))
+            return null;
         return nameProp.initializer.text;
     }
 
     @Cache()
     public getPatches(): SourcePatch[] {
         const definePlugin = this.findDefinePlugin();
-        if (!definePlugin) return [];
+
+        if (!definePlugin)
+            return [];
+
         const patchesProp = findObjectLiteralByKey(definePlugin, "patches");
-        if (!patchesProp || !isPropertyAssignment(patchesProp) || !isArrayLiteralExpression(patchesProp.initializer)) return [];
+
+        if (!patchesProp || !isPropertyAssignment(patchesProp) || !isArrayLiteralExpression(patchesProp.initializer))
+            return [];
         return patchesProp.initializer.elements
             .map((x, origIndex) => {
-                if (!isObjectLiteralExpression(x)) return null;
+                if (!isObjectLiteralExpression(x))
+                    return null;
+
                 const res = parsePatch(this.doc, x);
-                if (!res) return null;
+
+                if (!res)
+                    return null;
                 return {
                     ...res,
-                    range: this.makeRange(x.getChildAt(1)),
-                    origIndex
+                    range: this.makeRangeFromAstNode(x.getChildAt(1)),
+                    origIndex,
                 };
             })
-            .filter(x => x !== null);
+            .filter((x) => x !== null);
     }
 
     /**
@@ -98,38 +124,58 @@ export class VencordAstParser extends AstParser {
 
     @Cache()
     public getFinds(): FindUse[] {
-        return this.getFindUses().map<FindUse | false>(x => {
-            const call = x.parent;
-            if (call.arguments.length === 0) return false;
-            const args = call.arguments.map(x => tryParseStringLiteral(x) ?? tryParseRegularExpressionLiteral(x) ?? tryParseFunction(this.doc, x));
-            const range = this.makeRange(call);
-            return {
-                range,
-                use: {
-                    type: "testFind",
-                    data: {
-                        type: x.getText() as TestFind["data"]["type"],
-                        args: args.filter(x => x != null)
-                    }
-                }
-            };
-        }).filter(x => x !== false);
+        return this.getFindUses()
+            .map<FindUse | false>((x) => {
+                const call = x.parent;
+
+                if (call.arguments.length === 0)
+                    return false;
+
+                const args = call.arguments.map((x) => {
+                    return tryParseStringLiteral(x)
+                      ?? tryParseRegularExpressionLiteral(x)
+                      ?? tryParseFunction(this.doc, x);
+                });
+
+                const range = this.makeRangeFromAstNode(call);
+
+                return {
+                    range,
+                    use: {
+                        type: "testFind",
+                        data: {
+                            type: x.getText() as TestFind["data"]["type"],
+                            args: args.filter((x) => x != null),
+                        },
+                    },
+                };
+            })
+            .filter((x) => x !== false);
     }
 
     @Cache()
     private getFindUses(): WithParent<Identifier, CallExpression>[] {
         const imports = [...this.imports.entries()].flatMap(([k, v]) => {
-            if (v.source !== "@webpack") return [];
+            if (v.source !== "@webpack")
+                return [];
+
             const origName = (v.orig ?? v.as).getText();
-            if (!origName.startsWith("find")) return [];
+
+            if (!origName.startsWith("find"))
+                return [];
             return k;
         });
+
         const toRet: WithParent<Identifier, CallExpression>[] = [];
+
         for (const i of imports) {
             const uses = this.vars.get(i)?.uses;
-            if (!uses) continue;
+
+            if (!uses)
+                continue;
             for (const { location } of uses) {
-                if (!isCallExpression(location.parent)) continue;
+                if (!isCallExpression(location.parent))
+                    continue;
                 toRet.push(location as WithParent<Identifier, CallExpression>);
             }
         }
@@ -141,14 +187,23 @@ export class VencordAstParser extends AstParser {
      */
     private isIdentifierImported(i: Identifier): Import | undefined {
         const { declarations, domain } = this.vars.get(i) ?? {};
-        if (!declarations || declarations.length === 0) return;
-        if (!(domain! & DeclarationDomain.Import)) return;
-        const source = declarations.flatMap(x => {
-            if (!isInImportStatment(x)) return [];
+
+        if (!declarations || declarations.length === 0)
+            return;
+        if (!(domain! & DeclarationDomain.Import))
+            return;
+
+        const source = declarations.flatMap((x) => {
+            if (!isInImportStatment(x))
+                return [];
             return x;
         });
-        if (source.length !== 1) return;
+
+        if (source.length !== 1)
+            return;
+
         const [importIdent] = source;
+
         return {
             default: isDefaultImport(importIdent),
             namespace: isNamespaceImport(importIdent),
@@ -160,6 +215,7 @@ export class VencordAstParser extends AstParser {
     private listImports(): Map<Identifier, Import> {
         return new Map([...this.vars.entries()].flatMap(([k]) => {
             const ret = this.isIdentifierImported(k);
+
             return ret ? [[k, ret]] : [];
         }));
     }

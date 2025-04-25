@@ -10,3 +10,4 @@ eslint.config.mjs
 **/*.map
 **/*.ts
 scripts/**
+assets/test

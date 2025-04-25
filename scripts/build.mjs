@@ -7,8 +7,9 @@ import { writeFile } from "fs/promises";
 await Promise.all([
     esbuild.build(webviewOpts)
 ])
-const res = await esbuild.build({...commonOpts, 
-        sourcemap: "linked",
-        metafile: true
-    });
+const res = await esbuild.build({
+    ...commonOpts,
+    sourcemap: "linked",
+    metafile: true
+});
 await writeFile("dist/meta.json", JSON.stringify(res.metafile));

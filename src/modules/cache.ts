@@ -212,15 +212,13 @@ type AllDeps = Record<string, {
     lazyUses: string[];
 }>;
 
-/**
- * **YOU MUST CALL {@link ready} IF YOU PASS A FOLDER**
-**/
 export class ModuleDepManager {
     private static modCache: AllDeps | null = null;
-    modmap!: Record<string, string>;
-    private readyPromise;
+    private modmap?: Record<string, string>;
     currentFolder: string;
-    static defaultFolder = ".modules";
+    moduleFolder: string;
+    static DEFAULT_FOLDER = ".modules";
+    static CACHE_FILE_NAME = "cache.json";
 
     public static getModDeps(moduleid: string) {
         if (this.hasModDeps()) {
@@ -235,38 +233,39 @@ export class ModuleDepManager {
 
     // FIXME: setting to start caching when a webpack module is opened / when the vencord workspace is opened
     public static async initModDeps(opts: DepsGeneratorOpts) {
-        this.modCache = await (await new this(opts)
-            .ready()).gererateDeps();
+        this.modCache = await new this(opts)
+            .gererateDeps();
     }
 
     constructor(opts: DepsGeneratorOpts) {
         this.currentFolder = ("baseFolder" in opts && opts.baseFolder) || getCurrentFolder()!;
+        this.moduleFolder = ("folder" in opts && opts.folder) || ModuleDepManager.DEFAULT_FOLDER;
         if (this.currentFolder == null)
             throw new Error("No folder found, please make sure you are in a workspace");
         if ("modmap" in opts) {
             this.modmap = opts.modmap;
-        } else if (opts.fromDisk) {
-            this.readyPromise = this.generateModmap(opts.folder || ModuleDepManager.defaultFolder)
-                .then((v) => (this.modmap = v));
         }
     }
 
-    public async ready() {
-        this.readyPromise && await this.readyPromise;
-        return this;
-    }
+    public async gererateDeps(): Promise<AllDeps> {
+        // check if the deps are cached first, if so, load them
+        if (await exists(join(this.currentFolder, this.moduleFolder, ModuleDepManager.CACHE_FILE_NAME))) {
+            const file = await readFile(join(this.currentFolder, this.moduleFolder, ModuleDepManager.CACHE_FILE_NAME), "utf-8");
+            const cachedData = JSON.parse(file) as AllDeps;
 
-    public async gererateDeps() {
+            return cachedData;
+        }
+
         // FIXME: horror
         const toRet: AllDeps = ModuleDepManager.makeDepsMap();
         let cancelled = false;
 
-        const progress = await new BufferedProgressBar(Object.entries(this.modmap).length, "Parsing Modules", () => {
+        const progress = await new BufferedProgressBar(Object.entries(await this.getModmap()).length, "Parsing Modules", () => {
             cancelled = true;
         })
             .start();
 
-        for (const [id, text] of Object.entries(this.modmap)) {
+        for (const [id, text] of Object.entries(await this.getModmap())) {
             if (cancelled) {
                 throw new Error("canceled by user");
             }
@@ -286,6 +285,14 @@ export class ModuleDepManager {
                 throw e;
             }
         }
+
+        // write the deps to cache
+        const deps = JSON.stringify(toRet);
+
+        writeFile(join(this.currentFolder, this.moduleFolder, ModuleDepManager.CACHE_FILE_NAME), deps, "utf-8")
+            .catch((e) => {
+                outputChannel.error(`Failed to write cached module deps to disk. Error: ${e}`);
+            });
         return toRet;
     }
 
@@ -310,9 +317,13 @@ export class ModuleDepManager {
         });
     }
 
-    protected async generateModmap(folder: string) {
+    protected async getModmap(): Promise<Record<string, string>> {
+        if (this.modmap) {
+            return this.modmap;
+        }
+
         const toRet = {};
-        const modpath = join(this.currentFolder, folder);
+        const modpath = join(this.currentFolder, this.moduleFolder);
         const validPath = await exists(modpath) && await isDirectory(modpath);
 
         if (!validPath)
@@ -362,7 +373,7 @@ export class ModuleDepManager {
                 throw error;
             }
         }
-        return toRet;
+        return (this.modmap = toRet);
     }
 }
 export class testProgressBar {

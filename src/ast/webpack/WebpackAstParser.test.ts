@@ -121,6 +121,33 @@ describe("WebpackAstParser", function () {
                     },
                 });
             });
+            it("parses a module with a class export", function () {
+                const parser = new WebpackAstParser(require("test://ast/webpack/wreq.d/classExport.js"));
+                const map = parser.getExportMap();
+
+                expect(map).to.deep.equal({
+                    U: {
+                        isDispatching: [new Range(35, 8, 35, 21)],
+                        dispatch: [new Range(38, 8, 38, 16)],
+                        dispatchForStoreTest: [new Range(55, 8, 55, 28)],
+                        flushWaitQueue: [new Range(60, 8, 60, 22)],
+                        _dispatchWithDevtools: [new Range(88, 8, 88, 29)],
+                        _dispatchWithLogging: [new Range(91, 8, 91, 28)],
+                        _dispatch: [new Range(112, 8, 112, 17)],
+                        addInterceptor: [new Range(127, 8, 127, 22)],
+                        wait: [new Range(130, 8, 130, 12)],
+                        subscribe: [new Range(134, 8, 134, 17)],
+                        unsubscribe: [new Range(139, 8, 139, 19)],
+                        register: [new Range(144, 8, 144, 16)],
+                        createToken: [new Range(147, 8, 147, 19)],
+                        addDependencies: [new Range(150, 8, 150, 23)],
+                        [WebpackAstParser.SYM_CJS_DEFAULT]: [
+                            new Range(34, 10, 34, 11),
+                            new Range(153, 8, 153, 19),
+                        ],
+                    },
+                });
+            });
         });
         describe("module.exports", function () {
             it("parses a module with an object literal export (class names)", function () {
@@ -495,6 +522,15 @@ describe("WebpackAstParser", function () {
 
                 console.log(locs);
             });
+        });
+    });
+    describe("flux parsing", function () {
+        const fluxModule: string = require("test://ast/webpack/flux/dispatcherClass.js");
+
+        it("identifies the flux dispatcher module", function () {
+            const parser = new WebpackAstParser(fluxModule);
+
+            expect(parser.isFluxDispatcherModule()).to.equal("U");
         });
     });
 });

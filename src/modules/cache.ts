@@ -192,16 +192,21 @@ class _ModuleCache {
 const MODULE_ID_FILE_REGEX = /(\d+)\.js/;
 
 type DepsGeneratorOpts =
-  | {
-      modmap: Record<string, string>;
+  & {
+      noCache?: boolean;
   }
-  | {
-      fromDisk: true;
-      folder?: string;
-      baseFolder?: string;
-  };
+  & (
+    | {
+        modmap: Record<string, string>;
+    }
+    | {
+        fromDisk: true;
+        folder?: string;
+        baseFolder?: string;
+    }
+);
 
-type AllDeps = Record<string, {
+type MainDeps = Record<string, {
     /**
      * the modules that require this module syncranously
      */
@@ -212,13 +217,25 @@ type AllDeps = Record<string, {
     lazyUses: string[];
 }>;
 
+interface KeyModules {
+    fluxDispatcherClass: [moduleId: string, exportName: string | symbol][];
+}
+
+interface CacheData {
+    mainDeps: MainDeps;
+    keyModules: KeyModules;
+}
+
 export class ModuleDepManager {
-    private static modCache: AllDeps | null = null;
+    private static SYM_CJS_DEFAULT_PLACEHOLDER = "SYMBOL(SYM_CJS_DEFAULT)";
+    static DEFAULT_FOLDER = ".modules";
+    static CACHE_FILE_NAME = "cache.json";
+    private static modCache: MainDeps | null = null;
+    private static keyModules: KeyModules | null = null;
     private modmap?: Record<string, string>;
     currentFolder: string;
     moduleFolder: string;
-    static DEFAULT_FOLDER = ".modules";
-    static CACHE_FILE_NAME = "cache.json";
+    useCache: boolean;
 
     public static getModDeps(moduleid: string) {
         if (this.hasModDeps()) {
@@ -231,15 +248,38 @@ export class ModuleDepManager {
         return !!this.modCache;
     }
 
+    public static hasKeyModules() {
+        return !!this.keyModules;
+    }
+
     // FIXME: setting to start caching when a webpack module is opened / when the vencord workspace is opened
     public static async initModDeps(opts: DepsGeneratorOpts) {
-        this.modCache = await new this(opts)
-            .gererateDeps();
+        if (this.hasModDeps()) {
+            return;
+        }
+
+        const inst = new this(opts);
+        let maybeCache: CacheData | undefined;
+
+        if (inst.useCache && (maybeCache = await inst.tryReadCache())) {
+            outputChannel.info("ModuleDepManager#generateDeps: Using cached deps");
+            this.modCache = maybeCache.mainDeps;
+            this.keyModules = maybeCache.keyModules;
+            return;
+        }
+
+        this.modCache = await inst
+            .generateDeps();
+        this.keyModules = await inst
+            .generateKeyModules();
+
+        await inst.writeCache();
     }
 
     constructor(opts: DepsGeneratorOpts) {
         this.currentFolder = ("baseFolder" in opts && opts.baseFolder) || getCurrentFolder()!;
         this.moduleFolder = ("folder" in opts && opts.folder) || ModuleDepManager.DEFAULT_FOLDER;
+        this.useCache = !opts.noCache;
         if (this.currentFolder == null)
             throw new Error("No folder found, please make sure you are in a workspace");
         if ("modmap" in opts) {
@@ -247,17 +287,56 @@ export class ModuleDepManager {
         }
     }
 
-    public async gererateDeps(): Promise<AllDeps> {
-        // check if the deps are cached first, if so, load them
-        if (await exists(join(this.currentFolder, this.moduleFolder, ModuleDepManager.CACHE_FILE_NAME))) {
-            const file = await readFile(join(this.currentFolder, this.moduleFolder, ModuleDepManager.CACHE_FILE_NAME), "utf-8");
-            const cachedData = JSON.parse(file) as AllDeps;
+    private canonicalizeKeyModules(keyModules: KeyModules) {
+        keyModules.fluxDispatcherClass = keyModules.fluxDispatcherClass.map(([moduleId, exportName]) => {
+            if (exportName === ModuleDepManager.SYM_CJS_DEFAULT_PLACEHOLDER) {
+                exportName = WebpackAstParser.SYM_CJS_DEFAULT;
+            }
+            return [moduleId, exportName];
+        });
+    }
 
+    private async tryReadCache(): Promise<undefined | CacheData> {
+        // check if the deps are cached first, if so, load them
+        const cacheFile = join(this.currentFolder, this.moduleFolder, ModuleDepManager.CACHE_FILE_NAME);
+
+        if (this.useCache && await exists(cacheFile)) {
+            const file = await readFile(cacheFile, "utf-8");
+            const cachedData = JSON.parse(file) as CacheData;
+
+            this.canonicalizeKeyModules(cachedData.keyModules);
+
+            outputChannel.info("ModuleDepManager#generateDeps: Loading deps from cache file");
             return cachedData;
         }
+    }
 
+    private async writeCache() {
+        if (!this.useCache) {
+            return;
+        }
+        if (!ModuleDepManager.hasModDeps()) {
+            throw new Error("ModuleDepManager#writeCache: No deps to write");
+        }
+
+        const cacheFile = join(this.currentFolder, this.moduleFolder, ModuleDepManager.CACHE_FILE_NAME);
+
+        const data = JSON.stringify({
+            mainDeps: ModuleDepManager.modCache!,
+            keyModules: ModuleDepManager.keyModules!,
+        } satisfies CacheData);
+
+        await writeFile(cacheFile, data, "utf-8");
+    }
+
+    private async generateDeps(): Promise<MainDeps> {
         // FIXME: horror
-        const toRet: AllDeps = ModuleDepManager.makeDepsMap();
+        const ret: MainDeps = ModuleDepManager.makeDepsMap();
+
+        const retKeyModules: KeyModules = {
+            fluxDispatcherClass: [],
+        };
+
         let cancelled = false;
 
         const progress = await new BufferedProgressBar(Object.entries(await this.getModmap()).length, "Parsing Modules", () => {
@@ -270,34 +349,79 @@ export class ModuleDepManager {
                 throw new Error("canceled by user");
             }
             try {
-                const deps = new WebpackAstParser(text)
-                    .getModulesThatThisModuleRequires();
+                const parser = new WebpackAstParser(text);
 
-                for (const syncDep of deps?.sync ?? []) {
-                    toRet[syncDep].syncUses.push(id);
-                }
-                for (const lazyDep of deps?.lazy ?? []) {
-                    toRet[lazyDep].lazyUses.push(id);
+                {
+                    const deps = parser.getModulesThatThisModuleRequires();
+
+                    for (const syncDep of deps?.sync ?? []) {
+                        ret[syncDep].syncUses.push(id);
+                    }
+                    for (const lazyDep of deps?.lazy ?? []) {
+                        ret[lazyDep].lazyUses.push(id);
+                    }
                 }
                 await progress.increment();
             } catch (e) {
                 progress.stop(e);
+                outputChannel.error(e);
+                window.showErrorMessage((e as Error)?.message);
                 throw e;
             }
         }
 
-        // write the deps to cache
-        const deps = JSON.stringify(toRet);
-
-        writeFile(join(this.currentFolder, this.moduleFolder, ModuleDepManager.CACHE_FILE_NAME), deps, "utf-8")
-            .catch((e) => {
-                outputChannel.error(`Failed to write cached module deps to disk. Error: ${e}`);
-            });
-        return toRet;
+        return ret;
     }
 
-    private static makeDepsMap(): AllDeps {
-        const target = {};
+    private async generateKeyModules(): Promise<KeyModules> {
+        const ret: KeyModules = {
+            fluxDispatcherClass: [],
+        };
+
+        let cancelled = false;
+
+        const progress = await new BufferedProgressBar(Object.entries(await this.getModmap()).length, "Locating Key Modules", () => {
+            cancelled = true;
+        })
+            .start();
+
+        for (const [id, text] of Object.entries(await this.getModmap())) {
+            if (cancelled) {
+                throw new Error("canceled by user");
+            }
+            try {
+                const parser = new WebpackAstParser(text);
+
+                {
+                    const fluxDispatcherModuleExport = parser.isFluxDispatcherModule();
+
+                    if (fluxDispatcherModuleExport != null) {
+                        ret.fluxDispatcherClass.push([id, fluxDispatcherModuleExport]);
+
+                        (await parser.getAllReExportsForExport(fluxDispatcherModuleExport))
+                            .filter(([, exportChain]) => exportChain.length === 1)
+                            .forEach(([moduleId, [exportName]]) => {
+                                if (typeof exportName === "symbol") {
+                                    exportName = ModuleDepManager.SYM_CJS_DEFAULT_PLACEHOLDER;
+                                }
+                                ret.fluxDispatcherClass.push([moduleId, exportName]);
+                            });
+                    }
+                }
+                await progress.increment();
+            } catch (e) {
+                progress.stop(e);
+                outputChannel.error(e);
+                window.showErrorMessage((e as Error)?.message);
+                throw e;
+            }
+        }
+
+        return ret;
+    }
+
+    private static makeDepsMap(): MainDeps {
+        const target = {} satisfies MainDeps;
 
         return new Proxy(target, {
             get(target, prop, rec) {
@@ -306,7 +430,7 @@ export class ModuleDepManager {
                         const val = ({
                             lazyUses: [],
                             syncUses: [],
-                        } satisfies AllDeps[string]);
+                        } satisfies MainDeps[string]);
 
                         Reflect.set(target, prop, val, rec);
                         return val;

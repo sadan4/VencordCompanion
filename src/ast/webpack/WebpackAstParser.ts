@@ -33,6 +33,7 @@ import { isAccessorDeclaration } from "tsutils";
 import { VariableInfo } from "tsutils/util/usage";
 import {
     CallExpression,
+    ClassDeclaration,
     createSourceFile,
     Expression,
     Identifier,
@@ -51,13 +52,14 @@ import {
     isObjectLiteralExpression,
     isPropertyAccessExpression,
     isPropertyAssignment,
+    isPropertyDeclaration,
+    isSemicolonClassElement,
     isSpreadAssignment,
     isVariableDeclaration,
     MemberName,
     NewExpression,
     Node,
     ObjectLiteralExpression,
-    PropertyAccessExpression,
     ScriptKind,
     ScriptTarget,
     SourceFile,
@@ -391,6 +393,8 @@ export class WebpackAstParser extends AstParser {
             await ModuleDepManager.initModDeps({ fromDisk: true });
         }
 
+        this.isFluxDispatcherModule();
+
         const moduleExports = this.getExportMap();
         const where = await this.getModulesThatRequireThisModule();
         const locs: Location[] = [];
@@ -519,9 +523,12 @@ export class WebpackAstParser extends AstParser {
         };
     }
 
+    /**
+     * FIXME: this is not in line with {@link getExportMapWreq_d}
+     */
     @Cache()
     public getExportMapRawWreq_d():
-      | ExportMap<Identifier | PropertyAccessExpression>
+      | RawExportMap
       | undefined {
         const wreqD = this.findWreq_d();
 
@@ -541,10 +548,23 @@ export class WebpackAstParser extends AstParser {
                 )
                     return false;
 
-                const ret = findReturnIdentifier(x.initializer)
+                const tailingIdent = findReturnIdentifier(x.initializer)
                   ?? findReturnPropertyAccessExpression(x.initializer);
 
-                return ret != null && [x.name.getText(), [ret]];
+                if (this.tryParseStoreForExport(tailingIdent) != null) {
+                    console.warn("Getting raw export map for a module that has a store export "
+                      + "this is not supported and should be handled. "
+                      + "this will probably lead to errors.");
+                }
+
+                let ret: RawExportMap | RawExportRange | undefined;
+
+                if (tailingIdent) {
+                    ret = this.tryParseClassDeclaration(tailingIdent);
+                    ret ||= this.rawMakeExportMapRecursive(tailingIdent);
+                }
+
+                return ret != null && [x.name.getText(), ret] as const;
             })
             .filter((x) => x !== false));
     }
@@ -840,7 +860,7 @@ export class WebpackAstParser extends AstParser {
             .filter((x) => x !== false) as any);
     }
 
-    rawMakeExportMapRecursive(node: Node | undefined): RawExportMap | RawExportRange {
+    rawMakeExportMapRecursive(node: Node): RawExportMap | RawExportRange {
         if (!node)
             throw new Error("node should not be undefined");
         if (isObjectLiteralExpression(node)) {
@@ -1022,8 +1042,21 @@ export class WebpackAstParser extends AstParser {
 
                 lastNode ??= findReturnPropertyAccessExpression(x.initializer);
 
-                let ret: RangeExportMap | ExportRange | undefined
-            = this.tryParseStoreForExport(lastNode, [this.makeRangeFromAstNode(x.name)]);
+                let ret: RangeExportMap | ExportRange | undefined;
+
+                ret = this.tryParseStoreForExport(lastNode, [this.makeRangeFromAstNode(x.name)]);
+
+                classDecl: {
+                    // check for ret here instead of using ||= because we can't short-circuit
+                    if (!lastNode || ret)
+                        break classDecl;
+
+                    const rawMap = this.tryParseClassDeclaration(lastNode);
+
+                    if (!rawMap)
+                        break classDecl;
+                    ret = this.rawMapToExportMap(rawMap);
+                }
 
                 ret ||= this.makeExportMapRecursive(x);
                 // ensure we arent nested
@@ -1223,7 +1256,11 @@ export class WebpackAstParser extends AstParser {
                 continue;
             } else if (isConstructorDeclaration(member)) {
                 ret.store.push(member);
-            } else if (isPropertyAssignment(member)) {
+            } else if (isPropertyDeclaration(member)) {
+                if (!member.initializer) {
+                    outputChannel.warn("Property declaration has no initializer, this should not happen");
+                    continue;
+                }
                 ret.props[member.name.getText()] = member.initializer;
             } else if (isAccessorDeclaration(member)) {
                 if (!member.body)
@@ -1234,6 +1271,83 @@ export class WebpackAstParser extends AstParser {
             }
         }
         return ret;
+    }
+
+    /**
+     * 
+     * @returns ```js
+     * {
+     *     "<PASSED_IN_CLASS_NAME>": {
+     *          [WebpackAstParser.SYM_CJS_DEFAULT]: ["<CONSTRUCTOR>"],
+     *          ["methodName"]: ["METHOD"]
+     *     }
+     * }
+     * ```
+     */
+    parseClassDeclaration(clazz: ClassDeclaration): RawExportMap {
+        const ret: RawExportMap = {
+            [WebpackAstParser.SYM_CJS_DEFAULT]: [clazz.name ?? clazz.getChildAt(0)],
+        };
+
+        for (const member of clazz.members) {
+            if (isMethodDeclaration(member)) {
+                if (!member.body)
+                    continue;
+                ret[member.name.getText()] = [member.name];
+            } else if (isConstructorDeclaration(member)) {
+                // the ConstructoKeyword
+                const arr = ret[WebpackAstParser.SYM_CJS_DEFAULT];
+
+                if (!Array.isArray(arr)) {
+                    outputChannel.error("CJS default export is not an array, this should be never happen");
+                    continue;
+                }
+                arr.push(member.getChildAt(0));
+            } else if (isPropertyDeclaration(member)) {
+                ret[member.name.getText()] = [member.name];
+            } else if (isAccessorDeclaration(member)) {
+                if (!member.body)
+                    continue;
+                ret[member.name.getText()] = [member.name];
+            } else if (isSemicolonClassElement(member)) {
+                // ignore this
+            } else {
+                outputChannel.warn("Unhandled class member type. This should be handled");
+            }
+        }
+
+        // name ?? ClassKeyword
+        ret[WebpackAstParser.SYM_CJS_DEFAULT] ??= [clazz.name ?? clazz.getChildAt(0)];
+
+        return ret;
+    }
+
+    tryParseClassDeclaration(node: Node): RawExportMap | undefined {
+        if (!isIdentifier(node)) {
+            outputChannel.debug("trying to parse a class decl starting with a non-identifier node, this should be handled");
+            return;
+        }
+
+        const varInfo = this.getVarInfoFromUse(node);
+
+        if (!varInfo) {
+            return;
+        }
+        // classes should only have one decl.
+        // if someone proves me wrong on this (with an example in discord's code), ill support it
+        if (varInfo.declarations.length !== 1) {
+            if (varInfo.declarations.length > 1) {
+                outputChannel.error("Found more than one class declaration. this should not happen");
+            }
+            return;
+        }
+
+        const [decl] = varInfo.declarations;
+
+        if (!isClassDeclaration(decl.parent)) {
+            return;
+        }
+        return this.parseClassDeclaration(decl.parent);
     }
 
     getNestedExportFromMap<T>(keys: readonly (string | symbol)[], map: ExportMap<T>): T[] | undefined {
@@ -1414,5 +1528,103 @@ export class WebpackAstParser extends AstParser {
             return undefined;
 
         return this.makeRangeFromAstNode(exportItem.name ?? exportItem);
+    }
+
+    // TODO: support lazy requires
+    async getAllReExportsForExport(exportName: string | symbol):
+    Promise<[moduleId: string, exportChain: (string | symbol)[]][]> {
+        type R = [moduleId: string, exportChain: (string | symbol)[]][];
+
+        const ret: R = [];
+        const thisExports = this.getExportMapRaw();
+
+        if (!thisExports[exportName]) {
+            throw new Error(`Export ${exportName.toString()} not found in module ${this.moduleId}`);
+        }
+
+        type SearchItem = (readonly [parser: WebpackAstParser, moduleId: string, exportName: string | symbol]);
+
+        const toSearch: SearchItem[]
+            = (await this.getModulesThatRequireThisModule())
+                ?.sync
+                ?.map((mod) => [this, mod, exportName] as const)
+                ?? [];
+
+        let cur: SearchItem | undefined;
+
+        while ((cur = toSearch.pop())) {
+            const [thisParser, moduleId, exportName] = cur;
+            const moduleText = await ModuleCache.getModuleFromNum(moduleId);
+            const otherParser = new WebpackAstParser(moduleText);
+
+            if (!(thisParser.moduleId && otherParser.moduleId)) {
+                throw new Error("Module is is not set, this should not happen");
+            }
+
+            const otherReExportName = otherParser.doesReExportFromImport(thisParser.moduleId, exportName);
+
+            if (otherReExportName) {
+                ret.push([otherParser.moduleId, [otherReExportName]]);
+                for (const mod of (await otherParser.getModulesThatRequireThisModule())?.sync ?? []) {
+                    toSearch.push([otherParser, mod, otherReExportName]);
+                }
+            }
+        }
+
+        return ret;
+    }
+
+    /**
+     * @returns the string of the export if this is the flux dispatcher module, null otherwise
+     */
+    public isFluxDispatcherModule(): string | undefined {
+        const moduleExports = this.getExportMapRaw();
+
+        // the flux dispatcher module exports a single class
+        if (Object.keys(moduleExports).length !== 1) {
+            return;
+        }
+
+        const [mainExport] = Object.entries(moduleExports);
+
+        if ([
+            "isDispatching",
+            "dispatch",
+            "dispatchForStoreTest",
+            "flushWaitQueue",
+            "_dispatchWithDevtools",
+            "_dispatchWithLogging",
+            "_dispatch",
+            "addInterceptor",
+            "wait",
+            "subscribe",
+            "unsubscribe",
+            "register",
+            "createToken",
+            "addDependencies",
+            WebpackAstParser.SYM_CJS_DEFAULT,
+        ]
+            .some((key) => !(key in mainExport[1]))
+        ) {
+            return;
+        }
+
+        return mainExport[0];
+    }
+
+    /**
+     * checks if this module exports a flux dispatcher
+     * 
+     * @returns the string of the export name if this module exports a flux dispatcher
+     */
+    exportsFluxDispatcherInstance(): string | null {
+        const moduleExports = this.getExportMapRaw();
+
+        // no exports, cant be flux dispatcher
+        if (allEntries(moduleExports).length === 0) {
+            return null;
+        }
+
+        return null;
     }
 }

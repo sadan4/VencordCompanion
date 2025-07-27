@@ -24,6 +24,7 @@ export class ReferenceProvider implements IReferenceProvider {
             return await new WebpackAstParser(document.getText())
                 .generateReferences(position);
         } catch (e) {
+            window.showErrorMessage(String(e));
             outputChannel.error(String(e));
         }
     }

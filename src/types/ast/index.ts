@@ -84,9 +84,12 @@ export interface StringNode {
     type: "string";
     value: string;
 }
-export type AssertedType<T extends Function, E = any> = T extends (
-    a: any
-) => a is infer R ? R extends E ? R : never : never;
+
+export type AssertedType<
+    T extends Function,
+    E = any,
+> =
+    T extends (a: any) => a is infer R ? R extends E ? R : never : never;
 
 export type CBAssertion<U = undefined, N = never> = <
     F extends (n: Node) => n is Node,
@@ -116,6 +119,7 @@ export interface Store {
         [name: string]: PropertyAssignment["initializer"];
     };
 }
+
 export type Functionish = FunctionLikeDeclaration | ArrowFunction | FunctionExpression;
 export interface ReExport {
     /**
@@ -155,4 +159,9 @@ export interface ReExport {
      * ```
      */
     chain: string[] | undefined;
+}
+
+export interface FluxEvents {
+    name: string;
+    params?: [string, string | null][];
 }

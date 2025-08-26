@@ -7,3 +7,4 @@ node_modules
 .direnv
 .eslintcache
 *.cpuprofile
+assets/test/ast/.modules/cache.json

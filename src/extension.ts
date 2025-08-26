@@ -11,8 +11,6 @@ import { SourcePatch } from "@type/ast";
 import { Discriminate } from "@type/server";
 import { DisablePluginData, FindData, OutgoingMessage, PatchData } from "@type/server/send";
 
-import { startReporter } from "./reporter";
-
 import { commands, ExtensionContext, languages, QuickPickItem, TextDocument, Uri, window as vscWindow, window, workspace } from "vscode";
 
 export let extensionUri: Uri;
@@ -67,7 +65,6 @@ export function activate(context: ExtensionContext) {
 
             helper.openModuleWindow();
         }),
-        commands.registerCommand("vencord-companion.runReporter", startReporter),
         commands.registerCommand("vencord-companion.diffModule", async (args) => {
             if (args) {
                 try {

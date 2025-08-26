@@ -5,10 +5,8 @@
  */
 
 // should be the same types as src/server/types/recieve.ts in the companion
-import { ReporterData as IReporterData } from "../reporter";
-export type ReporterData = IReporterData;
 
-export type IncomingMessage = (Report | DiffModule | ExtractModuleR | ModuleList | RawId | I18nValue) & Base;
+export type IncomingMessage = (DiffModule | ExtractModuleR | ModuleList | RawId | I18nValue) & Base;
 export type FullIncomingMessage = IncomingMessage & Nonce;
 export type Base = {
     ok: true;
@@ -21,6 +19,14 @@ export type Nonce = {
 };
 export type ModuleResult = {
     moduleNumber: number;
+    /**
+     * a list of plugins that patched this module, if it was patched, otherwise an empty array
+     *
+     * if the module was patched, but the returned module is the original, they array will still be empty
+     *
+     * if {@link ExtractModuleR.data|ExtractModuleR.data.find} is true, this will be a list of what patched the entire module (not just the part that was found)
+     */
+    patchedBy: string[];
 };
 
 // #region valid payloads
@@ -29,11 +35,6 @@ export type I18nValue = {
     data: {
         value: string;
     };
-};
-
-export type Report = {
-    type: "report";
-    data: ReporterData;
 };
 
 export type DiffModule = {
@@ -61,10 +62,22 @@ export type ModuleList = {
         modules: string[];
     };
 };
-
+/**
+ * @deprecated use extractModule with usePatched instead
+ */
 export type RawId = {
+    /**
+     * @deprecated use extractModule with usePatched instead
+     */
     type: "rawId";
     data: string;
+};
+
+export type VersionResponse = {
+    type: "version";
+    data: {
+        clientVersion: readonly [number, number, number];
+    };
 };
 // #endregion
 

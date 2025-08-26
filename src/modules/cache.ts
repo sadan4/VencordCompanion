@@ -317,13 +317,14 @@ export class ModuleDepManager {
         // check if the deps are cached first, if so, load them
         const cacheFile = join(this.currentFolder, this.moduleFolder, ModuleDepManager.CACHE_FILE_NAME);
 
-        if (this.useCache && await exists(cacheFile)) {
+        // We don't want to use the cache in tests because we actually want to test the parsing
+        if (IS_TEST === false && this.useCache && await exists(cacheFile)) {
             const file = await readFile(cacheFile, "utf-8");
             const cachedData = JSON.parse(file) as CacheData;
 
             this.canonicalizeKeyModules(cachedData.keyModules);
 
-            outputChannel.info("ModuleDepManager#generateDeps: Loading deps from cache file");
+            outputChannel.info("ModuleDepManager#tryReadCache: Loading deps from cache file");
             return cachedData;
         }
     }

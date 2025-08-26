@@ -1,5 +1,4 @@
 //@ts-check
-import { commonOpts as webviewCommonOpts } from "../src/webview/scripts/common.mjs"
 import { join, relative } from "path";
 import { glob } from "glob";
 import { readFile } from "fs/promises";
@@ -83,6 +82,9 @@ const testOpts = {
     sourcemap: "linked",
     logLevel: "info",
     format: "cjs",
+    define: {
+        IS_TEST: "true"
+    },
     plugins: [fileUrlPlugin, bundleESMPlugin],
 }
 export const testOptions = [testOpts];
@@ -98,17 +100,8 @@ export const commonOpts = {
     platform: "node",
     sourcemap: "inline",
     logLevel: "info",
+    define: {
+        IS_TEST: "false"
+    },
     outfile: "dist/extension.js"
 }
-const webviewopts = {
-    ...webviewCommonOpts
-};
-if (!webviewopts.define || !Array.isArray(webviewopts.entryPoints))
-    throw new Error("how");
-webviewopts.entryPoints = webviewopts.entryPoints.map(x => join("src/webview", x))
-webviewopts.outdir = "./dist/webview"
-webviewopts.define.IS_DEV = "false"
-
-
-// ugly
-export const webviewOpts = webviewopts;

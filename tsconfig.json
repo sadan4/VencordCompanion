@@ -32,6 +32,7 @@
             "@tests/*": ["./src/tests/*"]
         }
     },
-    // ingore our webview
-    "exclude": ["src/webview", "assets/**"]
+    "include": ["src"],
+    // ignore our webview
+    "exclude": ["assets/**"]
 }

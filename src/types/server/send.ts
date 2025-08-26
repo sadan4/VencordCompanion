@@ -83,7 +83,8 @@ export type DisablePluginData = {
     pluginName: string;
 };
 
-export type OutgoingMessage = DisablePlugin
+export type OutgoingMessage =
+  | DisablePlugin
   | RawIdS
   | DiffPatch
   | Reload
@@ -91,7 +92,8 @@ export type OutgoingMessage = DisablePlugin
   | TestPatch
   | TestFind
   | AllModules
-  | I18nLookup;
+  | I18nLookup
+  | Version;
 export type FullOutgoingMessage = OutgoingMessage & { nonce: number; };
 // #region valid payloads
 export type I18nLookup = {
@@ -141,6 +143,13 @@ export type TestFind = {
 export type AllModules = {
     type: "allModules";
     data: null;
+};
+
+export type Version = {
+    type: "version";
+    data: {
+        server_version: readonly [major: number, minor: number, patch: number];
+    };
 };
 // #endregion
 

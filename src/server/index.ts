@@ -4,9 +4,7 @@ import { outputChannel } from "@modules/logging";
 import { formatModule, mkStringUri } from "@modules/util";
 import { Base, DiffModule, Discriminate, ExtractModuleR, FullIncomingMessage, IncomingMessage, OutgoingMessage } from "@type/server";
 
-import { handleReporterData } from "../reporter";
-
-import { commands, workspace } from "vscode";
+import { commands, window, workspace } from "vscode";
 import { RawData, WebSocket, WebSocketServer } from "ws";
 
 export let wss: WebSocketServer | undefined;
@@ -159,8 +157,9 @@ export function startWebSocketServer() {
                 const rec: FullIncomingMessage = JSON.parse(msg.toString());
 
                 switch (rec.type) {
+                    // @ts-expect-error no longer in types, but want to show error message anyway
                     case "report": {
-                        handleReporterData(rec.data);
+                        window.showErrorMessage("The Reporter feature is now removed from vencord companion");
                         break;
                     }
                     // even if this is sent, we always want to update our internal list

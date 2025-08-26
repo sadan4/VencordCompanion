@@ -32,7 +32,7 @@
             "@tests/*": ["./src/tests/*"]
         }
     },
-    "include": ["src"],
+    "include": ["src", "eslint.config.mts"],
     // ignore our webview
     "exclude": ["assets/**"]
 }

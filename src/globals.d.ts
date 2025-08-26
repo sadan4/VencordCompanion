@@ -1,9 +1,3 @@
-declare module "test://*" {
-    var _: string;
-
-    export default _;
-}
-
 declare global {
     /**
      * These vars exist only at build time.

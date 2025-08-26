@@ -56,7 +56,7 @@ class _ModuleCache {
 
             const after = performance.now();
 
-            outputChannel.debug(`Downloading ${moduleIds.length} modules took ${after - before}ms`);
+            outputChannel.debug(`[perf] Downloading, formatting and writing ${moduleIds.length} modules took ${after - before}ms`);
         } catch (error) {
             window.showErrorMessage(`Error downloading modules:\n${String(error)}`);
             outputChannel.error(String(error));
@@ -93,18 +93,23 @@ class _ModuleCache {
         await mkdir(this.modpath);
 
         let canceled = false;
+        const modmapEntries = Object.entries(modmap);
 
-        const progress = await new ProgressBar(Object.entries(modmap).length, "Writing modules", () => {
+        const progress = await new ProgressBar(modmapEntries.length, "Writing modules", () => {
             canceled = true;
         })
             .start();
 
-        for (const [id, text] of Object.entries(modmap)) {
+        const before = performance.now();
+
+        for (const [id, text] of modmapEntries) {
             if (canceled) {
                 throw new Error("Module writing canceled");
             }
             try {
-                // FIXME: check if id has any invalid/malicious characters
+                if (id.includes("/") || id.includes("\\")) {
+                    throw new Error(`Invalid module ID: ${id}`);
+                }
                 await writeFile(join(this.modpath, `${id}.js`), text);
                 progress.increment();
             } catch (error) {
@@ -112,6 +117,10 @@ class _ModuleCache {
                 throw error;
             }
         }
+
+        const after = performance.now();
+
+        outputChannel.debug(`[perf] Writing ${modmapEntries.length} modules took ${after - before}ms`);
     }
 
     private async formatModules(modmap: Record<string, string>) {
@@ -134,7 +143,7 @@ class _ModuleCache {
 
         const endTime = performance.now();
 
-        outputChannel.debug(`Formatting modules took ${endTime - startTime}ms`);
+        outputChannel.debug(`[perf] Formatting modules took ${endTime - startTime}ms`);
     }
 
     private async downloadModuleText(moduleIDs: string[]) {
@@ -146,6 +155,7 @@ class _ModuleCache {
             .start();
 
         const res: Record<string, string> = {};
+        const before = performance.now();
 
         for (const id of moduleIDs) {
             if (isCancelled) {
@@ -174,6 +184,11 @@ class _ModuleCache {
             }
             res[id] = text;
         }
+
+        const after = performance.now();
+
+        outputChannel.debug(`[perf] Downloading ${moduleIDs.length} modules took ${after - before}ms`);
+
         return res;
     }
 
@@ -268,10 +283,12 @@ export class ModuleDepManager {
             return;
         }
 
-        this.modCache = await inst
+        let parsers: WebpackAstParser[];
+
+        [this.modCache, parsers] = await inst
             .generateDeps();
         this.keyModules = await inst
-            .generateKeyModules();
+            .generateKeyModules(parsers);
 
         await inst.writeCache();
     }
@@ -329,27 +346,28 @@ export class ModuleDepManager {
         await writeFile(cacheFile, data, "utf-8");
     }
 
-    private async generateDeps(): Promise<MainDeps> {
+    private async generateDeps(): Promise<[MainDeps, WebpackAstParser[]]> {
         // FIXME: horror
         const ret: MainDeps = ModuleDepManager.makeDepsMap();
-
-        const retKeyModules: KeyModules = {
-            fluxDispatcherClass: [],
-        };
-
         let cancelled = false;
+        const modmap = await this.getModmap();
+        const retParsers = [] as WebpackAstParser[];
 
-        const progress = await new BufferedProgressBar(Object.entries(await this.getModmap()).length, "Parsing Modules", () => {
+        const progress = await new BufferedProgressBar(Object.entries(modmap).length, "Parsing Modules", () => {
             cancelled = true;
         })
             .start();
 
-        for (const [id, text] of Object.entries(await this.getModmap())) {
+        const start = performance.now();
+
+        for (const [id, text] of Object.entries(modmap)) {
             if (cancelled) {
                 throw new Error("canceled by user");
             }
             try {
                 const parser = new WebpackAstParser(text);
+
+                retParsers.push(parser);
 
                 {
                     const deps = parser.getModulesThatThisModuleRequires();
@@ -370,33 +388,40 @@ export class ModuleDepManager {
             }
         }
 
-        return ret;
+        const end = performance.now();
+
+        outputChannel.debug(`[perf] Generating Module Dependencies took ${end - start}ms`);
+
+        return [ret, retParsers];
     }
 
-    private async generateKeyModules(): Promise<KeyModules> {
+    private async generateKeyModules(parsers: WebpackAstParser[]): Promise<KeyModules> {
         const ret: KeyModules = {
             fluxDispatcherClass: [],
         };
 
         let cancelled = false;
 
-        const progress = await new BufferedProgressBar(Object.entries(await this.getModmap()).length, "Locating Key Modules", () => {
+        const progress = await new BufferedProgressBar(parsers.length, "Locating Key Modules", () => {
             cancelled = true;
         })
             .start();
 
-        for (const [id, text] of Object.entries(await this.getModmap())) {
+        const start = performance.now();
+
+        for (const parser of parsers) {
             if (cancelled) {
                 throw new Error("canceled by user");
             }
             try {
-                const parser = new WebpackAstParser(text);
-
                 {
                     const fluxDispatcherModuleExport = parser.isFluxDispatcherModule();
 
                     if (fluxDispatcherModuleExport != null) {
-                        ret.fluxDispatcherClass.push([id, fluxDispatcherModuleExport]);
+                        if (parser.moduleId == null) {
+                            throw new Error("Module ID is not set for module");
+                        }
+                        ret.fluxDispatcherClass.push([parser.moduleId, fluxDispatcherModuleExport]);
 
                         (await parser.getAllReExportsForExport(fluxDispatcherModuleExport))
                             .filter(([, exportChain]) => exportChain.length === 1)
@@ -416,6 +441,10 @@ export class ModuleDepManager {
                 throw e;
             }
         }
+
+        const end = performance.now();
+
+        outputChannel.debug(`[perf] Locating Key Modules took ${end - start}ms`);
 
         return ret;
     }

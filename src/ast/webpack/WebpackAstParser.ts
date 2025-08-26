@@ -496,7 +496,7 @@ export class WebpackAstParser extends AstParser {
                     // you cant discriminate against destructured unions
                     return this.isUseOf(module, decl) && reExport!.text === exportName;
                 }
-                outputChannel.warn(`Unhandled type for reExport: ${v.kind}`);
+                outputChannel.warn(`[WebpackAstParser] Unhandled type for reExport: ${v.kind}`);
                 return false;
             })
             .map(([k]) => k);
@@ -940,7 +940,7 @@ export class WebpackAstParser extends AstParser {
             const last = this.getVariableInitializer(trail.at(-1)!);
 
             if (!last) {
-                outputChannel.warn("Could not find initializer of identifier");
+                outputChannel.trace("[WebpackAstParser] Could not find initializer of identifier");
                 return [trail.at(-1)!];
             }
             return this.rawMakeExportMapRecursive(last);
@@ -1097,7 +1097,7 @@ export class WebpackAstParser extends AstParser {
             return;
 
         if (!isIdentifier(node)) {
-            outputChannel.debug("Could not find identifier for store export");
+            outputChannel.debug("[WebpackAstParser] Could not find identifier for store export");
             return;
         }
 
@@ -1119,7 +1119,7 @@ export class WebpackAstParser extends AstParser {
         if (uses.length === 0) {
             return;
         } else if (uses.length > 1) {
-            outputChannel.warn(`Found more than one store assignment in module ${this.moduleId}, this should not happen`);
+            outputChannel.warn(`[WebpackAstParser] Found more than one store assignment in module ${this.moduleId}, this should not happen`);
             return;
         }
 
@@ -1128,7 +1128,7 @@ export class WebpackAstParser extends AstParser {
         const initializer = (() => {
             if (isVariableDeclaration(use.parent)) {
                 if (!use.parent.initializer) {
-                    throw new Error("Variable declaration has no initializer, this should be filtered out by the previous isVariableAssignmentLike check");
+                    throw new Error("[WebpackAstParser] Variable declaration has no initializer, this should be filtered out by the previous isVariableAssignmentLike check");
                 }
                 return use.parent.initializer;
             } else if (this.isAssignmentExpression(use.parent)) {
@@ -1143,7 +1143,7 @@ export class WebpackAstParser extends AstParser {
         const store = this.tryParseStore(initializer);
 
         if (!store) {
-            outputChannel.debug("Failed to parse store");
+            outputChannel.debug("[WebpackAstParser] Failed to parse store");
             return;
         }
 
@@ -1183,20 +1183,20 @@ export class WebpackAstParser extends AstParser {
                 break parseArgs;
 
             if (args.length !== 2) {
-                outputChannel.warn(`Incorrect number of arguments for a store instantiation, expected 2, found ${args?.length}`);
+                outputChannel.debug(`[WebpackAstParser] Incorrect number of arguments for a store instantiation, expected 2, found ${args?.length}`);
                 break parseArgs;
             }
 
             const [, events] = args;
 
             if (!isObjectLiteralExpression(events)) {
-                outputChannel.warn("Expected the flux events to be an object literal expression");
+                outputChannel.warn("[WebpackAstParser] Expected the flux events to be an object literal expression");
                 break parseArgs;
             }
             // FIXME: extract into function
             for (const prop of events.properties) {
                 if (!isPropertyAssignment(prop)) {
-                    outputChannel.debug("found prob that is not a property assignment, this should be handled");
+                    outputChannel.debug("[WebpackAstParser] found prop that is not a property assignment, this should be handled");
                     continue;
                 }
                 ret.fluxEvents[prop.name.getText()] = [prop.initializer];
@@ -1211,7 +1211,7 @@ export class WebpackAstParser extends AstParser {
         }
         if (!isIdentifier(storeVar)) {
             // TODO: parse this
-            outputChannel.debug("anything than an identifier is not supported for store instantiations yet");
+            outputChannel.debug("[WebpackAstParser] anything than an identifier is not supported for store instantiations yet");
             return;
         }
         ret.store.push(storeVar);
@@ -1219,11 +1219,11 @@ export class WebpackAstParser extends AstParser {
         const storeVarInfo = this.getVarInfoFromUse(storeVar);
 
         if (!storeVarInfo || storeVarInfo.declarations.length === 0) {
-            outputChannel.debug("Could not find store declaration");
+            outputChannel.debug("[WebpackAstParser] Could not find store declaration");
             return;
         }
         if (storeVarInfo.declarations.length > 1) {
-            outputChannel.warn("Found more than one store declaration, this should not happen");
+            outputChannel.warn("[WebpackAstParser] Found more than one store declaration, this should not happen");
             return;
         }
 
@@ -1234,7 +1234,7 @@ export class WebpackAstParser extends AstParser {
         const classDecl = decl.parent;
 
         if (!isClassDeclaration(classDecl)) {
-            outputChannel.warn("Store decl is not a class");
+            outputChannel.warn("[WebpackAstParser] Store decl is not a class");
             return;
         }
 
@@ -1244,7 +1244,7 @@ export class WebpackAstParser extends AstParser {
         const doesExtend = (classDecl.heritageClauses?.length ?? -1) > 0;
 
         if (!doesExtend) {
-            outputChannel.debug("Store class does not extend Store");
+            outputChannel.debug("[WebpackAstParser] Store class does not extend Store");
             return;
         }
 
@@ -1324,7 +1324,8 @@ export class WebpackAstParser extends AstParser {
 
     tryParseClassDeclaration(node: Node): RawExportMap | undefined {
         if (!isIdentifier(node)) {
-            outputChannel.debug("trying to parse a class decl starting with a non-identifier node, this should be handled");
+            // FIXME: handle this
+            outputChannel.trace("[WebpackAstParser] trying to parse a class decl starting with a non-identifier node, this should be handled");
             return;
         }
 
@@ -1337,7 +1338,7 @@ export class WebpackAstParser extends AstParser {
         // if someone proves me wrong on this (with an example in discord's code), ill support it
         if (varInfo.declarations.length !== 1) {
             if (varInfo.declarations.length > 1) {
-                outputChannel.error("Found more than one class declaration. this should not happen");
+                outputChannel.error("[WebpackAstParser] Found more than one class declaration. this should not happen");
             }
             return;
         }

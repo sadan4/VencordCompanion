@@ -28,6 +28,7 @@
         "jsxs",
         "Literalish",
         "mapstrace",
+        "modmap",
         "moduleid",
         "outdir",
         "typeguard",

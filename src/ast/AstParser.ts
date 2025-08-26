@@ -69,7 +69,7 @@ export class AstParser {
         const toRet = [...this.vars.values()].find((x) => x.uses.some((use) => use.location === ident));
 
         if (!toRet) {
-            outputChannel.debug("getVarInfoFromUse: no variable info found for identifier");
+            outputChannel.trace("[AstParser] getVarInfoFromUse: no variable info found for identifier");
         }
         return toRet;
     }
@@ -124,7 +124,7 @@ export class AstParser {
         }
         if (arr.length !== 0)
             return arr;
-        outputChannel.debug("Failed finding variable declaration");
+        outputChannel.debug("[AstParser] Failed finding variable declaration");
     }
 
     public isCallExpression(node: Node | undefined): node is CallExpression {

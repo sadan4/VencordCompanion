@@ -24,6 +24,7 @@ re-exports (`U` => `E`, `I` => `F`) everything from `333333.js`
 # 555555.js
 
 exports a component (`D`) that uses `444444.js` a bunch
+exports a class component (`H`)
 
 # 666666.js
 

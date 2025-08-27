@@ -2,7 +2,7 @@ import { ModuleCache, ModuleDepManager } from "@modules/cache";
 import { hasConnection, onConnect } from "@server/index";
 import { IDynamicNode, TNode } from "@type/sidebar";
 
-import { Button, Item, Section, Text } from "./Nodes";
+import { Button, Item, Section } from "./Nodes";
 
 import { nanoid } from "nanoid";
 import {
@@ -47,30 +47,17 @@ export class treeDataProvider implements TreeDataProvider<TNode> {
                         .then(() => setTimeout(() => this._onDidChangeTreeData.fire())))
                     : new this.DynamicNode((r) => (hasConnection()
                         ? new Button("Download Modules", () => ModuleCache.downloadModules()
+                            .then(() => {
+                                return ModuleDepManager.initModDeps({ fromDisk: true });
+                            })
                             .then(() => this._onDidChangeTreeData.fire()))
                         : new Button("No Connections", r))),
             ]);
         });
     }
 
-    private makeDepSettings(): Section {
-        return new Section("Dependency Cache Settings", [
-            new this.DynamicNode(async (reRender) => (await ModuleCache.hasCache() && !ModuleDepManager.hasModDeps()
-                ? ModuleDepManager.hasModDeps()
-                    ? new Text("Module Dependencies Loaded")
-                    : new Button("Load Module Dependencies", () => {
-                        ModuleDepManager.initModDeps({ fromDisk: true })
-                            .then(() => reRender());
-                    })
-                : new Text("No Cache Found, make sure to download modules first"))),
-        ]);
-    }
-
     private async defaultChildren(): Promise<TNode[]> {
-        return Promise.all([
-            this.makeModuleSettings(),
-            this.makeDepSettings(),
-        ]);
+        return Promise.all([this.makeModuleSettings()]);
     }
 
     async getTreeItem(element: TNode): Promise<TreeItem> {

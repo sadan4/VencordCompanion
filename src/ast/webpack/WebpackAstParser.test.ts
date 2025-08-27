@@ -1,4 +1,4 @@
-import { TypeAssert } from "@ast/util";
+import { TAssert, TypeAssert } from "@ast/util";
 import { WebpackAstParser } from "@ast/webpack";
 import { RangeExportMap } from "@type/ast";
 
@@ -142,6 +142,7 @@ describe("WebpackAstParser", function () {
                         createToken: [new Range(147, 8, 147, 19)],
                         addDependencies: [new Range(150, 8, 150, 23)],
                         [WebpackAstParser.SYM_CJS_DEFAULT]: [
+                            new Range(5, 8, 5, 9),
                             new Range(34, 10, 34, 11),
                             new Range(153, 8, 153, 19),
                         ],
@@ -149,7 +150,7 @@ describe("WebpackAstParser", function () {
                 });
             });
         });
-        describe("module.exports", function () {
+        describe("e.exports", function () {
             it("parses a module with an object literal export (class names)", function () {
                 const parser = new WebpackAstParser(require("test://ast/webpack/e.exports/objLiteral.js"));
                 const map = parser.getExportMap();
@@ -241,6 +242,33 @@ describe("WebpackAstParser", function () {
                 expect(map).to.have.keys(WebpackAstParser.SYM_CJS_DEFAULT);
                 expect(map[WebpackAstParser.SYM_CJS_DEFAULT]).to.have.length(1);
                 expect(map[WebpackAstParser.SYM_CJS_DEFAULT][0]).to.deep.equal(new Range(9, 16, 9, 27));
+            });
+            it("parses a module with a class default export", function () {
+                const parser = new WebpackAstParser(require("test://ast/webpack/e.exports/classExport.js"));
+                const map = parser.getExportMap();
+
+                expect(map).to.deep.equal({
+                    [WebpackAstParser.SYM_CJS_DEFAULT]: {
+                        isDispatching: [new Range(35, 8, 35, 21)],
+                        dispatch: [new Range(38, 8, 38, 16)],
+                        dispatchForStoreTest: [new Range(55, 8, 55, 28)],
+                        flushWaitQueue: [new Range(60, 8, 60, 22)],
+                        _dispatchWithDevtools: [new Range(88, 8, 88, 29)],
+                        _dispatchWithLogging: [new Range(91, 8, 91, 28)],
+                        _dispatch: [new Range(112, 8, 112, 17)],
+                        addInterceptor: [new Range(127, 8, 127, 22)],
+                        wait: [new Range(130, 8, 130, 12)],
+                        subscribe: [new Range(134, 8, 134, 17)],
+                        unsubscribe: [new Range(139, 8, 139, 19)],
+                        register: [new Range(144, 8, 144, 16)],
+                        createToken: [new Range(147, 8, 147, 19)],
+                        addDependencies: [new Range(150, 8, 150, 23)],
+                        [WebpackAstParser.SYM_CJS_DEFAULT]: [
+                            new Range(34, 10, 34, 11),
+                            new Range(153, 8, 153, 19),
+                        ],
+                    },
+                });
             });
             it("parses everything else", function () {
                 const parser = new WebpackAstParser(require("test://ast/webpack/e.exports/everythingElse.js"));
@@ -474,8 +502,10 @@ describe("WebpackAstParser", function () {
                     makeLineRange(2, 18, 29),
                     makeLineRange(1, 23, 34),
                     makeLineRange(4, 5, 20),
-                    makeLineRange(5, 12, 30),
-                    makeLineRange(5, 17, 30),
+                    makeLineRange(5, 39, 30),
+                    makeLineRange(5, 44, 30),
+                    makeLineRange(5, 22, 34),
+                    makeLineRange(5, 27, 34),
                 ]);
             });
             it.skip("handles re-exports across wreq.t", async function () {
@@ -514,6 +544,18 @@ describe("WebpackAstParser", function () {
          */
         it.skip("finds all uses of a default e.exports where the exports are assigned to the default export first", function () {
 
+        });
+        it("finds uses of a class export as a component (class itself, not a method or instance)", async function () {
+            const parser = new WebpackAstParser(require("test://ast/.modules/555555.js"));
+            const locs = await parser.generateReferences(new Position(11, 10));
+            const locs2 = await parser.generateReferences(new Position(6, 8));
+
+            expect(locs).to.not.be.empty;
+            expect(locs2).to.not.be.empty;
+            TAssert<Location[]>(locs);
+            TAssert<Location[]>(locs2);
+            expect(locs).to.have.deep.members(locs2);
+            expect(locs).to.have.deep.members([makeLineRange(3, 12, 52)]);
         });
         describe("stores", function () {
             it("finds all uses of a store from the class name", async function () {

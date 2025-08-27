@@ -220,7 +220,7 @@ export function startWebSocketServer() {
 
                 if (isOutdated) {
                     activeSocket?.close(CloseCode.OUTDATED_CLIENT, "Client is outdated, please update from https://github.com/sadan4/vc-userDevTools/blob/main");
-                    window.showErrorMessage("Vencord Compaion: Your client is out of date, please update your userplugin from https://github.com/sadan4/vc-userDevTools/blob/main", "Open Link")
+                    window.showErrorMessage("Vencord Companion: Your client is out of date, please update your userplugin from https://github.com/sadan4/vc-userDevTools/blob/main", "Open Link")
                         .then((button) => {
                             if (button === "Open Link") {
                                 commands.executeCommand("vscode.open", USERPLUGIN_LINK);
@@ -272,7 +272,7 @@ export async function handleExtractPayload({ data }: ExtractModuleR): Promise<vo
     const moduleText = formatModule(data.module, data.moduleNumber, data.find);
 
     workspace.openTextDocument({
-        content: await format(moduleText || "//ERROR: NO DATA RECIVED\n//This module may be lazy loaded"),
+        content: await format(moduleText || "//ERROR: NO DATA RECEIVED\n//This module may be lazy loaded"),
         language: "javascript",
     })
         .then((e) => commands.executeCommand("vscode.open", e.uri));

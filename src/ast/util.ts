@@ -1,4 +1,4 @@
-import { AnyFunction, AssertedType, CBAssertion, Functionish, FunctionNode, Import, RegexNode, StringNode, WithParent } from "@type/ast";
+import { AnyFunction, AssertedType, CBAssertion, ExportMap, Functionish, FunctionNode, Import, RegexNode, StringNode, WithParent } from "@type/ast";
 import { IFindType, IReplacement, PatchData } from "@type/server";
 
 import { getNumberAndColumnFromPos } from "./lineUtil";
@@ -587,8 +587,7 @@ export function isEOL(char: number) {
     return char === CharCode.CarriageReturn || char === CharCode.LineFeed;
 }
 
-export function TAssert<T>(thing: T): void {
-    return void thing;
+export function TAssert<T>(thing: any): asserts thing is T {
 }
 
 
@@ -612,5 +611,17 @@ export function allEntries<T extends object, K extends keyof T & (string | symbo
     })
         .filter((x) => x !== SYM_NON_ENUMERABLE);
 }
+export function allValues<T extends object>(obj: T): (T[keyof T])[] {
+    return allEntries(obj)
+        .map(([, v]) => v);
+}
 export function TypeAssert<T>(v: any): asserts v is T {
+}
+
+export function containsPosition(range: ExportMap<Range> | Range[], pos: Position): boolean {
+    if (Array.isArray(range)) {
+        return range.some((r) => r.contains(pos));
+    }
+    return allValues(range)
+        .some((r) => containsPosition(r, pos));
 }

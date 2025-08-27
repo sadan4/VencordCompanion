@@ -244,7 +244,8 @@ interface CacheData {
 export class ModuleDepManager {
     private static SYM_CJS_DEFAULT_PLACEHOLDER = "SYMBOL(SYM_CJS_DEFAULT)";
     static DEFAULT_FOLDER = ".modules";
-    static CACHE_FILE_NAME = "cache.json";
+    // underscore so it's above the numbered modules
+    static CACHE_FILE_NAME = "_cache.json";
     private static modCache: MainDeps | null = null;
     private static keyModules: KeyModules | null = null;
     private modmap?: Record<string, string>;

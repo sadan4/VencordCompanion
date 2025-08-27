@@ -3,6 +3,7 @@ import {
     allEntries,
     Cache,
     CacheGetter,
+    containsPosition,
     findObjectLiteralByKey,
     findParent,
     findReturnIdentifier,
@@ -67,6 +68,8 @@ import {
 import { Location, Position, Range } from "vscode";
 
 // FIXME: rewrite to use module cache
+
+type Nullish = undefined | null;
 
 export class WebpackAstParser extends AstParser {
     /**
@@ -393,18 +396,12 @@ export class WebpackAstParser extends AstParser {
             await ModuleDepManager.initModDeps({ fromDisk: true });
         }
 
-        this.isFluxDispatcherModule();
-
         const moduleExports = this.getExportMap();
         const where = await this.getModulesThatRequireThisModule();
         const locs: Location[] = [];
 
         const exportedNames = Object.entries(moduleExports)
-            .filter(([, v]) => Array.isArray(v) && v.some((x) => {
-                if (!x)
-                    return;
-                return x.contains(position);
-            }));
+            .filter(([, exportRange]) => containsPosition(exportRange, position));
 
 
         // TODO: support jumping from object literals
@@ -560,7 +557,7 @@ export class WebpackAstParser extends AstParser {
                 let ret: RawExportMap | RawExportRange | undefined;
 
                 if (tailingIdent) {
-                    ret = this.tryParseClassDeclaration(tailingIdent);
+                    ret = this.tryParseClassDeclaration(tailingIdent, [x.name]);
                     ret ||= this.rawMakeExportMapRecursive(tailingIdent);
                 }
 
@@ -951,7 +948,10 @@ export class WebpackAstParser extends AstParser {
     rawMapToExportMap(map: RawExportRange): ExportRange;
     rawMapToExportMap(map: RawExportMap): RangeExportMap;
     rawMapToExportMap(map: RawExportMap | RawExportRange): RangeExportMap | ExportRange;
-    rawMapToExportMap(map: RawExportMap | RawExportRange): RangeExportMap | ExportRange {
+    rawMapToExportMap(map: RawExportMap | RawExportRange | Nullish): RangeExportMap | ExportRange | Nullish {
+        if (map == null) {
+            return map;
+        }
         if (Array.isArray(map)) {
             return map.map((node) => {
                 if (this.isFunctionish(node) && !node.name) {
@@ -1008,7 +1008,19 @@ export class WebpackAstParser extends AstParser {
             return undefined;
         }
 
-        const exports = this.makeExportMapRecursive(exportObject);
+        let exports: RangeExportMap | ExportRange | null = null;
+        // TODO: should this get extra export ranges
+        const rawClassExportMap = this.tryParseClassDeclaration(exportObject, []);
+
+        if (rawClassExportMap) {
+            const classExportMap = this.rawMapToExportMap(rawClassExportMap);
+
+            exports ??= {
+                [WebpackAstParser.SYM_CJS_DEFAULT]: classExportMap,
+            };
+        }
+
+        exports ??= this.makeExportMapRecursive(exportObject);
 
         if (Array.isArray(exports)) {
             return {
@@ -1051,7 +1063,7 @@ export class WebpackAstParser extends AstParser {
                     if (!lastNode || ret)
                         break classDecl;
 
-                    const rawMap = this.tryParseClassDeclaration(lastNode);
+                    const rawMap = this.tryParseClassDeclaration(lastNode, [x.name]);
 
                     if (!rawMap)
                         break classDecl;
@@ -1284,9 +1296,9 @@ export class WebpackAstParser extends AstParser {
      * }
      * ```
      */
-    parseClassDeclaration(clazz: ClassDeclaration): RawExportMap {
+    parseClassDeclaration(clazz: ClassDeclaration, extraExportRanges: Node[] = []): RawExportMap {
         const ret: RawExportMap = {
-            [WebpackAstParser.SYM_CJS_DEFAULT]: [clazz.name ?? clazz.getChildAt(0)],
+            [WebpackAstParser.SYM_CJS_DEFAULT]: [...extraExportRanges, clazz.name ?? clazz.getChildAt(0)],
         };
 
         for (const member of clazz.members) {
@@ -1322,7 +1334,7 @@ export class WebpackAstParser extends AstParser {
         return ret;
     }
 
-    tryParseClassDeclaration(node: Node): RawExportMap | undefined {
+    tryParseClassDeclaration(node: Node, extraExportRanges: Node[]): RawExportMap | undefined {
         if (!isIdentifier(node)) {
             // FIXME: handle this
             outputChannel.trace("[WebpackAstParser] trying to parse a class decl starting with a non-identifier node, this should be handled");
@@ -1348,7 +1360,7 @@ export class WebpackAstParser extends AstParser {
         if (!isClassDeclaration(decl.parent)) {
             return;
         }
-        return this.parseClassDeclaration(decl.parent);
+        return this.parseClassDeclaration(decl.parent, extraExportRanges);
     }
 
     getNestedExportFromMap<T>(keys: readonly (string | symbol)[], map: ExportMap<T>): T[] | undefined {

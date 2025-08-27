@@ -6,10 +6,11 @@ function(e, t, n) {
         U: () => _u,
         I: () => _i,
     });
-    var r = n(555001);
+    var r = n(555001),
+        _5 = n(555555);
     function _u() {
         return (0, r.jsx)("div", {
-            children: "Hello World",
+            children: ["Hello World", (0, r.jsx)(_5.H, {})],
             className: "foo bar"
         });
     }

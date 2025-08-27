@@ -148,6 +148,7 @@ export function activate(context: ExtensionContext) {
                     });
 
                     handleDiffPayload(r);
+                    return;
                 } catch (e) {
                     outputChannel.error(String(e));
                     window.showErrorMessage(String(e));
@@ -205,6 +206,7 @@ export function activate(context: ExtensionContext) {
                     });
 
                     handleExtractPayload(r);
+                    return;
                 } catch (e) {
                     outputChannel.error(String(e));
                     window.showErrorMessage(String(e));

@@ -1,7 +1,7 @@
 {
-    "name": "vencord-companion",
-    "displayName": "Vencord Companion",
-    "version": "0.1.4",
+    "name": "vencord-user-companion",
+    "displayName": "Vencord Companion Extended",
+    "version": "0.3.0",
     "description": "Vencord Companion is a vscode extension to test Vencord patches & webpack finds right from the comfort of your IDE",
     "categories": [
         "Other",
@@ -16,17 +16,20 @@
     ],
     "repository": {
         "type": "git",
-        "url": "https://github.com/Vencord/Companion"
+        "url": "https://github.com/sadan4/VencordCompanion"
     },
     "license": "GPL-3.0",
-    "author": "Vendicated <vendicated+npm@riseup.net>",
+    "author": {
+        "name": "sadan",
+        "url": "https://sadan.zip"
+    },
     "contributors": [
         {
-            "name": "sadan",
-            "url": "https://sadan.zip"
+            "name": "Vendicated",
+            "email": "vendicated+npm@riseup.net"
         }
     ],
-    "publisher": "Vendicated",
+    "publisher": "sadan",
     "main": "./dist/extension.js",
     "scripts": {
         "build": "node ./scripts/build.mjs",
@@ -35,9 +38,9 @@
         "watch:test": "npx nodemon",
         "eslint": "eslint --cache",
         "lint": "pnpm eslint && pnpm typecheck",
-        "package": "vsce package --no-dependencies",
-        "vscode:prepublish": "pnpm build && pnpm lint",
-        "publish": "vsce publish --no-dependencies",
+        "prepackage": "pnpm build && pnpm lint",
+        "package": "vsce pack",
+        "publish": "pnpm build && pnpm lint && vsce publish --no-dependencies",
         "typecheck": "tsc --noEmit",
         "pretest": "pnpm build:test",
         "test": "vscode-test"
@@ -108,7 +111,8 @@
                     "id": "vencordSettings",
                     "name": "Settings",
                     "when": "config.vencord-companion.showSidebar || config.vencord-companion.alwaysShowSidebar",
-                    "visibility": "visible"
+                    "visibility": "visible",
+                    "icon": "assets/oneko.svg"
                 }
             ]
         },
@@ -161,15 +165,17 @@
     "extensionKind": [
         "ui"
     ],
-    "sponsor": {
-        "url": "https://github.com/sponsors/Vendicated"
-    },
-    "homepage": "https://github.com/Vencord/Companion",
+    "homepage": "https://github.com/sadan4/VencordCompanion",
     "packageManager": "pnpm@9.1.4+sha512.9df9cf27c91715646c7d675d1c9c8e41f6fce88246f1318c1aa6a1ed1aeb3c4f032fcdf4ba63cc69c4fe6d634279176b5358727d8f2cc1e65b65f43ce2f8bfb0",
     "pnpm": {
         "patchedDependencies": {
             "@vscode/test-cli@0.0.10": "patches/@vscode__test-cli@0.0.10.patch",
             "@types/ws@8.5.14": "patches/@types__ws@8.5.14.patch"
         }
+    },
+    "_vsce": "see https://github.com/microsoft/vscode-vsce/blob/main/src/main.ts for types",
+    "vsce": {
+        "dependencies": false,
+        "githubBranch": "selfPublish"
     }
 }

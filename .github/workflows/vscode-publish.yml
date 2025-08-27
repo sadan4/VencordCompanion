@@ -1,4 +1,4 @@
-name: Publish on npm
+name: Publish on VS Code Marketplace
 
 on:
     push:
@@ -67,9 +67,6 @@ jobs:
             - name: Install dependencies
               run: pnpm install --frozen-lockfile
             
-            - name: Build Extension
-              run: pnpm build
-            
             - name: Create GitHub Release
               env:
                 GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -79,7 +76,7 @@ jobs:
                   --fail-on-no-commits
             
             - name: Package Extension
-              run: pnpm vsce package
+              run: pnpm package
               
             - name: Upload Package to Release
               env:

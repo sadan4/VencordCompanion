@@ -32,11 +32,11 @@ jobs:
               uses: actions/cache@v3
               with:
                 path: |
-                  ~/.cache/eslint
+                  eslint-config-cache
                 key: ${{ runner.os }}-node-${{ hashFiles('**/pnpm-lock.yaml', '**/.eslint.config.mts') }}
 
             - name: Test if linting passes
-              run: pnpm eslint --cache-strategy content --cache-location ~/.cache/eslint/sadan4-VencordCompanion
+              run: pnpm eslint --cache-strategy content --cache-location eslint-config-cache
 
             - name: Test if type checking passes
               run: pnpm typecheck

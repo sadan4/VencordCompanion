@@ -6,14 +6,15 @@
 
 // should be the same types as src/server/types/recieve.ts in the companion
 
-export type IncomingMessage = (DiffModule | ExtractModuleR | ModuleList | RawId | I18nValue) & Base;
+export type IncomingMessage = Base<DiffModule | ExtractModuleR | ModuleList | RawId | I18nValue | VersionResponse>;
 export type FullIncomingMessage = IncomingMessage & Nonce;
-export type Base = {
+export type Base<T> = ({
     ok: true;
-} | {
+} & T) | ({
     ok: false;
+    data: null;
     error: string;
-};
+} & Omit<T, "data">);
 export type Nonce = {
     nonce: number;
 };

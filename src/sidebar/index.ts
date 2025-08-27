@@ -1,5 +1,5 @@
 import { ModuleCache, ModuleDepManager } from "@modules/cache";
-import { hasConnectons, onConnect } from "@server/index";
+import { hasConnection, onConnect } from "@server/index";
 import { IDynamicNode, TNode } from "@type/sidebar";
 
 import { Button, Item, Section, Text } from "./Nodes";
@@ -45,7 +45,7 @@ export class treeDataProvider implements TreeDataProvider<TNode> {
                 await ModuleCache.hasCache()
                     ? new Button("Purge Cache", () => ModuleCache.clearCache()
                         .then(() => setTimeout(() => this._onDidChangeTreeData.fire())))
-                    : new this.DynamicNode((r) => (hasConnectons()
+                    : new this.DynamicNode((r) => (hasConnection()
                         ? new Button("Download Modules", () => ModuleCache.downloadModules()
                             .then(() => this._onDidChangeTreeData.fire()))
                         : new Button("No Connections", r))),

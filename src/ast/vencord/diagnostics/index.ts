@@ -1,7 +1,7 @@
 import { debounceAsync, zeroRange } from "@ast/util";
 import { VencordAstParser } from "@ast/vencord";
 import { outputChannel } from "@modules/logging";
-import { sendAndGetData, sockets } from "@server/index";
+import { hasConnection, sendAndGetData } from "@server/index";
 
 import { Diagnostic, DiagnosticSeverity, languages, Range, TextDocument, TextDocumentChangeEvent, Uri } from "vscode";
 
@@ -30,7 +30,7 @@ export function reloadDiagnostics() {
     }
 }
 async function updateDiagnosticsImmediately(e: Uri) {
-    if (sockets.size === 0) {
+    if (!hasConnection()) {
         diagnosticCollection.set(e, [zeroClientsWarning]);
         return;
     }

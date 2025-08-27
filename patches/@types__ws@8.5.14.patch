@@ -1,0 +1,26 @@
+diff --git a/index.d.mts b/index.d.mts
+index 23bce7fa58e850b274f000b6c32d31e2d26f47ac..4db7050cb7b540fa0b04879ad3ed2f249b05dab1 100644
+--- a/index.d.mts
++++ b/index.d.mts
+@@ -17,7 +17,7 @@ import { ZlibOptions } from "zlib";
+ 
+ // can not get all overload of BufferConstructor['from'], need to copy all it's first arguments here
+ // https://github.com/microsoft/TypeScript/issues/32164
+-type BufferLike =
++export type BufferLike =
+     | string
+     | Buffer
+     | DataView
+diff --git a/index.d.ts b/index.d.ts
+index 9af2b49ca679fedfef37a70931c23e65a06c6b5d..1f9ef239e01df59fba6e767a24d5e5b7d0fc3262 100644
+--- a/index.d.ts
++++ b/index.d.ts
+@@ -17,7 +17,7 @@ import { ZlibOptions } from "zlib";
+ 
+ // can not get all overload of BufferConstructor['from'], need to copy all it's first arguments here
+ // https://github.com/microsoft/TypeScript/issues/32164
+-type BufferLike =
++export type BufferLike =
+     | string
+     | Buffer
+     | DataView

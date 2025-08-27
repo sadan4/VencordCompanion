@@ -1,17 +1,21 @@
 import { reloadDiagnostics } from "@ast/vencord/diagnostics";
 import { format } from "@modules/format";
 import { outputChannel } from "@modules/logging";
-import { formatModule, mkStringUri } from "@modules/util";
+import { areVersionsIncompatible, formatModule, mkStringUri, SemVerVersion } from "@modules/util";
 import { Base, DiffModule, Discriminate, ExtractModuleR, FullIncomingMessage, IncomingMessage, OutgoingMessage } from "@type/server";
 
 import { commands, window, workspace } from "vscode";
-import { RawData, WebSocket, WebSocketServer } from "ws";
+import { BufferLike, RawData, WebSocket, WebSocketServer } from "ws";
+
+const MIN_CLIENT_VERSION: SemVerVersion = [0, 1, 1];
+const SERVER_VERSION: SemVerVersion = [0, 4, 0];
+const USERPLUGIN_LINK = "https://github.com/sadan4/vc-userDevTools/blob/main";
 
 export let wss: WebSocketServer | undefined;
 
-export const sockets = new Set<WebSocket>();
-export function hasConnectons() {
-    return sockets.size > 0;
+export let activeSocket: WebSocket | null = null;
+export function hasConnection() {
+    return activeSocket != null;
 }
 
 const onConnectCbs: ((sock: WebSocket) => void)[] = [];
@@ -30,6 +34,7 @@ onConnectCbs.push(reloadDiagnostics);
 
 const enum CloseCode {
     POLICY_VIOLATION = 1008,
+    OUTDATED_CLIENT = 1009,
 }
 
 export const moduleCache: string[] = [];
@@ -41,7 +46,7 @@ const defaultOpts: SendToSocketsOpts = {
 };
 
 // there is no autocomplete for this, https://github.com/microsoft/TypeScript/issues/52898
-export function sendAndGetData<T extends IncomingMessage["type"] = never>(data: OutgoingMessage, opts?: SendToSocketsOpts): Promise<[T] extends [never] ? Base & { ok: true; } : Discriminate<IncomingMessage, T>> {
+export function sendAndGetData<T extends IncomingMessage["type"] = never>(data: OutgoingMessage, opts?: SendToSocketsOpts): Promise<[T] extends [never] ? ({ ok: true; } & Base<Record<string, any>>) : Discriminate<IncomingMessage, T>> {
     const { timeout } = opts ?? defaultOpts;
 
     return new Promise((res, rej) => {
@@ -56,10 +61,11 @@ export interface SendToSocketsOpts {
      */
     timeout: number;
 }
+
 export async function sendToSockets(data: OutgoingMessage, dataCb?: (data: any) => void, opts?: SendToSocketsOpts) {
     const { timeout } = opts ?? defaultOpts;
 
-    if (sockets.size === 0) {
+    if (activeSocket == null) {
         throw new Error("No Discord Clients Connected! Make sure you have Discord open, and have the DevCompanion plugin enabled (see README for more info!)");
     }
 
@@ -67,7 +73,7 @@ export async function sendToSockets(data: OutgoingMessage, dataCb?: (data: any) 
 
     (data as any).nonce = nonce;
 
-    const promises = Array.from(sockets, (sock) => new Promise<void>((resolve, reject) => {
+    const promises = Array.from([activeSocket], (sock) => new Promise<void>((resolve, reject) => {
         function onMessage(data: RawData) {
             const msg = data.toString("utf-8");
             let parsed: FullIncomingMessage;
@@ -118,6 +124,19 @@ export async function sendToSockets(data: OutgoingMessage, dataCb?: (data: any) 
     return true;
 }
 
+async function isClientOutdated(): Promise<[boolean, SemVerVersion]> {
+    const res = await sendAndGetData<"version">({
+        type: "version",
+        data: {
+            server_version: SERVER_VERSION,
+        },
+    });
+
+    const { clientVersion } = res.data;
+
+    return [areVersionsIncompatible(MIN_CLIENT_VERSION, clientVersion), clientVersion];
+}
+
 export function startWebSocketServer() {
     wss = new WebSocketServer({
         port: 8485,
@@ -142,12 +161,12 @@ export function startWebSocketServer() {
         }
 
         outputChannel.info(`[WS] New Connection (Origin: ${req.headers.origin || "-"})`);
-        sockets.add(sock);
+        activeSocket = sock;
         onConnectCbs.forEach((cb) => cb(sock));
 
         sock.on("close", () => {
             outputChannel.warn("[WS] Connection Closed");
-            sockets.delete(sock);
+            activeSocket = null;
         });
 
         sock.on("message", (msg) => {
@@ -164,6 +183,10 @@ export function startWebSocketServer() {
                     }
                     // even if this is sent, we always want to update our internal list
                     case "moduleList": {
+                        if (!rec.ok) {
+                            throw new Error(rec.error);
+                        }
+
                         const m = rec.data;
 
                         // should be something like ["123", "58913"]
@@ -185,11 +208,42 @@ export function startWebSocketServer() {
 
         const originalSend = sock.send;
 
-        sock.send = function (data) {
+        sock.send = function (data: BufferLike) {
             outputChannel.trace(`[WS] SEND: ${data}`);
-            // @ts-expect-error "Expected 3-4 arguments but got 2?????" No bestie it expects 2-3....
-            originalSend.call(this, data);
+            // @ts-expect-error overloads are weird
+            // eslint-disable-next-line prefer-rest-params
+            originalSend.apply(this, arguments);
         };
+        setTimeout(async () => {
+            try {
+                const [isOutdated, clientVersion] = await isClientOutdated();
+
+                if (isOutdated) {
+                    activeSocket?.close(CloseCode.OUTDATED_CLIENT, "Client is outdated, please update from https://github.com/sadan4/vc-userDevTools/blob/main");
+                    window.showErrorMessage("Vencord Compaion: Your client is out of date, please update your userplugin from https://github.com/sadan4/vc-userDevTools/blob/main", "Open Link")
+                        .then((button) => {
+                            if (button === "Open Link") {
+                                commands.executeCommand("vscode.open", USERPLUGIN_LINK);
+                            }
+                        });
+                    activeSocket = null;
+                    outputChannel.warn("[WS] Client is outdated, clientVersion: ", clientVersion);
+                } else {
+                    outputChannel.info("[WS] Client is up to date, clientVersion: ", clientVersion);
+                }
+            } catch (e) {
+                outputChannel.error(`[WS] Error ensuring version: ${e}`);
+                window.showWarningMessage("Vencord Companion: Unable to ensure client is up to date, you should update from https://github.com/sadan4/vc-userDevTools/blob/main", "Open Link")
+                    .then((button) => {
+                        if (button === "Open Link") {
+                            commands.executeCommand("vscode.open", USERPLUGIN_LINK);
+                        }
+                    });
+                activeSocket?.close(CloseCode.OUTDATED_CLIENT, "Unable to ensure client is up to date");
+                activeSocket = null;
+                return;
+            }
+        });
     });
 
     wss.on("error", (err) => {

@@ -40,7 +40,7 @@
         "lint": "pnpm eslint && pnpm typecheck",
         "prepackage": "pnpm build && pnpm lint",
         "package": "vsce pack",
-        "publish": "pnpm build && pnpm lint && vsce publish --no-dependencies",
+        "publishExtension": "pnpm build && pnpm lint && vsce publish --no-dependencies",
         "typecheck": "tsc --noEmit",
         "pretest": "pnpm build:test",
         "test": "vscode-test"

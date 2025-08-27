@@ -97,4 +97,4 @@ jobs:
             - name: Publish Extension to VS Code Marketplace
               env: 
                 VSCE_PAT: ${{ secrets.VSCE_PAT }}
-              run: pnpm publish
+              run: pnpm publishExtension

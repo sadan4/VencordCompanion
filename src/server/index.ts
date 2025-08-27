@@ -8,7 +8,7 @@ import { commands, window, workspace } from "vscode";
 import { BufferLike, RawData, WebSocket, WebSocketServer } from "ws";
 
 const MIN_CLIENT_VERSION: SemVerVersion = [0, 1, 1];
-const SERVER_VERSION: SemVerVersion = [0, 4, 0];
+const SERVER_VERSION: SemVerVersion = Object.freeze(SERVER_VERSION_FROM_BUILD);
 const USERPLUGIN_LINK = "https://github.com/sadan4/vc-userDevTools/blob/main";
 
 export let wss: WebSocketServer | undefined;

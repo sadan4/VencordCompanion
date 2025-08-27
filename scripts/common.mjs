@@ -2,6 +2,8 @@
 import { join, relative } from "path";
 import { glob } from "glob";
 import { readFile } from "fs/promises";
+import packageJson from "../package.json" with {type: "json"};
+const { version } = packageJson;
 const sourceFiles = await glob("src/**/*.{ts,cts,mts}", {
     ignore: ["src/webview/**"]
 });
@@ -68,6 +70,10 @@ const bundleESMPlugin = {
         })
     }
 };
+const commonDefines = {
+    SERVER_VERSION_FROM_BUILD: JSON.stringify(version.split(".").map(Number)),
+    IS_TEST: "false"
+}
 /**
  * @type {import("esbuild").BuildOptions}
  */
@@ -83,7 +89,8 @@ const testOpts = {
     logLevel: "info",
     format: "cjs",
     define: {
-        IS_TEST: "true"
+        ...commonDefines,
+        IS_TEST: "true",
     },
     plugins: [fileUrlPlugin, bundleESMPlugin],
 }
@@ -101,7 +108,7 @@ export const commonOpts = {
     sourcemap: "inline",
     logLevel: "info",
     define: {
-        IS_TEST: "false"
+        ...commonDefines
     },
     outfile: "dist/extension.js"
 }

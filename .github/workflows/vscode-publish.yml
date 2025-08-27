@@ -1,0 +1,93 @@
+name: Publish on npm
+
+on:
+    push:
+      tags:
+        - v*
+
+
+jobs:
+  test:
+        runs-on: ${{ matrix.os }}
+        strategy:
+            matrix:
+                os: [ubuntu-latest, windows-latest]
+
+        steps:
+            - uses: actions/checkout@v4
+            - uses: pnpm/action-setup@v3 # Install pnpm using packageManager key in package.json
+
+            - name: Use Node.js 20
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 20
+                  cache: "pnpm"
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+
+            - name: Test if tests compile
+              run: pnpm build:test
+
+            - name: Test if it bundles
+              run: pnpm build
+              
+            - name: Setup ESLint Cache
+              uses: actions/cache@v3
+              with:
+                path: |
+                  eslint-config-cache
+                key: ${{ runner.os }}-node-${{ hashFiles('**/pnpm-lock.yaml', '**/.eslint.config.mts') }}
+
+            - name: Test if linting passes
+              run: pnpm eslint --cache-strategy content --cache-location eslint-config-cache
+
+            - name: Test if type checking passes
+              run: pnpm typecheck
+
+            - name: run tests linux
+              run: xvfb-run -a pnpm test
+              if: runner.os == 'Linux'
+
+            - name: run tests (non-linux)
+              run: pnpm test
+              if: runner.os != 'Linux'
+  publish:
+        needs: test
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: pnpm/action-setup@v3 # Install pnpm using packageManager key in package.json
+            - name: Use Node.js 20
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 20
+                  cache: "pnpm"
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+            
+            - name: Build Extension
+              run: pnpm build
+            
+            - name: Create GitHub Release
+              env:
+                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                gh release create ${{ github.ref_name }} \
+                  --title "Release ${{ github.ref_name }}" \
+                  --fail-on-no-commits
+            
+            - name: Package Extension
+              run: pnpm vsce package
+              
+            - name: Upload Package to Release
+              env:
+                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                gh release upload ${{ github.ref_name }} *.vsix
+
+            - name: Publish Extension to VS Code Marketplace
+              env: 
+                VSCE_PAT: ${{ secrets.VSCE_PAT }}
+              run: pnpm publish

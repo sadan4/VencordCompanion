@@ -1,3 +1,16 @@
+.direnv/**
+flake.nix
+flake.lock
+eslint.config.mts
+.eslintcache
+.vscode-test.mjs
+dist.test
+.github
+.envrc
+.mocharc.jsonc
+nodemon.json
+*.tgz
+patches
 .vscode/**
 .vscode-test/**
 src/**

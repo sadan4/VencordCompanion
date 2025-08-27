@@ -98,3 +98,8 @@ jobs:
               env: 
                 VSCE_PAT: ${{ secrets.VSCE_PAT }}
               run: pnpm publishExtension
+
+            - name: Publish Extension to Open VSX Marketplace
+              env:
+                OVSX_PAT: ${{ secrets.OVSX_PAT }}
+              run: pnpm publishOvsx

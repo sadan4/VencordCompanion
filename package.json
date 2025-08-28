@@ -61,7 +61,7 @@
         "@types/chai": "^4.3.16",
         "@types/mocha": "^10.0.10",
         "@types/node": "~22.13.1",
-        "@types/vscode": "^1.80.0",
+        "@types/vscode": "1.80.0",
         "@types/ws": "^8.5.14",
         "@typescript-eslint/eslint-plugin": "^8.23.0",
         "@typescript-eslint/parser": "^8.23.0",
@@ -168,12 +168,17 @@
         "ui"
     ],
     "homepage": "https://github.com/sadan4/VencordCompanion",
-    "packageManager": "pnpm@9.1.4+sha512.9df9cf27c91715646c7d675d1c9c8e41f6fce88246f1318c1aa6a1ed1aeb3c4f032fcdf4ba63cc69c4fe6d634279176b5358727d8f2cc1e65b65f43ce2f8bfb0",
+    "packageManager": "pnpm@10.15.0+sha512.486ebc259d3e999a4e8691ce03b5cac4a71cbeca39372a9b762cb500cfdf0873e2cb16abe3d951b1ee2cf012503f027b98b6584e4df22524e0c7450d9ec7aa7b",
     "pnpm": {
         "patchedDependencies": {
             "@vscode/test-cli@0.0.10": "patches/@vscode__test-cli@0.0.10.patch",
             "@types/ws@8.5.14": "patches/@types__ws@8.5.14.patch"
-        }
+        },
+        "onlyBuiltDependencies": [
+            "@vscode/vsce-sign",
+            "esbuild",
+            "keytar"
+        ]
     },
     "_vsce": "see https://github.com/microsoft/vscode-vsce/blob/main/src/main.ts for types",
     "vsce": {

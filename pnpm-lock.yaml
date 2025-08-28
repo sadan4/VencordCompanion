@@ -4,6 +4,15 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+catalogs:
+  default:
+    tsutils:
+      specifier: ^3.21.0
+      version: 3.21.0
+    typescript:
+      specifier: ^5.8.2
+      version: 5.8.2
+
 patchedDependencies:
   '@types/ws@8.5.14':
     hash: 431d7dda5df72ef614bdb1190df56f7422570166615913953407418c8eb9b713
@@ -29,10 +38,10 @@ importers:
         specifier: ^5.0.9
         version: 5.1.2
       tsutils:
-        specifier: ^3.21.0
+        specifier: 'catalog:'
         version: 3.21.0(typescript@5.8.2)
       typescript:
-        specifier: ^5.7.3
+        specifier: 'catalog:'
         version: 5.8.2
       ws:
         specifier: ^8.18.0

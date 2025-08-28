@@ -1,9 +1,5 @@
 import { format } from "@modules/format";
 import { outputChannel } from "@modules/logging";
-import { mkStringUri } from "@modules/util";
-import { Functionish } from "@type/ast";
-
-import { Cache, CacheGetter, CharCode, isEOL } from "./util";
 
 import { collectVariableUsage, VariableInfo } from "tsutils/util/usage";
 import { getTokenAtPosition } from "tsutils/util/util";
@@ -135,6 +131,7 @@ export class AstParser {
      * Returns an {@link Uri} for this file that can be used
      * to open this file.
      */
+    // FIXME: PACKAGE -
     public mkStringUri(): Uri {
         return mkStringUri(this.text);
     }

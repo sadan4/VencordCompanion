@@ -1,15 +1,22 @@
-import { format } from "@modules/format";
-import { outputChannel } from "@modules/logging";
+import { Format } from "@sadan4/devtools-pretty-printer";
+import { Cache, CacheGetter } from "@vencord-companion/shared/decorators";
+import { type Logger, NoopLogger } from "@vencord-companion/shared/Logger";
+import { IPosition, Position } from "@vencord-companion/shared/Position";
+import { Range } from "@vencord-companion/shared/Range";
 
-import { collectVariableUsage, VariableInfo } from "tsutils/util/usage";
+import { StringifiedModule } from "./StringifiedModule";
+import { Functionish } from "./types";
+import { CharCode, isEOL } from "./util";
+
+import { collectVariableUsage, type VariableInfo } from "tsutils/util/usage";
 import { getTokenAtPosition } from "tsutils/util/util";
 import {
-    AssignmentExpression,
-    AssignmentOperatorToken,
-    CallExpression,
+    type AssignmentExpression,
+    type AssignmentOperatorToken,
+    type CallExpression,
     createSourceFile,
-    Expression,
-    Identifier,
+    type Expression,
+    type Identifier,
     isArrowFunction,
     isBigIntLiteral,
     isBinaryExpression,
@@ -27,23 +34,28 @@ import {
     isSetAccessorDeclaration,
     isStringLiteralLike,
     isVariableDeclaration,
-    LeftHandSideExpression,
-    LiteralToken,
-    MemberName,
-    Node,
-    PropertyAccessExpression,
-    ReadonlyTextRange,
+    type LeftHandSideExpression,
+    type LiteralToken,
+    type MemberName,
+    type Node,
+    type PropertyAccessExpression,
+    type ReadonlyTextRange,
     ScriptKind,
     ScriptTarget,
-    SourceFile,
+    type SourceFile,
     SyntaxKind,
-    VariableDeclaration,
+    type VariableDeclaration,
 } from "typescript";
-import { Position, Range, Uri } from "vscode";
+
+let logger: Logger = NoopLogger;
+
+export function setLogger(newLogger: Logger) {
+    logger = newLogger;
+}
 
 export class AstParser {
     public static withFormattedText(text: string) {
-        return new this(format(text));
+        return new this(Format(text));
     }
 
     public readonly text: string;
@@ -65,7 +77,7 @@ export class AstParser {
         const toRet = [...this.vars.values()].find((x) => x.uses.some((use) => use.location === ident));
 
         if (!toRet) {
-            outputChannel.trace("[AstParser] getVarInfoFromUse: no variable info found for identifier");
+            logger.trace("[AstParser] getVarInfoFromUse: no variable info found for identifier");
         }
         return toRet;
     }
@@ -120,7 +132,7 @@ export class AstParser {
         }
         if (arr.length !== 0)
             return arr;
-        outputChannel.debug("[AstParser] Failed finding variable declaration");
+        logger.debug("[AstParser] Failed finding variable declaration");
     }
 
     public isCallExpression(node: Node | undefined): node is CallExpression {
@@ -128,12 +140,13 @@ export class AstParser {
     }
 
     /**
-     * Returns an {@link Uri} for this file that can be used
-     * to open this file.
+     * Used for interop with other systems
      */
     // FIXME: PACKAGE -
-    public mkStringUri(): Uri {
-        return mkStringUri(this.text);
+    public serialize(): StringifiedModule {
+        return {
+            content: this.text,
+        } satisfies StringifiedModule;
     }
 
     /**
@@ -259,7 +272,7 @@ export class AstParser {
         return getTokenAtPosition(this.sourceFile, pos, this.sourceFile, false);
     }
 
-    public getTokenAtPosition(pos: Position): Node | undefined {
+    public getTokenAtPosition(pos: IPosition): Node | undefined {
         return this.getTokenAtOffset(this.offsetAt(pos));
     }
 
@@ -289,15 +302,15 @@ export class AstParser {
         const { declarations } = this.getVarInfoFromUse(ident) ?? {};
 
         if (!declarations) {
-            outputChannel.debug("makeRangeFromFunctionDef: no declarations found for identifier");
+            logger.debug("makeRangeFromFunctionDef: no declarations found for identifier");
             return undefined;
         }
         if (declarations.length !== 1) {
-            outputChannel.debug("makeRangeFromFunctionDef: zero or multiple declarations found for identifier");
+            logger.debug("makeRangeFromFunctionDef: zero or multiple declarations found for identifier");
             return undefined;
         }
         if (declarations[0].parent && !isFunctionLike(declarations[0].parent)) {
-            outputChannel.debug("makeRangeFromFunctionDef: dec. parent is not a function");
+            logger.debug("makeRangeFromFunctionDef: dec. parent is not a function");
             return undefined;
         }
         return this.makeRangeFromAstNode(declarations[0]);
@@ -336,7 +349,7 @@ export class AstParser {
      * @return A valid zero-based offset.
      */
     // copied from vscode-languageserver-node
-    public offsetAt(position: Position): number {
+    public offsetAt(position: IPosition): number {
         const { lineOffsets } = this;
 
         if (position.line >= lineOffsets.length) {

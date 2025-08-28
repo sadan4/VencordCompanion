@@ -1,60 +1,6 @@
-import { Cache, CacheGetter, debounce, isWebpackModule, zeroRange } from "@ast/util";
+import { Cache, CacheGetter } from "./decorators";
 
-import { expect } from "chai";
-import randomData from "test://random";
-import { Range } from "vscode";
-
-describe("debounce()", function () {
-    it("resets the timeout correctly", async function () {
-        let i = 0;
-        const debouncedFunc = debounce(() => i++, 100);
-
-        debouncedFunc();
-        debouncedFunc();
-        debouncedFunc();
-        await new Promise((resolve) => setTimeout(resolve, 50));
-        debouncedFunc();
-        await new Promise((resolve) => setTimeout(resolve, 125));
-        expect(i).to.equal(1);
-    });
-});
-
-describe("debounceAsync()", function () {
-    it.skip("TODO", function () {
-    });
-});
-
-describe("isWebpackModule", function () {
-    it("fails on random data", function () {
-        expect(isWebpackModule(randomData)).to.be.false;
-    });
-    it("throws on an object", function () {
-        // @ts-expect-error it should throw a type error
-        expect(() => isWebpackModule({})).to.throw();
-    });
-    it("fails on an empty string", function () {
-        expect(isWebpackModule("")).to.be.false;
-    });
-    it("works on a module", function () {
-        const file: string = require("test://ast/util/webpackHeader.js");
-
-        expect(isWebpackModule(file)).to.be.true;
-    });
-    it("works on an extracted find", function () {
-        const file: string = require("test://ast/util/extractedFindHeader.js");
-
-        expect(isWebpackModule(file)).to.be.true;
-    });
-});
-describe("zeroRange", function () {
-    it("is empty", function () {
-        expect(zeroRange.isEmpty).to.be.true;
-    });
-    it("is equal to a new zero range", function () {
-        expect(zeroRange.isEqual(new Range(0, 0, 0, 0))).to.be.true;
-    });
-});
-
+import { describe, expect, it } from "vitest";
 describe("@CacheGetter()", function () {
     const mkTestClass = () => {
         class TestCachingGetters {
@@ -267,4 +213,3 @@ describe("@Cache()", function () {
         });
     });
 });
-

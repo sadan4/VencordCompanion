@@ -1,8 +1,5 @@
 import { AstParser } from "@ast/AstParser";
 import {
-    Cache,
-    CacheGetter,
-    findObjectLiteralByKey,
     getImportName,
     getImportSource,
     isDefaultImport,

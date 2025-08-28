@@ -1,9 +1,6 @@
-import { AstParser } from "@ast/AstParser";
+import { Format } from "@sadan4/devtools-pretty-printer";
 import {
-    allEntries,
-    Cache,
-    CacheGetter,
-    containsPosition,
+    AstParser,
     findObjectLiteralByKey,
     findParent,
     findReturnIdentifier,
@@ -11,24 +8,27 @@ import {
     getLeadingIdentifier,
     isSyntaxList,
     lastParent,
-    zeroRange,
-} from "@ast/util";
-import { outputChannel } from "@extension";
-import { ModuleCache, ModuleDepManager } from "@modules/cache";
-import { format } from "@modules/format";
-import { formatModule } from "@modules/util";
-import { sendAndGetData } from "@server/index";
+} from "@vencord-companion/ast-parser";
+import { Cache, CacheGetter } from "@vencord-companion/shared/decorators";
+import { Logger, NoopLogger } from "@vencord-companion/shared/Logger";
+import { Position } from "@vencord-companion/shared/Position";
+import { Range } from "@vencord-companion/shared/Range";
+import { zeroRange } from "@vencord-companion/shared/Range";
+
 import {
-    Definitions,
+    Definition,
     ExportMap,
     ExportRange,
+    IModuleCache,
+    IModuleDepManager,
     ModuleDeps,
     RangeExportMap,
     RawExportMap,
     RawExportRange,
-    References,
+    Reference,
     Store,
-} from "@type/ast";
+} from "./types";
+import { allEntries, containsPosition, formatModule } from "./util";
 
 import { isAccessorDeclaration } from "tsutils";
 import { VariableInfo } from "tsutils/util/usage";
@@ -65,13 +65,43 @@ import {
     ScriptTarget,
     SourceFile,
 } from "typescript";
-import { Location, Position, Range } from "vscode";
+
+let logger: Logger = NoopLogger;
+
+export function setLogger(l: Logger): void {
+    logger = l;
+}
 
 // FIXME: rewrite to use module cache
 
 type Nullish = undefined | null;
 
 export class WebpackAstParser extends AstParser {
+    private static defaultModuleCache: (self: WebpackAstParser) => IModuleCache = () => {
+        throw new Error("No default module cache set, please set one with WebpackAstParser.setDefaultModuleCache");
+    };
+
+    public static setDefaultModuleCache(cache: IModuleCache | ((self: WebpackAstParser) => IModuleCache)): void {
+        if (typeof cache === "function") {
+            this.defaultModuleCache = cache;
+        } else {
+            this.defaultModuleCache = () => cache;
+        }
+    }
+
+    private static defaultModuleDepManager: (self: WebpackAstParser) => IModuleDepManager = () => {
+        throw new Error("No default module dependency manager set, please set one with WebpackAstParser.setDefaultModuleDepManager");
+    };
+
+    // eslint-disable-next-line @stylistic/max-len
+    public static setDefaultModuleDepManager(manager: IModuleDepManager | ((self: WebpackAstParser) => IModuleDepManager)): void {
+        if (typeof manager === "function") {
+            this.defaultModuleDepManager = manager;
+        } else {
+            this.defaultModuleDepManager = () => manager;
+        }
+    }
+
     /**
      * This is set on {@link RangeExportMap} when the default export is commonjs and has no properties, eg, string literal, function
      */
@@ -85,11 +115,11 @@ export class WebpackAstParser extends AstParser {
      * NOTE: you probably want {@link WebpackAstParser.withFormattedModule|withFormattedModule}
      */
     public static override withFormattedText(text: string): WebpackAstParser {
-        return new this(format(text));
+        return new this(Format(text));
     }
 
     public static withFormattedModule(text: string, moduleId: string | number): WebpackAstParser {
-        return new this(format(formatModule(text, moduleId)));
+        return new this(Format(formatModule(text, moduleId)));
     }
 
     /**
@@ -124,6 +154,16 @@ export class WebpackAstParser extends AstParser {
             return id || null;
         }
         return null;
+    }
+
+    @CacheGetter()
+    get moduleCache(): IModuleCache {
+        return WebpackAstParser.defaultModuleCache(this);
+    }
+
+    @CacheGetter()
+    get moduleDepManager(): IModuleDepManager {
+        return WebpackAstParser.defaultModuleDepManager(this);
     }
 
     public constructor(text: string) {
@@ -163,11 +203,7 @@ export class WebpackAstParser extends AstParser {
             return null;
         }
 
-        if (!ModuleDepManager.hasModDeps()) {
-            await ModuleDepManager.initModDeps({ fromDisk: true });
-        }
-
-        const guh = ModuleDepManager.getModDeps(this.moduleId);
+        const guh = this.moduleDepManager.getModDeps(this.moduleId);
 
         return {
             lazy: guh.lazyUses,
@@ -221,7 +257,7 @@ export class WebpackAstParser extends AstParser {
         };
     }
 
-    public async generateDefinitions(position: Position): Definitions {
+    public async generateDefinitions(position: Position): Promise<Definition[] | undefined> {
         if (!this.uses)
             throw new Error("Wreq isn't used anywhere");
 
@@ -259,24 +295,22 @@ export class WebpackAstParser extends AstParser {
         if (!moduleId)
             return;
 
-        const res = await sendAndGetData<"rawId">({
-            type: "rawId",
-            data: {
-                id: moduleId,
-            },
-        })
-            .catch(outputChannel.error);
+        const res = await this.moduleCache.getLatestModuleFromNum(moduleId)
+            .catch(logger.error);
 
-        if (res?.data == null)
+        if (res == null)
             return;
 
-        let cur = WebpackAstParser.withFormattedModule(res.data, moduleId);
+        let cur = WebpackAstParser.withFormattedModule(res, moduleId);
 
         if (names.length < 1) {
-            return {
-                range: zeroRange,
-                uri: cur.mkStringUri(),
-            };
+            return [
+                {
+                    range: zeroRange,
+                    locationType: "inline",
+                    content: cur.text,
+                },
+            ];
         }
 
 
@@ -292,29 +326,27 @@ export class WebpackAstParser extends AstParser {
 
             [, names] = ret;
 
-            const res = await sendAndGetData<"rawId">({
-                type: "rawId",
-                data: {
-                    id: +importSourceId,
-                },
-            })
-                .catch(outputChannel.error);
+            const res = await this.moduleCache.getLatestModuleFromNum(importSourceId)
+                .catch(logger.error);
 
-            if (!res?.data) {
-                outputChannel.error("Failed to get data from client");
+            if (!res) {
+                logger.error("Failed to get data from client");
                 return;
             }
 
-            cur = WebpackAstParser.withFormattedModule(res.data, importSourceId);
+            cur = WebpackAstParser.withFormattedModule(res, importSourceId);
         }
 
         const maybeRange: Range = cur
             .findExportLocation(names.map((x) => x.text));
 
-        return {
-            range: maybeRange,
-            uri: cur.mkStringUri(),
-        };
+        return [
+            {
+                range: maybeRange,
+                locationType: "inline",
+                content: cur.text,
+            },
+        ];
         // const maybeRange = new WebpackAstParser(res.data)
         //     .findExportLocation(names.map((x) => x.text));
 
@@ -388,17 +420,13 @@ export class WebpackAstParser extends AstParser {
         return num;
     }
 
-    public async generateReferences(position: Position): References {
+    public async generateReferences(position: Position): Promise<Reference[] | undefined> {
         if (!this.moduleId)
             throw new Error("Could not find module id of module to search for references of");
 
-        if (!ModuleDepManager.hasModDeps()) {
-            await ModuleDepManager.initModDeps({ fromDisk: true });
-        }
-
         const moduleExports = this.getExportMap();
         const where = await this.getModulesThatRequireThisModule();
-        const locs: Location[] = [];
+        const locs: Reference[] = [];
 
         const exportedNames = Object.entries(moduleExports)
             .filter(([, exportRange]) => containsPosition(exportRange, position));
@@ -431,7 +459,7 @@ export class WebpackAstParser extends AstParser {
                 }
                 (seen[importedId] ||= new Set()).add(modId);
 
-                const modText = await ModuleCache.getModuleFromNum(modId);
+                const modText = await this.moduleCache.getModuleFromNum(modId);
 
                 if (!modText)
                     continue;
@@ -451,7 +479,22 @@ export class WebpackAstParser extends AstParser {
                     left.push(...where?.sync.map((x) => [x, parser.moduleId!, exportedAs] as ElementType) ?? []);
                 }
 
-                locs.push(...uses.map((x) => new Location(ModuleCache.getModuleURI(modId), x)));
+                locs.push(...uses.map((x): Reference => {
+                    const maybeFilePath = this.moduleCache.getModuleFilepath(modId);
+
+                    if (maybeFilePath) {
+                        return {
+                            range: x,
+                            locationType: "file_path",
+                            filePath: maybeFilePath,
+                        };
+                    }
+                    return {
+                        range: x,
+                        locationType: "inline",
+                        content: this.text,
+                    };
+                }));
             }
         }
         return locs;
@@ -493,7 +536,7 @@ export class WebpackAstParser extends AstParser {
                     // you cant discriminate against destructured unions
                     return this.isUseOf(module, decl) && reExport!.text === exportName;
                 }
-                outputChannel.warn(`[WebpackAstParser] Unhandled type for reExport: ${v.kind}`);
+                logger.warn(`[WebpackAstParser] Unhandled type for reExport: ${v.kind}`);
                 return false;
             })
             .map(([k]) => k);
@@ -677,7 +720,7 @@ export class WebpackAstParser extends AstParser {
         const [id] = initExpr.arguments;
 
         if (!this.isLiteralish(id)) {
-            outputChannel.warn("id is not literalish");
+            logger.warn("id is not literalish");
             return;
         }
 
@@ -865,13 +908,13 @@ export class WebpackAstParser extends AstParser {
                 .map((x): false | [string | symbol, RawExportMap[PropertyKey]][] => {
                     if (isSpreadAssignment(x)) {
                         if (!isIdentifier(x.expression)) {
-                            outputChannel.error("Spread assignment is not an identifier, this should be handled");
+                            logger.error("Spread assignment is not an identifier, this should be handled");
                         }
 
                         const spread = this.rawMakeExportMapRecursive(x.expression);
 
                         if (Array.isArray(spread)) {
-                            outputChannel.warn("Identifier in object spread is not an object, this should be handled");
+                            logger.warn("Identifier in object spread is not an object, this should be handled");
                             return false;
                         }
 
@@ -930,14 +973,14 @@ export class WebpackAstParser extends AstParser {
             const trail = this.unwrapVariableDeclaration(node);
 
             if (!trail || trail.length === 0) {
-                outputChannel.warn("Could not find variable declaration for identifier");
+                logger.warn("Could not find variable declaration for identifier");
                 return [];
             }
 
             const last = this.getVariableInitializer(trail.at(-1)!);
 
             if (!last) {
-                outputChannel.trace("[WebpackAstParser] Could not find initializer of identifier");
+                logger.trace("[WebpackAstParser] Could not find initializer of identifier");
                 return [trail.at(-1)!];
             }
             return this.rawMakeExportMapRecursive(last);
@@ -1004,7 +1047,7 @@ export class WebpackAstParser extends AstParser {
         )?.right;
 
         if (!exportObject) {
-            outputChannel.debug("Could not find export object");
+            logger.debug("Could not find export object");
             return undefined;
         }
 
@@ -1109,7 +1152,7 @@ export class WebpackAstParser extends AstParser {
             return;
 
         if (!isIdentifier(node)) {
-            outputChannel.debug("[WebpackAstParser] Could not find identifier for store export");
+            logger.debug("[WebpackAstParser] Could not find identifier for store export");
             return;
         }
 
@@ -1131,7 +1174,7 @@ export class WebpackAstParser extends AstParser {
         if (uses.length === 0) {
             return;
         } else if (uses.length > 1) {
-            outputChannel.warn(`[WebpackAstParser] Found more than one store assignment in module ${this.moduleId}, this should not happen`);
+            logger.warn(`[WebpackAstParser] Found more than one store assignment in module ${this.moduleId}, this should not happen`);
             return;
         }
 
@@ -1155,7 +1198,7 @@ export class WebpackAstParser extends AstParser {
         const store = this.tryParseStore(initializer);
 
         if (!store) {
-            outputChannel.debug("[WebpackAstParser] Failed to parse store");
+            logger.debug("[WebpackAstParser] Failed to parse store");
             return;
         }
 
@@ -1195,20 +1238,20 @@ export class WebpackAstParser extends AstParser {
                 break parseArgs;
 
             if (args.length !== 2) {
-                outputChannel.debug(`[WebpackAstParser] Incorrect number of arguments for a store instantiation, expected 2, found ${args?.length}`);
+                logger.debug(`[WebpackAstParser] Incorrect number of arguments for a store instantiation, expected 2, found ${args?.length}`);
                 break parseArgs;
             }
 
             const [, events] = args;
 
             if (!isObjectLiteralExpression(events)) {
-                outputChannel.warn("[WebpackAstParser] Expected the flux events to be an object literal expression");
+                logger.warn("[WebpackAstParser] Expected the flux events to be an object literal expression");
                 break parseArgs;
             }
             // FIXME: extract into function
             for (const prop of events.properties) {
                 if (!isPropertyAssignment(prop)) {
-                    outputChannel.debug("[WebpackAstParser] found prop that is not a property assignment, this should be handled");
+                    logger.debug("[WebpackAstParser] found prop that is not a property assignment, this should be handled");
                     continue;
                 }
                 ret.fluxEvents[prop.name.getText()] = [prop.initializer];
@@ -1223,7 +1266,7 @@ export class WebpackAstParser extends AstParser {
         }
         if (!isIdentifier(storeVar)) {
             // TODO: parse this
-            outputChannel.debug("[WebpackAstParser] anything than an identifier is not supported for store instantiations yet");
+            logger.debug("[WebpackAstParser] anything than an identifier is not supported for store instantiations yet");
             return;
         }
         ret.store.push(storeVar);
@@ -1231,11 +1274,11 @@ export class WebpackAstParser extends AstParser {
         const storeVarInfo = this.getVarInfoFromUse(storeVar);
 
         if (!storeVarInfo || storeVarInfo.declarations.length === 0) {
-            outputChannel.debug("[WebpackAstParser] Could not find store declaration");
+            logger.debug("[WebpackAstParser] Could not find store declaration");
             return;
         }
         if (storeVarInfo.declarations.length > 1) {
-            outputChannel.warn("[WebpackAstParser] Found more than one store declaration, this should not happen");
+            logger.warn("[WebpackAstParser] Found more than one store declaration, this should not happen");
             return;
         }
 
@@ -1246,7 +1289,7 @@ export class WebpackAstParser extends AstParser {
         const classDecl = decl.parent;
 
         if (!isClassDeclaration(classDecl)) {
-            outputChannel.warn("[WebpackAstParser] Store decl is not a class");
+            logger.warn("[WebpackAstParser] Store decl is not a class");
             return;
         }
 
@@ -1256,7 +1299,7 @@ export class WebpackAstParser extends AstParser {
         const doesExtend = (classDecl.heritageClauses?.length ?? -1) > 0;
 
         if (!doesExtend) {
-            outputChannel.debug("[WebpackAstParser] Store class does not extend Store");
+            logger.debug("[WebpackAstParser] Store class does not extend Store");
             return;
         }
 
@@ -1270,7 +1313,7 @@ export class WebpackAstParser extends AstParser {
                 ret.store.push(member);
             } else if (isPropertyDeclaration(member)) {
                 if (!member.initializer) {
-                    outputChannel.warn("Property declaration has no initializer, this should not happen");
+                    logger.warn("Property declaration has no initializer, this should not happen");
                     continue;
                 }
                 ret.props[member.name.getText()] = member.initializer;
@@ -1279,7 +1322,7 @@ export class WebpackAstParser extends AstParser {
                     continue;
                 ret.methods[member.name.getText()] = member;
             } else {
-                outputChannel.warn("Unhandled store member type. This should be handled");
+                logger.warn("Unhandled store member type. This should be handled");
             }
         }
         return ret;
@@ -1311,7 +1354,7 @@ export class WebpackAstParser extends AstParser {
                 const arr = ret[WebpackAstParser.SYM_CJS_DEFAULT];
 
                 if (!Array.isArray(arr)) {
-                    outputChannel.error("CJS default export is not an array, this should be never happen");
+                    logger.error("CJS default export is not an array, this should be never happen");
                     continue;
                 }
                 arr.push(member.getChildAt(0));
@@ -1324,7 +1367,7 @@ export class WebpackAstParser extends AstParser {
             } else if (isSemicolonClassElement(member)) {
                 // ignore this
             } else {
-                outputChannel.warn("Unhandled class member type. This should be handled");
+                logger.warn("Unhandled class member type. This should be handled");
             }
         }
 
@@ -1337,7 +1380,7 @@ export class WebpackAstParser extends AstParser {
     tryParseClassDeclaration(node: Node, extraExportRanges: Node[]): RawExportMap | undefined {
         if (!isIdentifier(node)) {
             // FIXME: handle this
-            outputChannel.trace("[WebpackAstParser] trying to parse a class decl starting with a non-identifier node, this should be handled");
+            logger.trace("[WebpackAstParser] trying to parse a class decl starting with a non-identifier node, this should be handled");
             return;
         }
 
@@ -1350,7 +1393,7 @@ export class WebpackAstParser extends AstParser {
         // if someone proves me wrong on this (with an example in discord's code), ill support it
         if (varInfo.declarations.length !== 1) {
             if (varInfo.declarations.length > 1) {
-                outputChannel.error("[WebpackAstParser] Found more than one class declaration. this should not happen");
+                logger.error("[WebpackAstParser] Found more than one class declaration. this should not happen");
             }
             return;
         }
@@ -1390,7 +1433,7 @@ export class WebpackAstParser extends AstParser {
                 if (g)
                     range = g;
                 else
-                    outputChannel.error("Empty array of exports");
+                    logger.error("Empty array of exports");
                 break;
                 // fallback to the most appropriate thing
                 // most of the time, it's the default export
@@ -1400,7 +1443,7 @@ export class WebpackAstParser extends AstParser {
                 if (g)
                     range = g;
                 else
-                    outputChannel.error("Empty array of exports");
+                    logger.error("Empty array of exports");
             }
         }
         return range;
@@ -1567,7 +1610,7 @@ export class WebpackAstParser extends AstParser {
 
         while ((cur = toSearch.pop())) {
             const [thisParser, moduleId, exportName] = cur;
-            const moduleText = await ModuleCache.getModuleFromNum(moduleId);
+            const moduleText = await this.moduleCache.getModuleFromNum(moduleId);
             const otherParser = new WebpackAstParser(moduleText);
 
             if (!(thisParser.moduleId && otherParser.moduleId)) {

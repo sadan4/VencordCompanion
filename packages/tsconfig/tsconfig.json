@@ -1,0 +1,18 @@
+{
+    "compilerOptions": {
+        "module": "esnext",
+        "moduleResolution": "bundler",
+        "target": "es2020",
+        "sourceMap": true,
+        "strict": true,
+        "noImplicitThis": true,
+        "noImplicitOverride": true,
+        "esModuleInterop": true,
+        "useUnknownInCatchVariables": false,
+        "resolveJsonModule": true,
+        "experimentalDecorators": true,
+    },
+    "exclude": [
+        "node_modules"
+    ]
+}

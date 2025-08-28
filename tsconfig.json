@@ -32,7 +32,7 @@
             "@tests/*": ["./src/tests/*"]
         }
     },
-    "include": ["src", "eslint.config.mts", "packages/ast-parser/src/AstParser.ts", "packages/ast-parser/src/AstParser.test.ts"],
+    "include": ["src", "eslint.config.mts", "packages/webpack-ast-parser/src/WebpackAstParser.test.ts", "packages/webpack-ast-parser/src/WebpackAstParser.ts"],
     // ignore our webview
-    "exclude": ["assets/**"]
+    "exclude": ["assets/**", "packages"]
 }

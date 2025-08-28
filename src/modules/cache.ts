@@ -37,8 +37,8 @@ class _ModuleCache {
         this.folder = folder;
     }
 
-    public getModuleURI(id: string) {
-        return Uri.file(this.getModulePath(id));
+    public getModuleURL(id: string): URL {
+        return new URL(`file://${this.getModulePath(id)}`);
     }
 
     public getModulePath(id: string): string {
@@ -221,16 +221,7 @@ type DepsGeneratorOpts =
     }
 );
 
-type MainDeps = Record<string, {
-    /**
-     * the modules that require this module syncranously
-     */
-    syncUses: string[];
-    /**
-     * the modules that require this module lazily
-     */
-    lazyUses: string[];
-}>;
+type MainDeps = Record<string, ModuleDep>;
 
 interface KeyModules {
     fluxDispatcherClass: [moduleId: string, exportName: string | symbol][];

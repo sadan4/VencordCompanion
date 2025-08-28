@@ -1,22 +1,19 @@
 {
-  "name": "@vencord-companion/ast-parser",
+  "name": "@vencord-companion/webpack-ast-parser",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "vitest"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.15.0",
-  "exports": {
-    ".": "./src/index.ts"
-  },
   "dependencies": {
     "@sadan4/devtools-pretty-printer": "catalog:",
-    "@vencord-companion/shared": "workspace:*",
-    "typescript": "catalog:"
+    "@vencord-companion/ast-parser": "workspace:*",
+    "@vencord-companion/shared": "workspace:*"
   },
   "devDependencies": {
     "vitest": "catalog:"

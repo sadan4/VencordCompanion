@@ -1,11 +1,21 @@
-import { AstParser } from "@ast/AstParser";
+import { Position } from "@vencord-companion/shared/Position";
 
-import { expect } from "chai";
+import { AstParser } from "./AstParser";
+
+import { readFileSync } from "fs";
+import { join } from "path";
+
 import { SyntaxKind } from "typescript";
-import { Position } from "vscode";
+import { describe, expect, it } from "vitest";
+
+const __dirname = import.meta.dirname;
+
+function getFile(asset: string): string {
+    return readFileSync(join(__dirname, "__test__", asset), "utf-8");
+}
 
 describe("AstParser", function () {
-    const file: string = require("test://ast/AstParser/file.js");
+    const file: string = getFile("file.js");
 
     expect(file).to.be.a("string");
 

@@ -580,8 +580,8 @@ const styleRules: Partial<_RuleOptions> = {
 
 const extensions = "{js,mjs,cjs,jsx,mjsx,cjsx,ts,mts,cts,tsx,mtsx,ctsx}";
 
-export default TSEslint.config({ ignores: ["dist", "src/webview"] }, {
-    files: [`src/**/*.${extensions}`, `eslint.config.${extensions}`],
+export default TSEslint.config({ ignores: ["dist", "src/webview", "node_modules"] }, {
+    files: [`src/**/*.${extensions}`, `eslint.config.${extensions}`, `packages/**/*.${extensions}`],
     plugins: {
         "@stylistic": stylistic,
         "@typescript-eslint": TSEslint.plugin,

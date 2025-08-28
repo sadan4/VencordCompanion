@@ -26,9 +26,6 @@ jobs:
             - name: Install dependencies
               run: pnpm install --frozen-lockfile
 
-            - name: Test if tests compile
-              run: pnpm build:test
-
             - name: Test if it bundles
               run: pnpm build
               
@@ -45,13 +42,9 @@ jobs:
             - name: Test if type checking passes
               run: pnpm typecheck
 
-            - name: run tests linux
-              run: xvfb-run -a pnpm test
-              if: runner.os == 'Linux'
-
-            - name: run tests (non-linux)
+            - name: run tests
               run: pnpm test
-              if: runner.os != 'Linux'
+
   publish:
         needs: test
         runs-on: ubuntu-latest

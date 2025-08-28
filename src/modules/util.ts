@@ -178,22 +178,6 @@ export async function isDirectory(path: PathLike) {
     return (await stat(path)).isDirectory();
 }
 /**
- * **does not** format the modules code see {@link format} for more code formating
-
- * takes the raw contents of a module and prepends a header
- * @param moduleContents the module
- * @param moduleId the module id
- * @param isFind if the module is coming from a find
-    eg: is it a partial module
- * @returns a string with the formatted module
- */
-
-export function formatModule(moduleContents: string, moduleId: string | number | undefined = "000000", isFind?: boolean): string {
-    if (isFind)
-        return `// Webpack Module ${moduleId} \n${isFind ? `//OPEN FULL MODULE: ${moduleId}\n` : ""}//EXTRACED WEPBACK MODULE ${moduleId}\n 0,\n${moduleContents}`;
-    return moduleContents;
-}
-/**
  * converts a string into a URI that will resolve to a file with the contents of the string
  * @param patched the contents of the file
  * @param filename the name of the file

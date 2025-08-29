@@ -1,45 +1,47 @@
-import { AstParser } from "@ast/AstParser";
 import {
+    AstParser,
+    findObjectLiteralByKey,
     getImportName,
     getImportSource,
+    Import,
     isDefaultImport,
     isInImportStatment,
-    isNamespaceImport,
-    parsePatch,
-    tryParseFunction,
-    tryParseRegularExpressionLiteral,
-    tryParseStringLiteral,
-} from "@ast/util";
-import { FindUse, Import, SourcePatch, WithParent } from "@type/ast";
-import { TestFind } from "@type/server";
+    WithParent,
+} from "@vencord-companion/ast-parser";
+import { Cache, CacheGetter } from "@vencord-companion/shared/decorators";
 
+import { FindUse, SourcePatch, TestFind } from "./types";
+import { parsePatch, tryParseFunction, tryParseRegularExpressionLiteral, tryParseStringLiteral } from "./util";
+
+import { readFile } from "node:fs/promises";
 import { DeclarationDomain } from "tsutils/util/usage";
 import {
     CallExpression,
     Identifier,
     isArrayLiteralExpression,
     isCallExpression,
+    isNamespaceImport,
     isObjectLiteralExpression,
     isPropertyAssignment,
     isStringLiteral,
     ObjectLiteralExpression,
 } from "typescript";
-import { TextDocument, Uri, workspace } from "vscode";
+
 export class VencordAstParser extends AstParser {
-    private doc: TextDocument;
+    private path: string;
 
     @CacheGetter()
     public get imports(): Map<Identifier, Import> {
         return this.listImports();
     }
 
-    constructor(doc: TextDocument) {
-        super(doc.getText());
-        this.doc = doc;
+    constructor(content: string, path: string) {
+        super(content);
+        this.path = path;
     }
 
-    public static async fromUri(uri: Uri) {
-        return new VencordAstParser(await workspace.openTextDocument(uri));
+    public static async fromPath(path: string) {
+        return new VencordAstParser(await readFile(path, "utf-8"), path);
     }
 
     @Cache()
@@ -99,7 +101,7 @@ export class VencordAstParser extends AstParser {
                 if (!isObjectLiteralExpression(x))
                     return null;
 
-                const res = parsePatch(this.doc, x);
+                const res = parsePatch(this.path, x);
 
                 if (!res)
                     return null;
@@ -131,7 +133,7 @@ export class VencordAstParser extends AstParser {
                 const args = call.arguments.map((x) => {
                     return tryParseStringLiteral(x)
                       ?? tryParseRegularExpressionLiteral(x)
-                      ?? tryParseFunction(this.doc, x);
+                      ?? tryParseFunction(this.path, x);
                 });
 
                 const range = this.makeRangeFromAstNode(call);

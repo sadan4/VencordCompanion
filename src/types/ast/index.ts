@@ -1,17 +1,4 @@
-import { PatchData, TestFind } from "@type/server";
-
-import { Definition, Location, LocationLink, Range } from "vscode";
-
-
-/**
- * a parsed patch, as it appears in a source file
- */
-export type SourcePatch = (PatchData & { range: Range;
-    origIndex: number; });
-export type FindUse = {
-    range: Range;
-    use: TestFind;
-};
+import { Definition, Location, LocationLink } from "vscode";
 
 
 export type References = Promise<Location[] | null | undefined>;

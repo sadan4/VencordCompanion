@@ -40,6 +40,9 @@ importers:
       '@vencord-companion/shared':
         specifier: 'workspace:'
         version: link:packages/shared
+      '@vencord-companion/vencord-ast-parser':
+        specifier: 'workspace:'
+        version: link:packages/vencord-ast-parser
       '@vencord-companion/webpack-ast-parser':
         specifier: 'workspace:'
         version: link:packages/webpack-ast-parser
@@ -146,6 +149,19 @@ importers:
         version: 3.2.4(@types/node@22.13.8)(@vitest/ui@3.2.4)(jiti@2.4.2)
 
   packages/tsconfig: {}
+
+  packages/vencord-ast-parser:
+    dependencies:
+      '@vencord-companion/ast-parser':
+        specifier: workspace:*
+        version: link:../ast-parser
+      '@vencord-companion/shared':
+        specifier: workspace:*
+        version: link:../shared
+    devDependencies:
+      vitest:
+        specifier: 'catalog:'
+        version: 3.2.4(@types/node@22.13.8)(@vitest/ui@3.2.4)(jiti@2.4.2)
 
   packages/webpack-ast-parser:
     dependencies:

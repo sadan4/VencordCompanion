@@ -6,6 +6,3 @@ catalog:
   tsutils: ^3.21.0
   typescript: ^5.8.2
   vitest: 3.2.4
-peerDependencyRules:
-  allowedVersions:
-    "@typescript-eslint/eslint-plugin>typescript": 5

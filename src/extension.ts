@@ -30,11 +30,11 @@ export function activate(context: ExtensionContext) {
         window.onDidChangeActiveTextEditor(PatchHelper.changeActiveEditor),
         window.tabGroups.onDidChangeTabs(PatchHelper.onTabClose),
         languages.registerCodeLensProvider(
-            { pattern: "**/{plugins,userplugins,plugins/_*}/{*.ts,*.tsx,**/index.ts,**/index.tsx}" },
+            { pattern: "**/{*plugins/_*}/{*.ts,*.tsx,**/index.ts,**/index.tsx}" },
             new PluginDefCodeLensProvider(),
         ),
         languages.registerCodeLensProvider(
-            { pattern: "**/{plugins,userplugins,plugins/_*}/{*.ts,*.tsx,**/index.ts,**/index.tsx}" },
+            { pattern: "**/{*plugins,plugins/_*}/{*.ts,*.tsx,**/index.ts,**/index.tsx}" },
             new PatchCodeLensProvider(),
         ),
         languages.registerDefinitionProvider({ language: "javascript" }, new DefinitionProvider()),

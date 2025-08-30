@@ -590,7 +590,7 @@ export class WebpackAstParser extends AstParser {
                   ?? findReturnPropertyAccessExpression(x.initializer);
 
                 if (this.tryParseStoreForExport(tailingIdent) != null) {
-                    console.warn("Getting raw export map for a module that has a store export "
+                    logger.warn("Getting raw export map for a module that has a store export "
                       + "this is not supported and should be handled. "
                       + "this will probably lead to errors.");
                 }

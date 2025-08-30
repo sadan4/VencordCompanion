@@ -15,7 +15,8 @@
   "packageManager": "pnpm@10.15.0",
   "dependencies": {
     "@vencord-companion/ast-parser": "workspace:*",
-    "@vencord-companion/shared": "workspace:*"
+    "@vencord-companion/shared": "workspace:*",
+    "ts-api-utils": "catalog:"
   },
   "devDependencies": {
     "vitest": "catalog:"

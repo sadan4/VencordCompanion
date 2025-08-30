@@ -3,6 +3,6 @@ packages:
 
 catalog:
   '@sadan4/devtools-pretty-printer': 1.0.4
-  tsutils: ^3.21.0
+  ts-api-utils: 2.1.0
   typescript: ^5.8.2
   vitest: 3.2.4

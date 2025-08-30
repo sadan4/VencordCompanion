@@ -29,8 +29,7 @@ import {
 } from "./types";
 import { allEntries, containsPosition, formatModule } from "./util";
 
-import { isAccessorDeclaration } from "tsutils";
-import { VariableInfo } from "tsutils/util/usage";
+import { isAccessorDeclaration, VariableInfo } from "ts-api-utils";
 import {
     CallExpression,
     ClassDeclaration,

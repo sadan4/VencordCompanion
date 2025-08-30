@@ -54,7 +54,6 @@
         "@vencord-companion/shared": "workspace:",
         "fast-diff": "^1.3.0",
         "nanoid": "^5.0.9",
-        "tsutils": "catalog:",
         "typescript": "catalog:",
         "ws": "^8.18.0"
     },

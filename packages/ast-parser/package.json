@@ -16,6 +16,7 @@
   "dependencies": {
     "@sadan4/devtools-pretty-printer": "catalog:",
     "@vencord-companion/shared": "workspace:*",
+    "ts-api-utils": "catalog:",
     "typescript": "catalog:"
   },
   "devDependencies": {

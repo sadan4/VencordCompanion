@@ -16,7 +16,8 @@
   "dependencies": {
     "@sadan4/devtools-pretty-printer": "catalog:",
     "@vencord-companion/ast-parser": "workspace:*",
-    "@vencord-companion/shared": "workspace:*"
+    "@vencord-companion/shared": "workspace:*",
+    "ts-api-utils": "catalog:"
   },
   "devDependencies": {
     "vitest": "catalog:"

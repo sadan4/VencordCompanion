@@ -6,10 +6,9 @@ import { Range } from "@vencord-companion/shared/Range";
 
 import { StringifiedModule } from "./StringifiedModule";
 import { Functionish } from "./types";
-import { CharCode, isEOL } from "./util";
+import { CharCode, getTokenAtPosition, isEOL } from "./util";
 
-import { collectVariableUsage, type VariableInfo } from "tsutils/util/usage";
-import { getTokenAtPosition } from "tsutils/util/util";
+import { collectVariableUsage, type VariableInfo } from "ts-api-utils";
 import {
     type AssignmentExpression,
     type AssignmentOperatorToken,
@@ -278,7 +277,8 @@ export class AstParser {
 
     /**
      * convert two offsets to a range
-     * DO NOT USE WITH AN AST NODE, IT WILL LEAD TO INCORRECT LOCATIONS
+     * 
+     * **DO NOT USE WITH AN AST NODE, IT WILL LEAD TO INCORRECT LOCATIONS**
      * @see makeRangeFromAstNode
      */
     public makeRange({ pos, end }: ReadonlyTextRange): Range {

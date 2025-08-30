@@ -14,7 +14,7 @@ import { FindUse, SourcePatch, TestFind } from "./types";
 import { parsePatch, tryParseFunction, tryParseRegularExpressionLiteral, tryParseStringLiteral } from "./util";
 
 import { readFile } from "node:fs/promises";
-import { DeclarationDomain } from "tsutils/util/usage";
+import { DeclarationDomain } from "ts-api-utils";
 import {
     CallExpression,
     Identifier,

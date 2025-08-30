@@ -9,7 +9,7 @@ import { Diagnostic, DiagnosticSeverity, languages, TextDocument, TextDocumentCh
 
 const diagnosticCollection = languages.createDiagnosticCollection("vencord-companion");
 const runtimeErrorWarning = new Diagnostic(toVscodeRange(zeroRange), "An error occured, check the log for more info", DiagnosticSeverity.Warning);
-const zeroClientsWarning = new Diagnostic(toVscodeRange(zeroRange), "No clients connected", DiagnosticSeverity.Warning);
+
 
 export const updateDiagnostics = debounceAsync(updateDiagnosticsImmediately, 1500);
 export function onEditCallback(e: TextDocumentChangeEvent) {
@@ -33,7 +33,6 @@ export function reloadDiagnostics() {
 }
 async function updateDiagnosticsImmediately(e: Uri) {
     if (!hasConnection()) {
-        diagnosticCollection.set(e, [zeroClientsWarning]);
         return;
     }
 

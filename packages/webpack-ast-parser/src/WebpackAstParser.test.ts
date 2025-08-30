@@ -602,8 +602,8 @@ describe("WebpackAstParser", function () {
         });
         describe("stores", function () {
             it.todo("finds all uses of a store from the class name", async function () {
-                const parser = new WebpackAstParser(getFile(".modules/999999.js"));
-                const locs = await parser.generateReferences(new Position(8, 11));
+                // const parser = new WebpackAstParser(getFile(".modules/999999.js"));
+                // const locs = await parser.generateReferences(new Position(8, 11));
             });
         });
     });

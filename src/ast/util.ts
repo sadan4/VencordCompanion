@@ -1,4 +1,6 @@
+import { mkStringUri } from "@modules/util";
 import * as Shared from "@vencord-companion/shared/Range";
+import * as wp from "@vencord-companion/webpack-ast-parser";
 
 import { getNumberAndColumnFromPos } from "./lineUtil";
 
@@ -12,7 +14,7 @@ import {
     StringLiteral,
     TemplateLiteralLikeNode,
 } from "typescript";
-import { Position, Range } from "vscode";
+import { Location, Position, Range, Uri } from "vscode";
 
 export * from "@ast/lineUtil";
 
@@ -48,4 +50,23 @@ export function isStringLiteralLikeOrTemplateLiteralFragmentOrRegexLiteral(node:
     if (isRegularExpressionLiteral(node))
         return true;
     return false;
+}
+
+export function webpackDefinitionsToVscodeDefinitions(d: wp.Definition[] | undefined): Location[] | undefined {
+    if (!d)
+        return;
+
+    return d.map((d) => {
+        let uri: Uri;
+
+        if (d.locationType === "file_path") {
+            uri = Uri.file(d.filePath);
+        } else if (d.locationType === "inline") {
+            uri = mkStringUri(d.content);
+        } else {
+            throw new Error("unreachable");
+        }
+
+        return new Location(uri, toVscodeRange(d.range));
+    });
 }

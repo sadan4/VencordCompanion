@@ -108,6 +108,9 @@ export type DisablePlugin = {
 };
 
 export type RawIdS = {
+    /**
+     * @deprecated
+     */
     type: "rawId";
     data: {
         id: number;

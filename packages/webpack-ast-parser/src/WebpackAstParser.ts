@@ -12,8 +12,7 @@ import {
 import { Cache, CacheGetter } from "@vencord-companion/shared/decorators";
 import { Logger, NoopLogger } from "@vencord-companion/shared/Logger";
 import { Position } from "@vencord-companion/shared/Position";
-import { Range } from "@vencord-companion/shared/Range";
-import { zeroRange } from "@vencord-companion/shared/Range";
+import { Range, zeroRange } from "@vencord-companion/shared/Range";
 
 import {
     Definition,
@@ -198,17 +197,17 @@ export class WebpackAstParser extends AstParser {
         }
     }
 
-    public async getModulesThatRequireThisModule(): Promise<ModuleDeps | null> {
+    public getModulesThatRequireThisModule(): Promise<ModuleDeps | null> {
         if (!this.moduleId) {
-            return null;
+            return Promise.resolve(null);
         }
 
         const guh = this.moduleDepManager.getModDeps(this.moduleId);
 
-        return {
+        return Promise.resolve({
             lazy: guh.lazyUses,
             sync: guh.syncUses,
-        };
+        });
     }
 
     @Cache()

@@ -20,6 +20,7 @@
         "pauseForSourceMap": true,
     },
     "cSpell.words": [
+        "clazz",
         "cpuprofile",
         "eslintcache",
         "flatmaps",
@@ -34,6 +35,7 @@
         "tsutils",
         "typeguard",
         "USERPLUGIN",
+        "userplugins",
         "Vencord",
         "vitest",
         "wreq",

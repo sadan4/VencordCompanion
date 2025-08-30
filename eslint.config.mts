@@ -582,6 +582,7 @@ const extensions = "{js,mjs,cjs,jsx,mjsx,cjsx,ts,mts,cts,tsx,mtsx,ctsx}";
 
 export default TSEslint.config({ ignores: ["dist", "src/webview", "node_modules"] }, {
     files: [`src/**/*.${extensions}`, `eslint.config.${extensions}`, `packages/**/*.${extensions}`],
+    ignores: ["**/__test__/**"],
     plugins: {
         "@stylistic": stylistic,
         "@typescript-eslint": TSEslint.plugin,

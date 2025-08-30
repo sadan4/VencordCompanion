@@ -1,14 +1,13 @@
 import { makeRange } from "@ast/util";
-import { VencordAstParser } from "@ast/vencord";
 import { outputChannel } from "@modules/logging";
+import { Format } from "@sadan4/devtools-pretty-printer";
 import { sendAndGetData } from "@server/index";
-import { SourcePatch } from "@type/ast";
 import { PromiseProivderResult } from "@type/index";
 import { ExtractModuleR } from "@type/server";
+import { SourcePatch, VencordAstParser } from "@vencord-companion/vencord-ast-parser";
+import { formatModule } from "@vencord-companion/webpack-ast-parser";
 
-import { format } from "./format";
 import { canonicalizeMatch, canonicalizeReplace, parseMatch, parseReplace } from "./patches";
-import { formatModule } from "./util";
 
 import DiffFunc, { DELETE, Diff } from "fast-diff";
 import { nanoid } from "nanoid";
@@ -112,7 +111,7 @@ export class PatchHelper {
 
     private constructor(private readonly doc: TextDocument, lastPatch: SourcePatch) {
         this.id = nanoid();
-        this.ast = new VencordAstParser(doc);
+        this.ast = new VencordAstParser(doc.getText(), doc.fileName);
         this.lastPatch = lastPatch;
         outputChannel.debug(`Opening new patch helper for patch ${JSON.stringify(lastPatch)}, with id ${this.id} and for document ${doc.uri.path}`);
     }
@@ -266,7 +265,7 @@ export class PatchHelper {
                 continue;
             }
         }
-        return this.lastPatchedModule.push(await format(formatModule(code, this.moduleData.moduleNumber, false)));
+        return this.lastPatchedModule.push(await Format(formatModule(code, this.moduleData.moduleNumber, false)));
     }
 
     private static idFromUri(uri: Uri) {
@@ -316,9 +315,9 @@ export class PatchHelper {
             if (!helper)
                 return;
 
-            const newast = new VencordAstParser(document);
+            const newAst = new VencordAstParser(document.getText(), document.fileName);
 
-            helper.onChange(newast);
+            helper.onChange(newAst);
         } catch (e) {
             window.showErrorMessage(String(e));
         }

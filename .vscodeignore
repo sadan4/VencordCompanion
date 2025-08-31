@@ -39,3 +39,4 @@ packages
 *.cpuprofile
 .actrc
 pnpm-workspace.yaml
+build-artifacts.zip

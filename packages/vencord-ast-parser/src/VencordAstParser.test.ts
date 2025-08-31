@@ -33,7 +33,8 @@ describe("VencordAstParser", async function () {
         it("parses all plugin names correctly", function () {
             const names = pluginParsers.map((parser) => parser.getPluginName());
 
-            expect(names)
+            // sort to keep snapshot sane && stable
+            expect(names.toSorted())
                 .toMatchSnapshot();
         });
         it.skip("gets the correct plugin name for a weird plugin", function () {

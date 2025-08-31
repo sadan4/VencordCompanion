@@ -1,19 +1,22 @@
 import { areVersionsIncompatible, compareVersions, debounce, SemVerVersion } from "./util";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 describe("debounce()", function () {
-    it("resets the timeout correctly", async function () {
+    it("resets the timeout correctly", function () {
+        vi.useFakeTimers();
+
         let i = 0;
         const debouncedFunc = debounce(() => i++, 100);
 
         debouncedFunc();
         debouncedFunc();
         debouncedFunc();
-        await new Promise((resolve) => setTimeout(resolve, 50));
+        vi.advanceTimersByTime(50);
         debouncedFunc();
-        await new Promise((resolve) => setTimeout(resolve, 125));
+        vi.advanceTimersByTime(125);
         expect(i).to.equal(1);
+        vi.restoreAllMocks();
     });
 });
 

@@ -28,7 +28,12 @@ import {
 } from "typescript";
 
 export class VencordAstParser extends AstParser {
-    private path: string;
+    private _path: string;
+
+    @CacheGetter()
+    public get path(): string {
+        return this._path;
+    }
 
     @CacheGetter()
     public get imports(): Map<Identifier, Import> {
@@ -37,7 +42,7 @@ export class VencordAstParser extends AstParser {
 
     constructor(content: string, path: string) {
         super(content);
-        this.path = path;
+        this._path = path;
     }
 
     public static async fromPath(path: string) {

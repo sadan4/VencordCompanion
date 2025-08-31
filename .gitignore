@@ -9,3 +9,5 @@ node_modules
 .eslintcache
 *.cpuprofile
 assets/test/ast/.modules/cache.json
+packages/vencord-ast-parser/src/.vencord-source
+packages/vencord-ast-parser/src/__test__/.vencord-source

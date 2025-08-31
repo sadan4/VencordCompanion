@@ -622,6 +622,13 @@ describe("WebpackAstParser", function () {
                     expect(defs)
                         .toMatchSnapshot();
                 });
+                it("finds the use of a simple import 2", async function () {
+                    const parser = new WebpackAstParser(getFile(".modules/111111.js"));
+                    const defs = await parser.generateDefinitions(new Position(24, 34));
+
+                    expect(defs)
+                        .toMatchSnapshot();
+                });
             });
         });
         describe("stores", function () {

@@ -10,8 +10,9 @@ import { handleDiffPayload, handleExtractPayload, moduleCache, sendAndGetData, s
 import { treeDataProvider } from "@sidebar";
 import { Discriminate } from "@type/server";
 import { DisablePluginData, FindData, OutgoingMessage, PatchData } from "@type/server/send";
+import { setLogger as setAstLogger } from "@vencord-companion/ast-parser";
 import { SourcePatch } from "@vencord-companion/vencord-ast-parser";
-import { WebpackAstParser } from "@vencord-companion/webpack-ast-parser";
+import { setLogger as setWebpackLogger, WebpackAstParser } from "@vencord-companion/webpack-ast-parser";
 
 import { commands, ExtensionContext, languages, QuickPickItem, TextDocument, Uri, window as vscWindow, window, workspace } from "vscode";
 
@@ -20,6 +21,8 @@ export let extensionPath: string;
 
 
 export function activate(context: ExtensionContext) {
+    setAstLogger(outputChannel);
+    setWebpackLogger(outputChannel);
     WebpackAstParser.setDefaultModuleCache({
         async getLatestModuleFromNum(id) {
             const { data } = await sendAndGetData<"rawId">({

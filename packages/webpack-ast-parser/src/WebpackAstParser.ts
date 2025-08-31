@@ -529,6 +529,7 @@ export class WebpackAstParser extends AstParser {
      * ```
      * @returns the module ID if it does, undefined otherwise
      */
+    @Cache()
     doesReExportWholeModule(): string | undefined {
         // we can't export anything if we don't import anything
         if (!this.wreq)
@@ -1713,6 +1714,7 @@ export class WebpackAstParser extends AstParser {
     /**
      * @returns the string of the export if this is the flux dispatcher module, null otherwise
      */
+    @Cache()
     public isFluxDispatcherModule(): string | undefined {
         const moduleExports = this.getExportMapRaw();
 

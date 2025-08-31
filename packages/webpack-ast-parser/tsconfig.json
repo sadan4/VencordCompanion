@@ -1,0 +1,9 @@
+{
+  "extends": "@vencord-companion/tsconfig",
+  // Visit https://aka.ms/tsconfig to read more about this file
+  "compilerOptions": {
+    "target": "es2023",
+    "noImplicitAny": false,
+  },
+  "include": ["src"]
+}

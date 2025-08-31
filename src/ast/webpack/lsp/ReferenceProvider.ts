@@ -1,8 +1,9 @@
-import { isWebpackModule } from "@ast/util";
-import { WebpackAstParser } from "@ast/webpack";
+import { webpackDefinitionsToVscodeDefinitions } from "@ast/util";
 import { ModuleCache, ModuleDepManager } from "@modules/cache";
 import { outputChannel } from "@modules/logging";
 import { References } from "@type/ast";
+import { Position as WP_Position } from "@vencord-companion/shared/Position";
+import { isWebpackModule, WebpackAstParser } from "@vencord-companion/webpack-ast-parser";
 
 import { Position, ReferenceProvider as IReferenceProvider, TextDocument, window } from "vscode";
 
@@ -21,8 +22,8 @@ export class ReferenceProvider implements IReferenceProvider {
             });
         }
         try {
-            return await new WebpackAstParser(document.getText())
-                .generateReferences(position);
+            return webpackDefinitionsToVscodeDefinitions(await new WebpackAstParser(document.getText())
+                .generateReferences(new WP_Position(position.line, position.character)));
         } catch (e) {
             window.showErrorMessage(String(e));
             outputChannel.error(String(e));

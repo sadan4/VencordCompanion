@@ -1,0 +1,24 @@
+{
+  "name": "@vencord-companion/vencord-ast-parser",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.15.0",
+  "dependencies": {
+    "@vencord-companion/ast-parser": "workspace:*",
+    "@vencord-companion/shared": "workspace:*",
+    "ts-api-utils": "catalog:"
+  },
+  "devDependencies": {
+    "vitest": "catalog:"
+  }
+}

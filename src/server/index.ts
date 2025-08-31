@@ -1,8 +1,10 @@
 import { reloadDiagnostics } from "@ast/vencord/diagnostics";
-import { format } from "@modules/format";
 import { outputChannel } from "@modules/logging";
-import { areVersionsIncompatible, formatModule, mkStringUri, SemVerVersion } from "@modules/util";
+import { mkStringUri } from "@modules/util";
+import { Format } from "@sadan4/devtools-pretty-printer";
 import { Base, DiffModule, Discriminate, ExtractModuleR, FullIncomingMessage, IncomingMessage, OutgoingMessage } from "@type/server";
+import { areVersionsIncompatible, SemVerVersion } from "@vencord-companion/shared/util";
+import { formatModule } from "@vencord-companion/webpack-ast-parser";
 
 import { commands, window, workspace } from "vscode";
 import { BufferLike, RawData, WebSocket, WebSocketServer } from "ws";
@@ -130,6 +132,8 @@ async function isClientOutdated(): Promise<[boolean, SemVerVersion]> {
         data: {
             server_version: SERVER_VERSION,
         },
+    }, {
+        timeout: 2000,
     });
 
     const { clientVersion } = res.data;
@@ -259,9 +263,9 @@ export function startWebSocketServer() {
         outputChannel.warn("[WS] Closed");
     });
 }
-export async function handleDiffPayload({ data }: DiffModule) {
-    const sourceUri = mkStringUri(await format(formatModule(data.source, data.moduleNumber)));
-    const patchedUri = mkStringUri(await format(formatModule(data.patched, data.moduleNumber)));
+export function handleDiffPayload({ data }: DiffModule) {
+    const sourceUri = mkStringUri(Format(formatModule(data.source, data.moduleNumber)));
+    const patchedUri = mkStringUri(Format(formatModule(data.patched, data.moduleNumber)));
 
     commands.executeCommand("vscode.diff", sourceUri, patchedUri, `Patch Diff: ${data.moduleNumber}`);
 }
@@ -272,7 +276,7 @@ export async function handleExtractPayload({ data }: ExtractModuleR): Promise<vo
     const moduleText = formatModule(data.module, data.moduleNumber, data.find);
 
     workspace.openTextDocument({
-        content: await format(moduleText || "//ERROR: NO DATA RECEIVED\n//This module may be lazy loaded"),
+        content: await Format(moduleText || "//ERROR: NO DATA RECEIVED\n//This module may be lazy loaded"),
         language: "javascript",
     })
         .then((e) => commands.executeCommand("vscode.open", e.uri));

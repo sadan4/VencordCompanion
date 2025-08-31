@@ -1,6 +1,0 @@
-{
-    "color": true,
-    "diff": true,
-    "enable-source-maps": true,
-    "spec": "dist.test/**/*.test.js"
-}

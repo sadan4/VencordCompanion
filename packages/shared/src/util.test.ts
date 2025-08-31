@@ -1,6 +1,27 @@
-import { areVersionsIncompatible, compareVersions, SemVerVersion } from "./util";
+import { areVersionsIncompatible, compareVersions, debounce, SemVerVersion } from "./util";
 
-import { expect } from "chai";
+import { describe, expect, it, vi } from "vitest";
+
+describe("debounce()", function () {
+    it("resets the timeout correctly", function () {
+        vi.useFakeTimers();
+
+        let i = 0;
+        const debouncedFunc = debounce(() => i++, 100);
+
+        debouncedFunc();
+        debouncedFunc();
+        debouncedFunc();
+        vi.advanceTimersByTime(50);
+        debouncedFunc();
+        vi.advanceTimersByTime(125);
+        expect(i).to.equal(1);
+        vi.restoreAllMocks();
+    });
+});
+
+describe.todo("debounceAsync()", function () {
+});
 
 describe("compareVersions()", function () {
     // Test cases for equal versions

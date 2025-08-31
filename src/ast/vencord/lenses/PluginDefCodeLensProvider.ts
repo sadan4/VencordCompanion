@@ -105,20 +105,20 @@ export class PluginDefCodeLensProvider implements CodeLensProvider {
                 title: "Disable Plugin",
                 command: "vencord-companion.disablePlugin",
                 arguments: [
-{
-    pluginName: patchesArray.pluginName,
-    enabled: false,
-} satisfies DisablePluginData,
+                    {
+                        pluginName: patchesArray.pluginName,
+                        enabled: false,
+                    } satisfies DisablePluginData,
                 ],
             }));
             lenses.push(new CodeLens(range, {
                 title: "Enable Plugin",
                 command: "vencord-companion.disablePlugin",
                 arguments: [
-{
-    pluginName: patchesArray.pluginName,
-    enabled: true,
-} satisfies DisablePluginData,
+                    {
+                        pluginName: patchesArray.pluginName,
+                        enabled: true,
+                    } satisfies DisablePluginData,
                 ],
             }));
         }

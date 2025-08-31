@@ -3,13 +3,15 @@ import { I18nHover } from "@ast/vencord/hover";
 import { PatchCodeLensProvider, PluginDefCodeLensProvider, WebpackCodeLensProvider } from "@ast/vencord/lenses";
 import { PartialModuleJumpCodeLensProvider } from "@ast/webpack/lenses";
 import { DefinitionProvider, ReferenceProvider } from "@ast/webpack/lsp";
+import { ModuleCache, ModuleDepManager } from "@modules/cache";
 import { outputChannel } from "@modules/logging";
 import { PatchHelper } from "@modules/PatchHelper";
 import { handleDiffPayload, handleExtractPayload, moduleCache, sendAndGetData, startWebSocketServer, stopWebSocketServer } from "@server";
 import { treeDataProvider } from "@sidebar";
-import { SourcePatch } from "@type/ast";
 import { Discriminate } from "@type/server";
 import { DisablePluginData, FindData, OutgoingMessage, PatchData } from "@type/server/send";
+import { SourcePatch } from "@vencord-companion/vencord-ast-parser";
+import { WebpackAstParser } from "@vencord-companion/webpack-ast-parser";
 
 import { commands, ExtensionContext, languages, QuickPickItem, TextDocument, Uri, window as vscWindow, window, workspace } from "vscode";
 
@@ -18,6 +20,29 @@ export let extensionPath: string;
 
 
 export function activate(context: ExtensionContext) {
+    WebpackAstParser.setDefaultModuleCache({
+        async getLatestModuleFromNum(id) {
+            const { data } = await sendAndGetData<"rawId">({
+                type: "rawId",
+                data: {
+                    id: +id,
+                },
+            });
+
+            return data;
+        },
+        getModuleFilepath(id) {
+            return ModuleCache.getModulePath(id);
+        },
+        getModuleFromNum(id) {
+            return ModuleCache.getModuleFromNum(id);
+        },
+    });
+    WebpackAstParser.setDefaultModuleDepManager({
+        getModDeps(moduleId) {
+            return ModuleDepManager.getModDeps(moduleId);
+        },
+    });
     extensionUri = context.extensionUri;
     extensionPath = context.extensionPath;
     startWebSocketServer();

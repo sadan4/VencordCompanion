@@ -1,10 +1,10 @@
-import { AstParser } from "@ast/AstParser";
-import { isStringLiteralLikeOrTemplateLiteralFragmentOrRegexLiteral } from "@ast/util";
+import { isStringLiteralLikeOrTemplateLiteralFragmentOrRegexLiteral, toVscodeRange } from "@ast/util";
 import { runtimeHashMessageKey } from "@modules/intlHash";
 import { outputChannel } from "@modules/logging";
 import { intlRegex } from "@modules/patches";
 import { sendAndGetData } from "@server/index";
 import { PromiseProivderResult } from "@type/index";
+import { AstParser } from "@vencord-companion/ast-parser";
 
 // import mappings from "./mappings.json";
 import { isRegularExpressionLiteral } from "typescript";
@@ -54,7 +54,7 @@ export class I18nHover implements HoverProvider {
                     });
 
                     return {
-                        range,
+                        range: toVscodeRange(range),
                         contents: [
                             new MarkdownString(hasSpecialChars ? `["${hashedKey}"]` : `.${hashedKey}`),
                             // FIXME: refactor

@@ -1,13 +1,23 @@
-import { TAssert, TypeAssert } from "@ast/util";
-import { WebpackAstParser } from "@ast/webpack";
-import { RangeExportMap } from "@type/ast";
+import { Position } from "@vencord-companion/shared/Position";
+import { Range } from "@vencord-companion/shared/Range";
 
-import { expect } from "chai";
-import { resolve } from "node:path";
-import { Location, Position, Range, Uri } from "vscode";
+import { MainDeps, RangeExportMap, Reference } from "./types";
+import { TAssert } from "./util";
+import { WebpackAstParser } from "./WebpackAstParser";
+
+import { readFileSync } from "node:fs";
+import { readdir, readFile } from "node:fs/promises";
+import { basename, join } from "node:path";
+import { beforeAll, describe, expect, it } from "vitest";
+
+const __dirname = import.meta.dirname;
+
+export function getFile(asset: string): string {
+    return readFileSync(join(__dirname, "__test__", asset), "utf-8");
+}
 
 describe("WebpackAstParser", function () {
-    const normalModule: string = require("test://ast/webpack/module.js");
+    const normalModule: string = getFile("webpack/module.js");
 
     it("constructs", function () {
         new WebpackAstParser(normalModule);
@@ -47,7 +57,7 @@ describe("WebpackAstParser", function () {
                 expect(map.ZP[1]).to.deep.equal(new Range(87, 13, 87, 14));
             });
             it("parses a module with a string literal export", function () {
-                const parser = new WebpackAstParser(require("test://ast/webpack/wreq.d/simpleString.js"));
+                const parser = new WebpackAstParser(getFile("webpack/wreq.d/simpleString.js"));
                 const map = parser.getExportMap();
 
                 expect(map).to.have.keys("STRING_EXPORT");
@@ -55,7 +65,7 @@ describe("WebpackAstParser", function () {
                 expect(map.STRING_EXPORT).to.deep.equal([new Range(5, 8, 5, 21), new Range(7, 12, 7, 31)]);
             });
             it("parses a module with an object literal export", function () {
-                const parser = new WebpackAstParser(require("test://ast/webpack/wreq.d/objectExport.js"));
+                const parser = new WebpackAstParser(getFile("webpack/wreq.d/objectExport.js"));
                 const map = parser.getExportMap();
 
                 expect(map).to.deep.equal({
@@ -105,7 +115,7 @@ describe("WebpackAstParser", function () {
                 });
             });
             it("parses a module with an exported object with a computed property", function () {
-                const parser = new WebpackAstParser(require("test://ast/webpack/wreq.d/computedPropInObj.js"));
+                const parser = new WebpackAstParser(getFile("webpack/wreq.d/computedPropInObj.js"));
                 const map = parser.getExportMap();
 
                 expect(map).to.deep.equal({
@@ -122,7 +132,7 @@ describe("WebpackAstParser", function () {
                 });
             });
             it("parses a module with a class export", function () {
-                const parser = new WebpackAstParser(require("test://ast/webpack/wreq.d/classExport.js"));
+                const parser = new WebpackAstParser(getFile("webpack/wreq.d/classExport.js"));
                 const map = parser.getExportMap();
 
                 expect(map).to.deep.equal({
@@ -152,7 +162,7 @@ describe("WebpackAstParser", function () {
         });
         describe("e.exports", function () {
             it("parses a module with an object literal export (class names)", function () {
-                const parser = new WebpackAstParser(require("test://ast/webpack/e.exports/objLiteral.js"));
+                const parser = new WebpackAstParser(getFile("webpack/e.exports/objLiteral.js"));
                 const map = parser.getExportMap();
 
                 expect(map).to.deep.equal({
@@ -176,7 +186,7 @@ describe("WebpackAstParser", function () {
                 });
             });
             it("parses a single string export", function () {
-                const parser = new WebpackAstParser(require("test://ast/webpack/e.exports/string.js"));
+                const parser = new WebpackAstParser(getFile("webpack/e.exports/string.js"));
                 const map = parser.getExportMap();
 
                 expect(map).to.deep.equal({
@@ -184,7 +194,7 @@ describe("WebpackAstParser", function () {
                 });
             });
             it("parses a re-export", function () {
-                const parser = new WebpackAstParser(require("test://ast/webpack/e.exports/identReExport.js"));
+                const parser = new WebpackAstParser(getFile("webpack/e.exports/identReExport.js"));
                 const map = parser.getExportMap();
 
                 expect(map).to.have.keys(WebpackAstParser.SYM_CJS_DEFAULT);
@@ -192,7 +202,7 @@ describe("WebpackAstParser", function () {
                 expect(map[WebpackAstParser.SYM_CJS_DEFAULT][0]).to.deep.equal(new Range(4, 12, 4, 21));
             });
             it("parses exports in an intermediate variable", function () {
-                const parser = new WebpackAstParser(require("test://ast/webpack/e.exports/ident.js"));
+                const parser = new WebpackAstParser(getFile("webpack/e.exports/ident.js"));
                 const map = parser.getExportMap();
 
                 expect(map).to.deep.equal({
@@ -236,7 +246,7 @@ describe("WebpackAstParser", function () {
                 });
             });
             it("parses a function expression", function () {
-                const parser = new WebpackAstParser(require("test://ast/webpack/e.exports/function.js"));
+                const parser = new WebpackAstParser(getFile("webpack/e.exports/function.js"));
                 const map = parser.getExportMap();
 
                 expect(map).to.have.keys(WebpackAstParser.SYM_CJS_DEFAULT);
@@ -244,7 +254,7 @@ describe("WebpackAstParser", function () {
                 expect(map[WebpackAstParser.SYM_CJS_DEFAULT][0]).to.deep.equal(new Range(9, 16, 9, 27));
             });
             it("parses a module with a class default export", function () {
-                const parser = new WebpackAstParser(require("test://ast/webpack/e.exports/classExport.js"));
+                const parser = new WebpackAstParser(getFile("webpack/e.exports/classExport.js"));
                 const map = parser.getExportMap();
 
                 expect(map).to.deep.equal({
@@ -271,7 +281,7 @@ describe("WebpackAstParser", function () {
                 });
             });
             it("parses everything else", function () {
-                const parser = new WebpackAstParser(require("test://ast/webpack/e.exports/everythingElse.js"));
+                const parser = new WebpackAstParser(getFile("webpack/e.exports/everythingElse.js"));
                 const map = parser.getExportMap();
 
                 expect(map).to.have.keys(WebpackAstParser.SYM_CJS_DEFAULT);
@@ -281,7 +291,7 @@ describe("WebpackAstParser", function () {
         });
         describe("exports", function () {
             it("Parses exports properly", function () {
-                const parser = new WebpackAstParser(require("test://ast/webpack/exports/module.js"));
+                const parser = new WebpackAstParser(getFile("webpack/exports/module.js"));
 
                 const keys = [
                     "Deflate",
@@ -308,13 +318,13 @@ describe("WebpackAstParser", function () {
         });
         describe("stores", function () {
             it("generates the proper export map for a store exported with wreq.d", function () {
-                const parser = new WebpackAstParser(require("test://ast/webpack/stores/store1.js"));
+                const parser = new WebpackAstParser(getFile("webpack/stores/store1.js"));
                 const map = parser.getExportMap();
 
                 expect(map).to.have.keys("Z");
 
                 expect(map.Z).to.have.keys(["initialize", "isVisible", WebpackAstParser.SYM_CJS_DEFAULT]);
-                TypeAssert<RangeExportMap>(map.Z);
+                TAssert<RangeExportMap>(map.Z);
                 expect(map.Z[WebpackAstParser.SYM_CJS_DEFAULT]).to.deep.equal([
                     new Range(4, 8, 4, 9),
                     new Range(32, 16, 32, 17),
@@ -324,7 +334,7 @@ describe("WebpackAstParser", function () {
                 expect(map.Z.isVisible).to.deep.equal([new Range(18, 8, 18, 17)]);
             });
             it("generates the proper export map for a store constructed with no arguments", function () {
-                const parser = new WebpackAstParser(require("test://ast/webpack/stores/store2.js"));
+                const parser = new WebpackAstParser(getFile("webpack/stores/store2.js"));
                 const map = parser.getExportMap();
 
                 expect(map).to.have.keys("default", "mergeUser", "ASSISTANT_WUMPUS_VOICE_USER");
@@ -357,7 +367,7 @@ describe("WebpackAstParser", function () {
                 ]);
             });
             it("generates the proper export map for a store with no initialize method", function () {
-                const parser = new WebpackAstParser(require("test://ast/webpack/stores/store3.js"));
+                const parser = new WebpackAstParser(getFile("webpack/stores/store3.js"));
                 const map = parser.getExportMap();
 
                 expect(map).to.have.keys("Z");
@@ -381,7 +391,7 @@ describe("WebpackAstParser", function () {
                 });
             });
             it("generates the proper export map for a store with getters", function () {
-                const parser = new WebpackAstParser(require("test://ast/webpack/stores/getter.js"));
+                const parser = new WebpackAstParser(getFile("webpack/stores/getter.js"));
                 const map = parser.getExportMap();
 
                 // Change when parsing is fixed to only return to constants
@@ -407,95 +417,128 @@ describe("WebpackAstParser", function () {
     });
     describe("import parsing", function () {
         it("parses an only re-exported export properly", function () {
-            const parser = new WebpackAstParser(require("test://ast/webpack/imports/reExport.js"));
+            const parser = new WebpackAstParser(getFile("webpack/imports/reExport.js"));
             const test = parser.getUsesOfImport("999001", "foo");
 
             expect(test).to.deep.equal([new Range(5, 21, 5, 24)]);
         });
         it("parses a re-export with other uses", function () {
-            const parser = new WebpackAstParser(require("test://ast/webpack/imports/reExport.js"));
+            const parser = new WebpackAstParser(getFile("webpack/imports/reExport.js"));
             const test = parser.getUsesOfImport("999001", "bar");
 
             expect(test).to.have.deep.members([new Range(6, 22, 6, 25), new Range(10, 18, 10, 21)]);
         });
         it("returns [] when there are no uses of that export for that module", function () {
-            const parser = new WebpackAstParser(require("test://ast/webpack/imports/reExport.js"));
+            const parser = new WebpackAstParser(getFile("webpack/imports/reExport.js"));
             const test = parser.getUsesOfImport("999001", "baz");
 
             expect(test).to.deep.equal([]);
         });
         it("returns [] when the module ID is not imported", function () {
-            const parser = new WebpackAstParser(require("test://ast/webpack/imports/reExport.js"));
+            const parser = new WebpackAstParser(getFile("webpack/imports/reExport.js"));
             const text = parser.getUsesOfImport("999003", "foo");
 
             expect(text).to.deep.equal([]);
         });
         it("returns [] when there are no uses of that export for that module 2", function () {
-            const parser = new WebpackAstParser(require("test://ast/webpack/imports/indirectCall.js"));
+            const parser = new WebpackAstParser(getFile("webpack/imports/indirectCall.js"));
             const test = parser.getUsesOfImport("999002", "bar");
 
             expect(test).to.deep.equal([]);
         });
         it("returns [] when the module ID is not imported 2", function () {
-            const parser = new WebpackAstParser(require("test://ast/webpack/imports/indirectCall.js"));
+            const parser = new WebpackAstParser(getFile("webpack/imports/indirectCall.js"));
             const text = parser.getUsesOfImport("999004", "foo");
 
             expect(text).to.deep.equal([]);
         });
         it("parses an indirect call properly", function () {
-            const parser = new WebpackAstParser(require("test://ast/webpack/imports/indirectCall.js"));
+            const parser = new WebpackAstParser(getFile("webpack/imports/indirectCall.js"));
             const test = parser.getUsesOfImport("999002", "foo");
 
             expect(test).to.deep.equal([new Range(9, 22, 9, 25)]);
         });
         it("throws when wreq is not used", function () {
-            const parser = new WebpackAstParser(require("test://ast/webpack/imports/noWreq.js"));
+            const parser = new WebpackAstParser(getFile("webpack/imports/noWreq.js"));
 
             // args should not matter as it should throw before
             expect(parser.getUsesOfImport.bind(parser)).to.throw("Wreq is not used in this file");
         });
         it("parses node default exports correctly", function () {
-            const parser = new WebpackAstParser(require("test://ast/webpack/imports/nodeModule.js"));
+            const parser = new WebpackAstParser(getFile("webpack/imports/nodeModule.js"));
             const test = parser.getUsesOfImport("999005", WebpackAstParser.SYM_CJS_DEFAULT);
 
             expect(test).to.have.deep.members([new Range(20, 15, 20, 19), new Range(15, 8, 15, 12)]);
         });
         it("parsed named node exports correctly", function () {
-            const parser = new WebpackAstParser(require("test://ast/webpack/imports/nodeModule.js"));
+            const parser = new WebpackAstParser(getFile("webpack/imports/nodeModule.js"));
             const test = parser.getUsesOfImport("999005", "qux");
 
             expect(test).to.have.deep.members([new Range(19, 13, 19, 16), new Range(16, 20, 16, 23)]);
         });
     });
-    // INFO: this assumes that the cache is working properly
-    // TODO: add septate testing for the cache
     describe("cache parsing", function () {
-        function makeModulePath(file: string): Uri {
-            return Uri.file(resolve(
-                __dirname,
-                "..",
-                "..",
-                "..",
-                "assets",
-                "test",
-                "ast",
-                ".modules",
-                file,
-            ));
-        }
+        beforeAll(async function () {
+            const modulesOnDisk = Object.fromEntries((await readdir(join(__dirname, "__test__", ".modules")))
+                .filter((x) => x.endsWith(".js"))
+                .map((fullPath) => [basename(fullPath, ".js"), join(__dirname, "__test__", ".modules", fullPath)]));
+
+            WebpackAstParser.setDefaultModuleCache({
+                getLatestModuleFromNum(_id) {
+                    return Promise.reject(new Error("Not implemented"));
+                },
+                getModuleFilepath(id) {
+                    return modulesOnDisk[String(id)];
+                },
+                async getModuleFromNum(id) {
+                    return await readFile(join(__dirname, "__test__", ".modules", `${id}.js`), "utf-8");
+                },
+            });
+            async function generateModDeps(): Promise<[MainDeps]> {
+                const modmap = await Promise.all(Object.entries(modulesOnDisk)
+                    .map(async ([id, path]) => [id, await readFile(path, "utf-8")] as const));
+
+                const ret = makeDepsMap();
+
+                for (const [id, text] of modmap) {
+                    const parser = new WebpackAstParser(text);
+
+                    {
+                        const deps = parser.getModulesThatThisModuleRequires();
+
+                        for (const syncDep of deps?.sync ?? []) {
+                            ret[syncDep].syncUses.push(id);
+                        }
+                        for (const lazyDep of deps?.lazy ?? []) {
+                            ret[lazyDep].lazyUses.push(id);
+                        }
+                    }
+                }
+                return [ret];
+            }
+
+            const [mainDeps] = await generateModDeps();
+
+            WebpackAstParser.setDefaultModuleDepManager({
+                getModDeps(moduleId) {
+                    return mainDeps[moduleId];
+                },
+            });
+        });
 
         function makeLineRange(file: string | number, y1, x1: number, len = 1) {
             if (typeof file === "number") {
                 file = `${file * 111111}.js`;
             }
-            return new Location(
-                makeModulePath(file),
-                new Range(y1, x1, y1, x1 + len),
-            );
+            return {
+                locationType: "file_path",
+                filePath: join(__dirname, "__test__", ".modules", file),
+                range: new Range(y1, x1, y1, x1 + len),
+            } satisfies Reference;
         }
         describe("re-export handling", function () {
             it("handles re-exports across wreq.d", async function () {
-                const parser = new WebpackAstParser(require("test://ast/.modules/333333.js"));
+                const parser = new WebpackAstParser(getFile(".modules/333333.js"));
                 const locs = await parser.generateReferences(new Position(5, 8));
 
                 expect(locs).to.have.deep.members([
@@ -508,19 +551,19 @@ describe("WebpackAstParser", function () {
                     makeLineRange(5, 27, 34),
                 ]);
             });
-            it.skip("handles re-exports across wreq.t", async function () {
+            it.todo("handles re-exports across wreq.t", async function () {
             });
-            it.skip("handles re-exports across wreq.e", async function () {
+            it.todo("handles re-exports across wreq.e", async function () {
             });
         });
         it("finds a simple use in only one file", async function () {
-            const parser = new WebpackAstParser(require("test://ast/.modules/222222.js"));
+            const parser = new WebpackAstParser(getFile(".modules/222222.js"));
             const locs = await parser.generateReferences(new Position(6, 8));
 
             expect(locs).to.deep.equal([makeLineRange(1, 15, 26)]);
         });
         it("finds a simple export in more than one file", async function () {
-            const parser = new WebpackAstParser(require("test://ast/.modules/222222.js"));
+            const parser = new WebpackAstParser(getFile(".modules/222222.js"));
             const locs = await parser.generateReferences(new Position(5, 8));
 
             expect(locs).to.have.deep.members([
@@ -529,7 +572,7 @@ describe("WebpackAstParser", function () {
                 makeLineRange(9, 13, 41),
             ]);
         });
-        it.skip("finds all uses of a default e.exports", function () {
+        it.todo("finds all uses of a default e.exports", function () {
 
         });
         /**
@@ -542,11 +585,11 @@ describe("WebpackAstParser", function () {
          * e.exports = foo;
          * ```
          */
-        it.skip("finds all uses of a default e.exports where the exports are assigned to the default export first", function () {
+        it.todo("finds all uses of a default e.exports where the exports are assigned to the default export first", function () {
 
         });
         it("finds uses of a class export as a component (class itself, not a method or instance)", async function () {
-            const parser = new WebpackAstParser(require("test://ast/.modules/555555.js"));
+            const parser = new WebpackAstParser(getFile(".modules/555555.js"));
             const locs = await parser.generateReferences(new Position(11, 10));
             const locs2 = await parser.generateReferences(new Position(6, 8));
 
@@ -558,16 +601,14 @@ describe("WebpackAstParser", function () {
             expect(locs).to.have.deep.members([makeLineRange(3, 12, 52)]);
         });
         describe("stores", function () {
-            it("finds all uses of a store from the class name", async function () {
-                const parser = new WebpackAstParser(require("test://ast/.modules/999999.js"));
-                const locs = await parser.generateReferences(new Position(8, 11));
-
-                console.log(locs);
+            it.todo("finds all uses of a store from the class name", async function () {
+                // const parser = new WebpackAstParser(getFile(".modules/999999.js"));
+                // const locs = await parser.generateReferences(new Position(8, 11));
             });
         });
     });
     describe("flux parsing", function () {
-        const fluxModule: string = require("test://ast/webpack/flux/dispatcherClass.js");
+        const fluxModule: string = getFile("webpack/flux/dispatcherClass.js");
 
         it("identifies the flux dispatcher module", function () {
             const parser = new WebpackAstParser(fluxModule);
@@ -576,3 +617,25 @@ describe("WebpackAstParser", function () {
         });
     });
 });
+
+
+function makeDepsMap(): MainDeps {
+    const target = {} satisfies MainDeps;
+
+    return new Proxy(target, {
+        get(target, prop, rec) {
+            if (typeof prop === "string" && prop.match(/\d+/)) {
+                if (!Reflect.has(target, prop)) {
+                    const val = ({
+                        lazyUses: [],
+                        syncUses: [],
+                    } satisfies MainDeps[string]);
+
+                    Reflect.set(target, prop, val, rec);
+                    return val;
+                }
+            }
+            return Reflect.get(target, prop, rec);
+        },
+    });
+}

@@ -1,12 +1,15 @@
-import { debounceAsync, zeroRange } from "@ast/util";
-import { VencordAstParser } from "@ast/vencord";
+import { toVscodeRange } from "@ast/util";
 import { outputChannel } from "@modules/logging";
 import { hasConnection, sendAndGetData } from "@server/index";
+import { Range, zeroRange } from "@vencord-companion/shared/Range";
+import { debounceAsync } from "@vencord-companion/shared/util";
+import { VencordAstParser } from "@vencord-companion/vencord-ast-parser";
 
-import { Diagnostic, DiagnosticSeverity, languages, Range, TextDocument, TextDocumentChangeEvent, Uri } from "vscode";
+import { Diagnostic, DiagnosticSeverity, languages, TextDocument, TextDocumentChangeEvent, Uri } from "vscode";
 
 const diagnosticCollection = languages.createDiagnosticCollection("vencord-companion");
-const runtimeErrorWarning = new Diagnostic(zeroRange, "An error occured, check the log for more info", DiagnosticSeverity.Warning);
+const runtimeErrorWarning = new Diagnostic(toVscodeRange(zeroRange), "An error occured, check the log for more info", DiagnosticSeverity.Warning);
+
 
 export const updateDiagnostics = debounceAsync(updateDiagnosticsImmediately, 1500);
 export function onEditCallback(e: TextDocumentChangeEvent) {
@@ -33,7 +36,7 @@ async function updateDiagnosticsImmediately(e: Uri) {
         return;
     }
 
-    const doc = await VencordAstParser.fromUri(e);
+    const doc = await VencordAstParser.fromPath(e.fsPath);
 
     // Set to filter duplicate error / no client warnings
     const diagnostics = Array.from(new Set((await Promise.all([
@@ -64,7 +67,7 @@ async function makePatchDiagnostic(doc: VencordAstParser): Promise<Diagnostic[]>
                 message: string;
             } => e.message != null)
             .map(({ range, message }) => ({
-                range,
+                range: toVscodeRange(range),
                 message,
                 severity: DiagnosticSeverity.Error,
                 source: "Vencord-Companion",
@@ -93,7 +96,7 @@ async function makeFindDiagnostic(doc: VencordAstParser): Promise<Diagnostic[]> 
                 message: string;
             } => e.message != null)
             .map(({ range, message }) => ({
-                range,
+                range: toVscodeRange(range),
                 severity: DiagnosticSeverity.Error,
                 message,
                 source: "Vencord-Companion",

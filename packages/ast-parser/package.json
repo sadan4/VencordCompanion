@@ -1,0 +1,25 @@
+{
+  "name": "@vencord-companion/ast-parser",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "vitest"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.15.0",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@sadan4/devtools-pretty-printer": "catalog:",
+    "@vencord-companion/shared": "workspace:*",
+    "ts-api-utils": "catalog:",
+    "typescript": "catalog:"
+  },
+  "devDependencies": {
+    "vitest": "catalog:"
+  }
+}

@@ -1,15 +1,13 @@
-import { WebpackAstParser } from "@ast/webpack";
-import { format } from "@modules/format";
 import { outputChannel } from "@modules/logging";
 import { BufferedProgressBar, exists, getCurrentFolder, isDirectory, ProgressBar, SecTo } from "@modules/util";
+import { Format } from "@sadan4/devtools-pretty-printer";
 import { sendAndGetData } from "@server";
-
-import { formatModule } from "./util";
+import { formatModule, ModuleDep, WebpackAstParser } from "@vencord-companion/webpack-ast-parser";
 
 import { mkdir, readdir, readFile, rm, writeFile } from "fs/promises";
 import { join, resolve } from "path";
 
-import { ProgressLocation, Uri, window } from "vscode";
+import { ProgressLocation, window } from "vscode";
 
 class _ModuleCache {
     folder: string;
@@ -37,8 +35,8 @@ class _ModuleCache {
         this.folder = folder;
     }
 
-    public getModuleURI(id: string) {
-        return Uri.file(this.getModulePath(id));
+    public getModuleURL(id: string): URL {
+        return new URL(`file://${this.getModulePath(id)}`);
     }
 
     public getModulePath(id: string): string {
@@ -137,7 +135,7 @@ class _ModuleCache {
             if (canceled) {
                 throw new Error("Module formatting canceled");
             }
-            modmap[id] = format(formatModule(text, id));
+            modmap[id] = Format(formatModule(text, id));
             await progress.increment();
         }
 
@@ -221,16 +219,7 @@ type DepsGeneratorOpts =
     }
 );
 
-type MainDeps = Record<string, {
-    /**
-     * the modules that require this module syncranously
-     */
-    syncUses: string[];
-    /**
-     * the modules that require this module lazily
-     */
-    lazyUses: string[];
-}>;
+type MainDeps = Record<string, ModuleDep>;
 
 interface KeyModules {
     fluxDispatcherClass: [moduleId: string, exportName: string | symbol][];

@@ -1,0 +1,6 @@
+{
+  "extends": "@vencord-companion/tsconfig",
+  "compilerOptions": {
+    "noImplicitAny": false
+  }
+}

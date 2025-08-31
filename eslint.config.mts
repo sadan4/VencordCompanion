@@ -230,6 +230,7 @@ const TSLintRules: Partial<ExtractRules> = {
             enforceForRenamedProperties: false,
         },
     ],
+    "@typescript-eslint/return-await": ["error", "error-handling-correctness-only"],
 };
 
 const styleRules: Partial<_RuleOptions> = {
@@ -580,8 +581,8 @@ const styleRules: Partial<_RuleOptions> = {
 
 const extensions = "{js,mjs,cjs,jsx,mjsx,cjsx,ts,mts,cts,tsx,mtsx,ctsx}";
 
-export default TSEslint.config({ ignores: ["dist", "src/webview"] }, {
-    files: [`src/**/*.${extensions}`, `eslint.config.${extensions}`],
+export default TSEslint.config({ ignores: ["dist", "src/webview", "node_modules", "**/__test__/**", "packages/vencord-ast-parser/src/.vencord-source/**"] }, {
+    files: [`src/**/*.${extensions}`, `eslint.config.${extensions}`, `packages/**/*.${extensions}`],
     plugins: {
         "@stylistic": stylistic,
         "@typescript-eslint": TSEslint.plugin,

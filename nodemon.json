@@ -1,7 +1,0 @@
-{
-    "restartable": "rs",
-    "verbose": true,
-    "watch": "src",
-    "exec": "npm run pretest",
-    "ext": "ts,mts,cts,js,mjs,cjs,json"
-}

@@ -178,22 +178,6 @@ export async function isDirectory(path: PathLike) {
     return (await stat(path)).isDirectory();
 }
 /**
- * **does not** format the modules code see {@link format} for more code formating
-
- * takes the raw contents of a module and prepends a header
- * @param moduleContents the module
- * @param moduleId the module id
- * @param isFind if the module is coming from a find
-    eg: is it a partial module
- * @returns a string with the formatted module
- */
-
-export function formatModule(moduleContents: string, moduleId: string | number | undefined = "000000", isFind?: boolean): string {
-    if (isFind)
-        return `// Webpack Module ${moduleId} \n${isFind ? `//OPEN FULL MODULE: ${moduleId}\n` : ""}//EXTRACED WEPBACK MODULE ${moduleId}\n 0,\n${moduleContents}`;
-    return moduleContents;
-}
-/**
  * converts a string into a URI that will resolve to a file with the contents of the string
  * @param patched the contents of the file
  * @param filename the name of the file
@@ -211,55 +195,4 @@ export function mkStringUri(patched: any, filename = "module", filetype = "js"):
     const a = Buffer.from(patched);
 
     return Uri.parse(PREFIX + a.toString("base64url") + SUFFIX);
-}
-
-export type SemVerVersion = readonly [major: number, minor: number, patch: number];
-
-/**
- * Compares two semantic version arrays
- * @param a First version to compare
- * @param b Second version to compare
- * @returns 
- *  -1 if a < b
- *   0 if a = b
- *   1 if a > b
- */
-export function compareVersions(a: SemVerVersion, b: SemVerVersion): 0 | -1 | 1 {
-    // Compare major version
-    if (a[0] < b[0])
-        return -1;
-    if (a[0] > b[0])
-        return 1;
-
-    // Major versions are equal, compare minor version
-    if (a[1] < b[1])
-        return -1;
-    if (a[1] > b[1])
-        return 1;
-
-    // Minor versions are equal, compare patch version
-    if (a[2] < b[2])
-        return -1;
-    if (a[2] > b[2])
-        return 1;
-
-    // All components are equal
-    return 0;
-}
-
-/**
- * version are incompatible if the actual version is less than the minimum version
- * or the actual version has a higher major than the min version
- */
-export function areVersionsIncompatible(minVersion: SemVerVersion, actualVersion: SemVerVersion): boolean {
-    // Check if actual version is less than minimum version
-    if (compareVersions(actualVersion, minVersion) === -1)
-        return true;
-
-    // Check if actual version has a higher major version than minimum version
-    if (actualVersion[0] > minVersion[0])
-        return true;
-
-    // Versions are compatible
-    return false;
 }

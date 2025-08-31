@@ -2,6 +2,7 @@ import { outputChannel } from "@modules/logging";
 import { BufferedProgressBar, exists, getCurrentFolder, isDirectory, ProgressBar, SecTo } from "@modules/util";
 import { Format } from "@sadan4/devtools-pretty-printer";
 import { sendAndGetData } from "@server";
+import { compareVersions, SemVerVersion } from "@vencord-companion/shared/util";
 import { formatModule, ModuleDep, WebpackAstParser } from "@vencord-companion/webpack-ast-parser";
 
 import { mkdir, readdir, readFile, rm, writeFile } from "fs/promises";
@@ -226,6 +227,7 @@ interface KeyModules {
 }
 
 interface CacheData {
+    companionVersion: SemVerVersion;
     mainDeps: MainDeps;
     keyModules: KeyModules;
 }
@@ -312,6 +314,16 @@ export class ModuleDepManager {
             const file = await readFile(cacheFile, "utf-8");
             const cachedData = JSON.parse(file) as CacheData;
 
+            // ignore the cache if the companion version doesn't match
+            if (!("companionVersion" in cachedData) || compareVersions(cachedData.companionVersion, SERVER_VERSION_FROM_BUILD) !== 0) {
+                console.info("Removing _cache.json generated with an old version of VencordCompanion oldVersion: ", cachedData.companionVersion);
+                rm(cacheFile)
+                    .catch((e) => {
+                        outputChannel.error(`Failed to remove invalid cache file: ${e}`);
+                    });
+                return;
+            }
+
             this.canonicalizeKeyModules(cachedData.keyModules);
 
             outputChannel.info("ModuleDepManager#tryReadCache: Loading deps from cache file");
@@ -330,6 +342,7 @@ export class ModuleDepManager {
         const cacheFile = join(this.currentFolder, this.moduleFolder, ModuleDepManager.CACHE_FILE_NAME);
 
         const data = JSON.stringify({
+            companionVersion: SERVER_VERSION_FROM_BUILD,
             mainDeps: ModuleDepManager.modCache!,
             keyModules: ModuleDepManager.keyModules!,
         } satisfies CacheData);

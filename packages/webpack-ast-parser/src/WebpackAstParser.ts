@@ -293,8 +293,19 @@ export class WebpackAstParser extends AstParser {
         if (!moduleId)
             return;
 
-        const res = await this.moduleCache.getLatestModuleFromNum(moduleId)
-            .catch(logger.error);
+        let res: string | undefined;
+
+        try {
+            res ??= await this.moduleCache.getLatestModuleFromNum(moduleId);
+        } catch (e) {
+            logger.warn(e);
+        }
+
+        try {
+            res ??= await this.moduleCache.getModuleFromNum(String(moduleId));
+        } catch (e) {
+            logger.warn(e);
+        }
 
         if (res == null)
             return;

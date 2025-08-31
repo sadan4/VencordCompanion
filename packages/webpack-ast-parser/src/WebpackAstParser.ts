@@ -255,6 +255,22 @@ export class WebpackAstParser extends AstParser {
         };
     }
 
+    async tryGetFreshModuleFallbackToCache(moduleId: string | number): Promise<string | undefined> {
+        try {
+            return await this.moduleCache.getLatestModuleFromNum(moduleId);
+        } catch (e) {
+            logger.warn(e);
+        }
+
+        try {
+            return await this.moduleCache.getModuleFromNum(String(moduleId));
+        } catch (e) {
+            logger.warn(e);
+        }
+
+        return;
+    }
+
     public async generateDefinitions(position: Position): Promise<Definition[] | undefined> {
         if (!this.uses)
             throw new Error("Wreq isn't used anywhere");
@@ -293,19 +309,7 @@ export class WebpackAstParser extends AstParser {
         if (!moduleId)
             return;
 
-        let res: string | undefined;
-
-        try {
-            res ??= await this.moduleCache.getLatestModuleFromNum(moduleId);
-        } catch (e) {
-            logger.warn(e);
-        }
-
-        try {
-            res ??= await this.moduleCache.getModuleFromNum(String(moduleId));
-        } catch (e) {
-            logger.warn(e);
-        }
+        const res: string | undefined = await this.tryGetFreshModuleFallbackToCache(moduleId);
 
         if (res == null)
             return;
@@ -322,11 +326,23 @@ export class WebpackAstParser extends AstParser {
             ];
         }
 
-
         while (true) {
+            // check for an explicit re-export before falling back to checking for a whole module re-export
             const ret = cur.doesReExportFromExport(names.map((x) => x.text));
 
             if (!ret) {
+                // if no explicit re-export was found, try a whole module re-export
+                const wholeModuleExportId = cur.doesReExportWholeModule();
+
+                if (wholeModuleExportId) {
+                    const content = await this.tryGetFreshModuleFallbackToCache(wholeModuleExportId);
+
+                    if (content) {
+                        cur = WebpackAstParser.withFormattedModule(content, wholeModuleExportId);
+                        // go again with the new module
+                        continue;
+                    }
+                }
                 break;
             }
 
@@ -507,6 +523,60 @@ export class WebpackAstParser extends AstParser {
     }
 
     /**
+     * checks if this module re-exports another whole module and not just parts of it
+     * ```js
+     * e.exports = n(moduleId);
+     * ```
+     * @returns the module ID if it does, undefined otherwise
+     */
+    doesReExportWholeModule(): string | undefined {
+        // we can't export anything if we don't import anything
+        if (!this.wreq)
+            return;
+
+        // Check for a re-export of the whole module before decl
+        // if the whole module is exported, then we don't need to do any more work
+
+        // e.exports = n(moduleId);
+
+        for (const { location: use } of this.uses!.uses) {
+            const assignment = findParent(use, this.isAssignmentExpression);
+
+            if (!assignment) {
+                continue;
+            }
+
+            // lhs
+            const lhs = assignment.left;
+
+            if (!isPropertyAccessExpression(lhs)) {
+                continue;
+            }
+
+            const [module, exports] = this.flattenPropertyAccessExpression(lhs) ?? [];
+
+            if (!module || !isIdentifier(module) || !this.isUseOf(module, this.findWreq_e()) || exports?.text !== "exports") {
+                continue;
+            }
+
+            const rhs = assignment.right;
+
+            if (!isCallExpression(rhs) || rhs.expression !== use || rhs.arguments.length !== 1) {
+                continue;
+            }
+
+            const [arg] = rhs.arguments;
+
+            if (!isNumericLiteral(arg)) {
+                continue;
+            }
+
+            return arg.text;
+        }
+        return;
+    }
+
+    /**
    * @param moduleId the module id that {@link exportName} is from
    * @param exportName the name of the re-exported export
    */
@@ -518,71 +588,9 @@ export class WebpackAstParser extends AstParser {
         if (!this.wreq || !this.moduleId)
             return;
 
-
-        const directExportUses = this.uses!.uses.filter(({ location }) => {
-            // n(moduleId)
-            if (!isCallExpression(location.parent)) {
-                return false;
-            }
-
-            const webpackRequireUse = location.parent;
-
-            if (webpackRequireUse.arguments.length !== 1) {
-                return false;
-            }
-
-            const [arg] = webpackRequireUse.arguments;
-
-            if (!isNumericLiteral(arg)) {
-                return false;
-            }
-            return arg.text === moduleId;
-        })
-            .map(({ location }) => location);
-
-        // Check for a re-export of the whole module before decl
-        // if the whole module is exported, then we don't need to do any more work
-
-        // e.exports = n(moduleId);
-
-        wholeReExport: if (directExportUses.length === 1) {
-            const [use] = directExportUses;
-            const assignment = findParent(use, this.isAssignmentExpression);
-
-            if (!assignment) {
-                break wholeReExport;
-            }
-
-            // lhs
-            const lhs = assignment.left;
-
-            if (!isPropertyAccessExpression(lhs)) {
-                return;
-            }
-
-            const [module, exports] = this.flattenPropertyAccessExpression(lhs) ?? [];
-
-            if (!module || !isIdentifier(module) || !this.isUseOf(module, this.findWreq_e()) || exports?.text !== "exports") {
-                break wholeReExport;
-            }
-
-            const rhs = assignment.right;
-
-            if (!isCallExpression(rhs) || rhs.expression !== use || rhs.arguments.length !== 1) {
-                break wholeReExport;
-            }
-
-            const [arg] = rhs.arguments;
-
-            if (!isNumericLiteral(arg) || arg.text !== moduleId) {
-                break wholeReExport;
-            }
-
+        if (this.doesReExportWholeModule()) {
             return exportName;
-        } else if (directExportUses.length > 1) {
-            logger.debug(`[WebpackAstParser] Found multiple direct export uses for ${moduleId} in ${this.moduleId}`);
         }
-
 
         const decl = this.getImportedVar(moduleId);
 
@@ -1186,7 +1194,7 @@ export class WebpackAstParser extends AstParser {
                 }
 
                 ret ||= this.makeExportMapRecursive(x);
-                // ensure we arent nested
+                // ensure we aren't nested
                 ret = (function nestLoop(curName: string | symbol, obj: RangeExportMap | ExportRange):
                     RangeExportMap | ExportRange {
                     if (Array.isArray(obj)) {

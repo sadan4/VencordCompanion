@@ -73,12 +73,15 @@ export class AstParser {
     }
 
     public getVarInfoFromUse(ident: Identifier): VariableInfo | undefined {
-        const toRet = [...this.vars.values()].find((x) => x.uses.some((use) => use.location === ident));
-
-        if (!toRet) {
-            logger.trace("[AstParser] getVarInfoFromUse: no variable info found for identifier");
+        for (const use of this.vars.values()) {
+            for (const { location } of use.uses) {
+                if (location === ident) {
+                    return use;
+                }
+            }
         }
-        return toRet;
+
+        logger.trace("[AstParser] getVarInfoFromUse: no variable info found for identifier");
     }
 
     // FIXME: add tests for this

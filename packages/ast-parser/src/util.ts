@@ -325,6 +325,9 @@ function _getTokenAtPosition(node: Node, pos: number, sourceFile: SourceFile, al
     if (!allowJsDoc) {
         // if we are not interested in JSDoc, we can skip to the deepest AST node at the given position
         node = getAstNodeAtPosition(node, pos)!;
+        if (isTokenKind(node.kind)) {
+            return node;
+        }
     }
     outer: while (true) {
         for (const child of node.getChildren()) {

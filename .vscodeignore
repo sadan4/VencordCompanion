@@ -35,3 +35,7 @@ nodemon.json
 .github
 assets/test
 .direnv
+packages
+*.cpuprofile
+.actrc
+pnpm-workspace.yaml

@@ -1,20 +1,17 @@
 import { Position } from "@vencord-companion/shared/Position";
 import { Range } from "@vencord-companion/shared/Range";
 
+import { getFile } from "./testingUtil";
 import { MainDeps, RangeExportMap, Reference } from "./types";
 import { TAssert } from "./util";
 import { WebpackAstParser } from "./WebpackAstParser";
 
-import { readFileSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 
 const __dirname = import.meta.dirname;
 
-export function getFile(asset: string): string {
-    return readFileSync(join(__dirname, "__test__", asset), "utf-8");
-}
 
 describe("WebpackAstParser", function () {
     const normalModule: string = getFile("webpack/module.js");

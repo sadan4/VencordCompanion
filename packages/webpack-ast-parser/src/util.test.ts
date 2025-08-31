@@ -1,5 +1,5 @@
+import { getFile } from "./testingUtil";
 import { isWebpackModule } from "./util";
-import { getFile } from "./WebpackAstParser.test";
 
 import { describe, expect, it } from "vitest";
 

@@ -9,8 +9,15 @@
       "name": "Run Extension",
       "type": "extensionHost",
       "request": "launch",
-      "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
-      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+      // vscode-neovim does NOT play well when debugging other extensions
+      // it incorrectly monkey-patches standard APIs (only patching some console methods and leaving the rest undefined, ...), and randomly errors
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}",
+        "--disable-extension=asvetliakov.vscode-neovim"
+      ],
+      "outFiles": [
+        "${workspaceFolder}/dist/**/*.js"
+      ],
       "preLaunchTask": "${defaultBuildTask}",
       "pauseForSourceMap": true,
       "resolveSourceMapLocations": [
@@ -27,7 +34,9 @@
         "--extensionTestsPath=${workspaceFolder}/dist.test/tests/runTests",
         "--disable-extensions"
       ],
-      "outFiles": ["${workspaceFolder}/dist.test/**/*.js"],
+      "outFiles": [
+        "${workspaceFolder}/dist.test/**/*.js"
+      ],
       "preLaunchTask": "build:test",
       "pauseForSourceMap": true,
       "resolveSourceMapLocations": [

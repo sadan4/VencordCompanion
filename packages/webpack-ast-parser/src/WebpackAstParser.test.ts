@@ -527,9 +527,7 @@ describe("WebpackAstParser", function () {
         });
 
         function makeLineRange(file: string | number, y1, x1: number, len = 1) {
-            if (typeof file === "number") {
-                file = `${file * 111111}.js`;
-            }
+            file = `${file}.js`;
             return {
                 locationType: "file_path",
                 filePath: join(__dirname, "__test__", ".modules", file),
@@ -542,13 +540,13 @@ describe("WebpackAstParser", function () {
                 const locs = await parser.generateReferences(new Position(5, 8));
 
                 expect(locs).to.have.deep.members([
-                    makeLineRange(2, 18, 29),
-                    makeLineRange(1, 23, 34),
-                    makeLineRange(4, 5, 20),
-                    makeLineRange(5, 39, 30),
-                    makeLineRange(5, 44, 30),
-                    makeLineRange(5, 22, 34),
-                    makeLineRange(5, 27, 34),
+                    makeLineRange(222222, 18, 29),
+                    makeLineRange(111111, 24, 34),
+                    makeLineRange(444444, 5, 20),
+                    makeLineRange(555555, 39, 30),
+                    makeLineRange(555555, 44, 30),
+                    makeLineRange(555555, 22, 34),
+                    makeLineRange(555555, 27, 34),
                 ]);
             });
             it.todo("handles re-exports across wreq.t", async function () {
@@ -560,16 +558,16 @@ describe("WebpackAstParser", function () {
             const parser = new WebpackAstParser(getFile(".modules/222222.js"));
             const locs = await parser.generateReferences(new Position(6, 8));
 
-            expect(locs).to.deep.equal([makeLineRange(1, 15, 26)]);
+            expect(locs).to.deep.equal([makeLineRange(111111, 16, 26)]);
         });
         it("finds a simple export in more than one file", async function () {
             const parser = new WebpackAstParser(getFile(".modules/222222.js"));
             const locs = await parser.generateReferences(new Position(5, 8));
 
             expect(locs).to.have.deep.members([
-                makeLineRange(1, 15, 18),
-                makeLineRange(1, 15, 40),
-                makeLineRange(9, 13, 41),
+                makeLineRange(111111, 16, 18),
+                makeLineRange(111111, 16, 40),
+                makeLineRange(999999, 13, 41),
             ]);
         });
         it.todo("finds all uses of a default e.exports", function () {
@@ -585,8 +583,23 @@ describe("WebpackAstParser", function () {
          * e.exports = foo;
          * ```
          */
-        it.todo("finds all uses of a default e.exports where the exports are assigned to the default export first", function () {
+        it("finds all uses of a default e.exports where the exports are assigned to the default export first", async function () {
+            const parser = new WebpackAstParser(getFile(".modules/111113.js"));
+            const locs = await parser.generateReferences(new Position(5, 8));
 
+            expect(locs).to.deep.equal([makeLineRange(111111, 31, 28, 3)]);
+        });
+        it("finds all uses of a default e.exports where the exports are assigned to the default export first 2", async function () {
+            const parser = new WebpackAstParser(getFile(".modules/111113.js"));
+            const locs = await parser.generateReferences(new Position(8, 8));
+
+            expect(locs).to.deep.equal([makeLineRange(111111, 32, 28, 3)]);
+        });
+        it("finds all uses of a default e.exports where the exports are assigned to the default export first 3", async function () {
+            const parser = new WebpackAstParser(getFile(".modules/111113.js"));
+            const locs = await parser.generateReferences(new Position(11, 8));
+
+            expect(locs).to.deep.equal([makeLineRange(111111, 33, 28, 3)]);
         });
         it("finds uses of a class export as a component (class itself, not a method or instance)", async function () {
             const parser = new WebpackAstParser(getFile(".modules/555555.js"));
@@ -598,7 +611,7 @@ describe("WebpackAstParser", function () {
             TAssert<Location[]>(locs);
             TAssert<Location[]>(locs2);
             expect(locs).to.have.deep.members(locs2);
-            expect(locs).to.have.deep.members([makeLineRange(3, 12, 52)]);
+            expect(locs).to.have.deep.members([makeLineRange(333333, 12, 52)]);
         });
         describe("stores", function () {
             it.todo("finds all uses of a store from the class name", async function () {

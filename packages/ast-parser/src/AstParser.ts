@@ -87,7 +87,7 @@ export class AstParser {
      * @param decl a declaration of a variable
      * @returns true of the use is a use of the declaration, false otherwise
      */
-    public isUseOf(use: Identifier, decl: Identifier): boolean {
+    public isUseOf(use: Identifier | undefined, decl: Identifier | undefined): boolean {
         if (!decl || !use)
             return false;
 
@@ -189,7 +189,7 @@ export class AstParser {
 
     public isAssignmentExpression(node: Node | undefined):
      node is AssignmentExpression<AssignmentOperatorToken> {
-        if (!node || !isBinaryExpression(node) || !isIdentifier(node.left))
+        if (!node || !isBinaryExpression(node))
             return false;
 
 

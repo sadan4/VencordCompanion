@@ -433,7 +433,6 @@ export class WebpackAstParser extends AstParser {
         // TODO: support jumping from object literals
         for (const [_exportedName] of exportedNames) {
             // needed to workaround a v8 bug which crashes when a breakpoint falls on the for loop
-            // see: https://github.com/microsoft/vscode/issues/246902
             const exportedName = _exportedName;
             const seen: Record<string, Set<String>> = {};
 
@@ -464,11 +463,9 @@ export class WebpackAstParser extends AstParser {
 
                 const parser = new WebpackAstParser(modText);
                 const uses = parser.getUsesOfImport(importedId, exportedName);
-
                 // FIXME: this covers up a bug in {@link doesReExport}
-                if (uses.length === 0)
-                    continue;
-
+                // if (uses.length === 0)
+                //     continue;
                 const exportedAs = parser.doesReExportFromImport(importedId, exportedName);
 
                 if (exportedAs) {
@@ -506,9 +503,75 @@ export class WebpackAstParser extends AstParser {
         moduleId: string,
         exportName: string | symbol,
     ): string | symbol | undefined {
-    // we can't re-export anything if we don't import anything
+        // we can't re-export anything if we don't import anything
         if (!this.wreq || !this.moduleId)
             return;
+
+
+        const directExportUses = this.uses!.uses.filter(({ location }) => {
+            // n(moduleId)
+            if (!isCallExpression(location.parent)) {
+                return false;
+            }
+
+            const webpackRequireUse = location.parent;
+
+            if (webpackRequireUse.arguments.length !== 1) {
+                return false;
+            }
+
+            const [arg] = webpackRequireUse.arguments;
+
+            if (!isNumericLiteral(arg)) {
+                return false;
+            }
+            return arg.text === moduleId;
+        })
+            .map(({ location }) => location);
+
+        // Check for a re-export of the whole module before decl
+        // if the whole module is exported, then we don't need to do any more work
+
+        // e.exports = n(moduleId);
+
+        wholeReExport: if (directExportUses.length === 1) {
+            const [use] = directExportUses;
+            const assignment = findParent(use, this.isAssignmentExpression);
+
+            if (!assignment) {
+                break wholeReExport;
+            }
+
+            // lhs
+            const lhs = assignment.left;
+
+            if (!isPropertyAccessExpression(lhs)) {
+                return;
+            }
+
+            const [module, exports] = this.flattenPropertyAccessExpression(lhs) ?? [];
+
+            if (!module || !isIdentifier(module) || !this.isUseOf(module, this.findWreq_e()) || exports?.text !== "exports") {
+                break wholeReExport;
+            }
+
+            const rhs = assignment.right;
+
+            if (!isCallExpression(rhs) || rhs.expression !== use || rhs.arguments.length !== 1) {
+                break wholeReExport;
+            }
+
+            const [arg] = rhs.arguments;
+
+            if (!isNumericLiteral(arg) || arg.text !== moduleId) {
+                break wholeReExport;
+            }
+
+            return exportName;
+        } else if (directExportUses.length > 1) {
+            logger.debug(`[WebpackAstParser] Found multiple direct export uses for ${moduleId} in ${this.moduleId}`);
+        }
+
 
         const decl = this.getImportedVar(moduleId);
 

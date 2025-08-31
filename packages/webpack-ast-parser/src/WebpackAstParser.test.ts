@@ -613,6 +613,17 @@ describe("WebpackAstParser", function () {
             expect(locs).to.have.deep.members(locs2);
             expect(locs).to.have.deep.members([makeLineRange(333333, 12, 52)]);
         });
+        describe("definitions", function () {
+            describe("e.exports", function () {
+                it("finds the use of a simple import", async function () {
+                    const parser = new WebpackAstParser(getFile(".modules/111111.js"));
+                    const defs = await parser.generateDefinitions(new Position(21, 29));
+
+                    expect(defs)
+                        .toMatchSnapshot();
+                });
+            });
+        });
         describe("stores", function () {
             it.todo("finds all uses of a store from the class name", async function () {
                 // const parser = new WebpackAstParser(getFile(".modules/999999.js"));

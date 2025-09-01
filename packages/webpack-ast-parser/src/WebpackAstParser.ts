@@ -1584,6 +1584,11 @@ export class WebpackAstParser extends AstParser {
             const exportVar = findReturnIdentifier(exportCallAssignment.initializer);
 
             if (exportVar) {
+                /**
+                 * This is probably bad for perf
+                 *
+                 * consider {@link this.getVarInfoFromUse}
+                */
                 const [exportDec]
           = [...this.vars.entries()].find(([, v]) => {
               return v.uses.some((use) => use.location === exportVar);

@@ -72,16 +72,24 @@ export class AstParser {
         return collectVariableUsage(this.sourceFile);
     }
 
-    public getVarInfoFromUse(ident: Identifier): VariableInfo | undefined {
-        for (const use of this.vars.values()) {
-            for (const { location } of use.uses) {
-                if (location === ident) {
-                    return use;
-                }
+    @CacheGetter()
+    public get usesToVars(): Map<Identifier, VariableInfo> {
+        const map = new Map<Identifier, VariableInfo>();
+
+        for (const [, info] of this.vars) {
+            for (const { location } of info.uses) {
+                map.set(location, info);
             }
+            // for (const decl of info.declarations) {
+            //     map.set(decl, info);
+            // }
         }
 
-        logger.trace("[AstParser] getVarInfoFromUse: no variable info found for identifier");
+        return map;
+    }
+
+    public getVarInfoFromUse(ident: Identifier): VariableInfo | undefined {
+        return this.usesToVars.get(ident);
     }
 
     // FIXME: add tests for this
@@ -99,7 +107,9 @@ export class AstParser {
         if (!varInfo)
             return false;
 
-        return varInfo.uses.some(({ location }) => location === use);
+        const varInfoFromUse = this.usesToVars.get(use);
+
+        return varInfoFromUse === varInfo;
     }
 
     public constructor(text: string) {
@@ -190,33 +200,52 @@ export class AstParser {
         return false;
     }
 
+    private static AssignmentTokens: Partial<Record<SyntaxKind, true>> = {
+        [SyntaxKind.EqualsToken]: true,
+        [SyntaxKind.PlusEqualsToken]: true,
+        [SyntaxKind.MinusEqualsToken]: true,
+        [SyntaxKind.AsteriskAsteriskEqualsToken]: true,
+        [SyntaxKind.AsteriskEqualsToken]: true,
+        [SyntaxKind.SlashEqualsToken]: true,
+        [SyntaxKind.PercentEqualsToken]: true,
+        [SyntaxKind.AmpersandEqualsToken]: true,
+        [SyntaxKind.BarEqualsToken]: true,
+        [SyntaxKind.CaretEqualsToken]: true,
+        [SyntaxKind.LessThanLessThanEqualsToken]: true,
+        [SyntaxKind.GreaterThanGreaterThanGreaterThanEqualsToken]: true,
+        [SyntaxKind.GreaterThanGreaterThanEqualsToken]: true,
+        [SyntaxKind.BarBarEqualsToken]: true,
+        [SyntaxKind.AmpersandAmpersandEqualsToken]: true,
+        [SyntaxKind.QuestionQuestionEqualsToken]: true,
+    };
+
     public isAssignmentExpression(node: Node | undefined):
      node is AssignmentExpression<AssignmentOperatorToken> {
         if (!node || !isBinaryExpression(node))
             return false;
 
-
-        switch (node.operatorToken.kind) {
-            case SyntaxKind.EqualsToken:
-            case SyntaxKind.PlusEqualsToken:
-            case SyntaxKind.MinusEqualsToken:
-            case SyntaxKind.AsteriskAsteriskEqualsToken:
-            case SyntaxKind.AsteriskEqualsToken:
-            case SyntaxKind.SlashEqualsToken:
-            case SyntaxKind.PercentEqualsToken:
-            case SyntaxKind.AmpersandEqualsToken:
-            case SyntaxKind.BarEqualsToken:
-            case SyntaxKind.CaretEqualsToken:
-            case SyntaxKind.LessThanLessThanEqualsToken:
-            case SyntaxKind.GreaterThanGreaterThanGreaterThanEqualsToken:
-            case SyntaxKind.GreaterThanGreaterThanEqualsToken:
-            case SyntaxKind.BarBarEqualsToken:
-            case SyntaxKind.AmpersandAmpersandEqualsToken:
-            case SyntaxKind.QuestionQuestionEqualsToken:
-                return true;
-            default:
-                return false;
-        }
+        return AstParser.AssignmentTokens[node.operatorToken.kind] === true;
+        // switch (node.operatorToken.kind) {
+        //     case SyntaxKind.EqualsToken:
+        //     case SyntaxKind.PlusEqualsToken:
+        //     case SyntaxKind.MinusEqualsToken:
+        //     case SyntaxKind.AsteriskAsteriskEqualsToken:
+        //     case SyntaxKind.AsteriskEqualsToken:
+        //     case SyntaxKind.SlashEqualsToken:
+        //     case SyntaxKind.PercentEqualsToken:
+        //     case SyntaxKind.AmpersandEqualsToken:
+        //     case SyntaxKind.BarEqualsToken:
+        //     case SyntaxKind.CaretEqualsToken:
+        //     case SyntaxKind.LessThanLessThanEqualsToken:
+        //     case SyntaxKind.GreaterThanGreaterThanGreaterThanEqualsToken:
+        //     case SyntaxKind.GreaterThanGreaterThanEqualsToken:
+        //     case SyntaxKind.BarBarEqualsToken:
+        //     case SyntaxKind.AmpersandAmpersandEqualsToken:
+        //     case SyntaxKind.QuestionQuestionEqualsToken:
+        //         return true;
+        //     default:
+        //         return false;
+        // }
     }
 
     // TODO: add tests for this

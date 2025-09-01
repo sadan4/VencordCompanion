@@ -225,27 +225,6 @@ export class AstParser {
             return false;
 
         return AstParser.AssignmentTokens[node.operatorToken.kind] === true;
-        // switch (node.operatorToken.kind) {
-        //     case SyntaxKind.EqualsToken:
-        //     case SyntaxKind.PlusEqualsToken:
-        //     case SyntaxKind.MinusEqualsToken:
-        //     case SyntaxKind.AsteriskAsteriskEqualsToken:
-        //     case SyntaxKind.AsteriskEqualsToken:
-        //     case SyntaxKind.SlashEqualsToken:
-        //     case SyntaxKind.PercentEqualsToken:
-        //     case SyntaxKind.AmpersandEqualsToken:
-        //     case SyntaxKind.BarEqualsToken:
-        //     case SyntaxKind.CaretEqualsToken:
-        //     case SyntaxKind.LessThanLessThanEqualsToken:
-        //     case SyntaxKind.GreaterThanGreaterThanGreaterThanEqualsToken:
-        //     case SyntaxKind.GreaterThanGreaterThanEqualsToken:
-        //     case SyntaxKind.BarBarEqualsToken:
-        //     case SyntaxKind.AmpersandAmpersandEqualsToken:
-        //     case SyntaxKind.QuestionQuestionEqualsToken:
-        //         return true;
-        //     default:
-        //         return false;
-        // }
     }
 
     // TODO: add tests for this

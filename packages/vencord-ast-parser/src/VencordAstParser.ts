@@ -30,9 +30,8 @@ import {
 } from "typescript";
 
 export class VencordAstParser extends AstParser {
-    private _path: string;
+    private readonly _path: string;
 
-    @CacheGetter()
     public get path(): string {
         return this._path;
     }

@@ -26,6 +26,27 @@
       ]
     },
     {
+      "name": "Inspect-Brk Extension Host",
+      "type": "extensionHost",
+      "request": "launch",
+      // vscode-neovim does NOT play well when debugging other extensions
+      // it incorrectly monkey-patches standard APIs (only patching some console methods and leaving the rest undefined, ...), and randomly errors
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}",
+        "--disable-extension=asvetliakov.vscode-neovim",
+        "--inspect-brk-extensions=9229"
+      ],
+      "outFiles": [
+        "${workspaceFolder}/dist/**/*.js"
+      ],
+      "preLaunchTask": "${defaultBuildTask}",
+      "pauseForSourceMap": true,
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/**",
+        "!**/node_modules/**"
+      ]
+    },
+    {
       "name": "Extension Tests",
       "type": "extensionHost",
       "request": "launch",

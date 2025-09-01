@@ -196,17 +196,17 @@ export class WebpackAstParser extends AstParser {
         }
     }
 
-    public getModulesThatRequireThisModule(): Promise<ModuleDeps | null> {
+    public getModulesThatRequireThisModule(): ModuleDeps | null {
         if (!this.moduleId) {
-            return Promise.resolve(null);
+            return null;
         }
 
         const guh = this.moduleDepManager.getModDeps(this.moduleId);
 
-        return Promise.resolve({
+        return {
             lazy: guh.lazyUses,
             sync: guh.syncUses,
-        });
+        };
     }
 
     @Cache()
@@ -450,7 +450,7 @@ export class WebpackAstParser extends AstParser {
             throw new Error("Could not find module id of module to search for references of");
 
         const moduleExports = this.getExportMap();
-        const where = await this.getModulesThatRequireThisModule();
+        const where = this.getModulesThatRequireThisModule();
         const locs: Reference[] = [];
 
         const exportedNames = Object.entries(moduleExports)
@@ -496,7 +496,7 @@ export class WebpackAstParser extends AstParser {
                 const exportedAs = parser.doesReExportFromImport(importedId, exportedName);
 
                 if (exportedAs) {
-                    const where = await parser.getModulesThatRequireThisModule();
+                    const where = parser.getModulesThatRequireThisModule();
 
                     left.push(...where?.sync.map((x) => [x, parser.moduleId!, exportedAs] as ElementType) ?? []);
                 }
@@ -578,6 +578,7 @@ export class WebpackAstParser extends AstParser {
     }
 
     /**
+     * Figure out if this module re-exports another given the module id of the other and the name of the export from the other module
    * @param moduleId the module id that {@link exportName} is from
    * @param exportName the name of the re-exported export
    */
@@ -601,7 +602,7 @@ export class WebpackAstParser extends AstParser {
         // FIXME: handle re-exports as cjs default, Object.entries ignores symbols
         const maybeReExports = Object.entries(this.getExportMapRaw())
             .filter(([, _v]) => {
-                // FIXME: properly handle this with {@link exportName}
+                /** FIXME: properly handle this with {@link exportName} */
                 if (!Array.isArray(_v))
                     return false;
 
@@ -617,7 +618,7 @@ export class WebpackAstParser extends AstParser {
                     // you cant discriminate against destructured unions
                     return this.isUseOf(module, decl) && reExport!.text === exportName;
                 }
-                logger.warn(`[WebpackAstParser] Unhandled type for reExport: ${v.kind}`);
+                logger.warn(`[WebpackAstParser] Unhandled type for reExport: ${v.kind}. Module ID: ${this.moduleId}`);
                 return false;
             })
             .map(([k]) => k);
@@ -1682,7 +1683,7 @@ export class WebpackAstParser extends AstParser {
         type SearchItem = (readonly [parser: WebpackAstParser, moduleId: string, exportName: string | symbol]);
 
         const toSearch: SearchItem[]
-            = (await this.getModulesThatRequireThisModule())
+            = this.getModulesThatRequireThisModule()
                 ?.sync
                 ?.map((mod) => [this, mod, exportName] as const)
                 ?? [];
@@ -1702,7 +1703,7 @@ export class WebpackAstParser extends AstParser {
 
             if (otherReExportName) {
                 ret.push([otherParser.moduleId, [otherReExportName]]);
-                for (const mod of (await otherParser.getModulesThatRequireThisModule())?.sync ?? []) {
+                for (const mod of otherParser.getModulesThatRequireThisModule()?.sync ?? []) {
                     toSearch.push([otherParser, mod, otherReExportName]);
                 }
             }

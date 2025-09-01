@@ -26,7 +26,6 @@ import {
     isPropertyAssignment,
     isRegularExpressionLiteral,
     isStringLiteral,
-    NamedDeclaration,
     ObjectLiteralExpression,
 } from "typescript";
 
@@ -122,12 +121,8 @@ export class VencordAstParser extends AstParser {
             .filter((x) => x !== null);
     }
 
-    hasName(node: NamedDeclaration, name: string) {
-        return this.isIdentifier(node.name) && node.name.text === name;
-    }
-
     parseFind(patch: ObjectLiteralExpression): IFindType | null {
-        const find = patch.properties.find((p) => this.hasName(p, "find"));
+        const find = findObjectLiteralByKey(patch, "find");
 
         if (!find || !isPropertyAssignment(find))
             return null;
@@ -149,7 +144,7 @@ export class VencordAstParser extends AstParser {
     }
 
     parseReplacement(patch: ObjectLiteralExpression): IReplacement[] | null {
-        const replacementObj = patch.properties.find((p) => this.hasName(p, "replacement"));
+        const replacementObj = findObjectLiteralByKey(patch, "replacement");
 
         if (!replacementObj || !isPropertyAssignment(replacementObj))
             return null;
@@ -161,8 +156,8 @@ export class VencordAstParser extends AstParser {
             return null;
 
         const replacementValues = (replacements as ObjectLiteralExpression[]).map((r: ObjectLiteralExpression) => {
-            const match = r.properties.find((p) => this.hasName(p, "match"));
-            const replace = r.properties.find((p) => this.hasName(p, "replace"));
+            const match = findObjectLiteralByKey(r, "match");
+            const replace = findObjectLiteralByKey(r, "replace");
 
             if (!replace || !isPropertyAssignment(replace) || !match || !isPropertyAssignment(match))
                 return null;

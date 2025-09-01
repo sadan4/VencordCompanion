@@ -43,6 +43,14 @@ describe("VencordAstParser", async function () {
             expect(parser.getPluginName()).to.equal("2");
         });
     });
+    describe("getPatches()", function () {
+        it("gets the patches for all plugins", async function () {
+            const patches = Object.fromEntries(pluginParsers.map((parser) => [parser.getPluginName() ?? assert.fail("Plugin name is missing"), parser.getPatches()] as const));
+
+            await expect(JSON.stringify(patches, null, 4))
+                .toMatchFileSnapshot(join(__dirname, "__snapshots__", "allPatches.json"));
+        });
+    });
 });
 
 function waitForProcess(process: ChildProcess): Promise<void> {

@@ -10,21 +10,36 @@ import {
 } from "@vencord-companion/ast-parser";
 import { Cache, CacheGetter } from "@vencord-companion/shared/decorators";
 
-import { FindUse, SourcePatch, TestFind } from "./types";
-import { parsePatch, tryParseFunction, tryParseRegularExpressionLiteral, tryParseStringLiteral } from "./util";
+import { FindUse, FunctionNode, IFindType, IReplacement, PatchData, SourcePatch, TestFind } from "./types";
+import { tryParseRegularExpressionLiteral, tryParseStringLiteral } from "./util";
 
 import { readFile } from "node:fs/promises";
+import { basename } from "node:path";
 import { DeclarationDomain } from "ts-api-utils";
 import {
     CallExpression,
+    CompilerOptions,
+    createPrinter,
+    EmitHint,
+    Expression,
+    findConfigFile,
     Identifier,
     isArrayLiteralExpression,
+    isArrowFunction,
     isCallExpression,
+    isFunctionExpression,
     isNamespaceImport,
     isObjectLiteralExpression,
     isPropertyAssignment,
+    isRegularExpressionLiteral,
     isStringLiteral,
+    NamedDeclaration,
+    Node,
     ObjectLiteralExpression,
+    parseJsonConfigFileContent,
+    readConfigFile,
+    sys,
+    transpileModule,
 } from "typescript";
 
 export class VencordAstParser extends AstParser {
@@ -106,7 +121,7 @@ export class VencordAstParser extends AstParser {
                 if (!isObjectLiteralExpression(x))
                     return null;
 
-                const res = parsePatch(this.path, x);
+                const res = this.parsePatch(x);
 
                 if (!res)
                     return null;
@@ -117,6 +132,111 @@ export class VencordAstParser extends AstParser {
                 };
             })
             .filter((x) => x !== null);
+    }
+
+    hasName(node: NamedDeclaration, name: string) {
+        return this.isIdentifier(node.name) && node.name.text === name;
+    }
+
+    parseFind(patch: ObjectLiteralExpression): IFindType | null {
+        const find = patch.properties.find((p) => this.hasName(p, "find"));
+
+        if (!find || !isPropertyAssignment(find))
+            return null;
+        if (!(isStringLiteral(find.initializer) || isRegularExpressionLiteral(find.initializer)))
+            return null;
+
+        return {
+            findType: isStringLiteral(find.initializer) ? "string" : "regex",
+            find: find.initializer.text,
+        };
+    }
+
+    parseReplace(node: Expression) {
+        return tryParseStringLiteral(node) ?? this.tryParseFunction(node);
+    }
+
+    parseMatch(node: Expression) {
+        return tryParseStringLiteral(node) ?? tryParseRegularExpressionLiteral(node);
+    }
+
+    parseReplacement(patch: ObjectLiteralExpression): IReplacement[] | null {
+        const replacementObj = patch.properties.find((p) => this.hasName(p, "replacement"));
+
+        if (!replacementObj || !isPropertyAssignment(replacementObj))
+            return null;
+
+        const replacement = replacementObj.initializer;
+        const replacements = isArrayLiteralExpression(replacement) ? replacement.elements : [replacement];
+
+        if (!replacements.every(isObjectLiteralExpression))
+            return null;
+
+        const replacementValues = (replacements as ObjectLiteralExpression[]).map((r: ObjectLiteralExpression) => {
+            const match = r.properties.find((p) => this.hasName(p, "match"));
+            const replace = r.properties.find((p) => this.hasName(p, "replace"));
+
+            if (!replace || !isPropertyAssignment(replace) || !match || !isPropertyAssignment(match))
+                return null;
+
+            const matchValue = this.parseMatch(match.initializer);
+
+            if (!matchValue)
+                return null;
+
+            const replaceValue = this.parseReplace(replace.initializer);
+
+            if (replaceValue == null)
+                return null;
+
+            return {
+                match: matchValue,
+                replace: replaceValue,
+            };
+        })
+            .filter((x) => x != null);
+
+        return replacementValues.length > 0 ? replacementValues : null;
+    }
+
+    parsePatch(patch: ObjectLiteralExpression): PatchData | null {
+        const find = this.parseFind(patch);
+        const replacement = this.parseReplacement(patch);
+
+        if (!replacement || !find)
+            return null;
+
+        return {
+            ...find,
+            replacement,
+        };
+    }
+
+    tryParseFunction(node: Node): FunctionNode | null {
+        if (!isArrowFunction(node) && !isFunctionExpression(node))
+            return null;
+
+        const code = createPrinter()
+            .printNode(EmitHint.Expression, node, node.getSourceFile());
+
+        let compilerOptions: CompilerOptions = {};
+        const tsConfigPath = findConfigFile(this.path, sys.fileExists);
+
+        if (tsConfigPath) {
+            const configFile = readConfigFile(tsConfigPath, sys.readFile);
+
+            compilerOptions = parseJsonConfigFileContent(configFile.config, sys, basename(tsConfigPath)).options;
+        }
+
+        const res = transpileModule(code, { compilerOptions });
+
+        if (res.diagnostics && res.diagnostics.length > 0)
+            return null;
+
+        return {
+            type: "function",
+            value: res.outputText,
+        };
     }
 
     /**
@@ -138,7 +258,7 @@ export class VencordAstParser extends AstParser {
                 const args = call.arguments.map((x) => {
                     return tryParseStringLiteral(x)
                       ?? tryParseRegularExpressionLiteral(x)
-                      ?? tryParseFunction(this.path, x);
+                      ?? this.tryParseFunction(x);
                 });
 
                 const range = this.makeRangeFromAstNode(call);

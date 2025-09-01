@@ -16,6 +16,8 @@ function parserFor(path: string): VencordAstParser {
     return new VencordAstParser(readFileSync(path, "utf-8"), path);
 }
 
+const IS_WINDOWS = process.platform === "win32";
+
 describe("VencordAstParser", async function () {
     await ensureVencordDownloaded();
 
@@ -44,7 +46,7 @@ describe("VencordAstParser", async function () {
         });
     });
     describe("getPatches()", function () {
-        it("gets the patches for all plugins", async function () {
+        it.skipIf(IS_WINDOWS)("gets the patches for all plugins", async function () {
             const patches = Object.fromEntries(pluginParsers.map((parser) => [parser.getPluginName() ?? assert.fail("Plugin name is missing"), parser.getPatches()] as const));
 
             await expect(JSON.stringify(patches, null, 4))

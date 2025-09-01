@@ -10,23 +10,36 @@ import {
 } from "@vencord-companion/ast-parser";
 import { Cache, CacheGetter } from "@vencord-companion/shared/decorators";
 
-import { FindUse, IFindType, IReplacement, PatchData, SourcePatch, TestFind } from "./types";
-import { tryParseFunction, tryParseRegularExpressionLiteral, tryParseStringLiteral } from "./util";
+import { FindUse, FunctionNode, IFindType, IReplacement, PatchData, SourcePatch, TestFind } from "./types";
+import { tryParseRegularExpressionLiteral, tryParseStringLiteral } from "./util";
 
 import { readFile } from "node:fs/promises";
+import { basename } from "node:path";
 import { DeclarationDomain } from "ts-api-utils";
 import {
     CallExpression,
+    CompilerOptions,
+    createPrinter,
+    EmitHint,
     Expression,
+    findConfigFile,
     Identifier,
     isArrayLiteralExpression,
+    isArrowFunction,
     isCallExpression,
+    isFunctionExpression,
     isNamespaceImport,
     isObjectLiteralExpression,
     isPropertyAssignment,
     isRegularExpressionLiteral,
     isStringLiteral,
+    Node,
     ObjectLiteralExpression,
+    parseJsonConfigFileContent,
+    readConfigFile,
+    ScriptTarget,
+    sys,
+    transpileModule,
 } from "typescript";
 
 export class VencordAstParser extends AstParser {
@@ -134,8 +147,31 @@ export class VencordAstParser extends AstParser {
         };
     }
 
+    tryParseFunction(node: Node): FunctionNode | null {
+        if (!isArrowFunction(node) && !isFunctionExpression(node))
+            return null;
+
+        const code = createPrinter()
+            .printNode(EmitHint.Expression, node, node.getSourceFile());
+
+        const res = transpileModule(code, {
+            compilerOptions: {
+                target: ScriptTarget.ESNext,
+                strict: true,
+            },
+        });
+
+        if (res.diagnostics && res.diagnostics.length > 0)
+            return null;
+
+        return {
+            type: "function",
+            value: res.outputText,
+        };
+    }
+
     parseReplace(node: Expression) {
-        return tryParseStringLiteral(node) ?? tryParseFunction(this.path, node);
+        return tryParseStringLiteral(node) ?? this.tryParseFunction(node);
     }
 
     parseMatch(node: Expression) {
@@ -214,7 +250,7 @@ export class VencordAstParser extends AstParser {
                 const args = call.arguments.map((x) => {
                     return tryParseStringLiteral(x)
                       ?? tryParseRegularExpressionLiteral(x)
-                      ?? tryParseFunction(this.path, x);
+                      ?? this.tryParseFunction(x);
                 });
 
                 const range = this.makeRangeFromAstNode(call);

@@ -6,7 +6,7 @@ import { Range } from "@vencord-companion/shared/Range";
 
 import { StringifiedModule } from "./StringifiedModule";
 import { Functionish } from "./types";
-import { CharCode, getTokenAtPosition, isEOL } from "./util";
+import { CharCode, findParent, getTokenAtPosition, isEOL } from "./util";
 
 import { collectVariableUsage, type VariableInfo } from "ts-api-utils";
 import {
@@ -33,6 +33,7 @@ import {
     isSetAccessorDeclaration,
     isStringLiteralLike,
     isVariableDeclaration,
+    isVariableDeclarationList,
     type LeftHandSideExpression,
     type LiteralToken,
     type MemberName,
@@ -225,6 +226,25 @@ export class AstParser {
             return false;
 
         return AstParser.AssignmentTokens[node.operatorToken.kind] === true;
+    }
+
+    /**
+     * TODO: document this
+     */
+    public isConstDeclared(info: VariableInfo): [Identifier] | false {
+        const len = info.declarations.length;
+
+        if (len !== 1) {
+            if (len > 1) {
+                logger.warn("[AstParser] isConstDeclared: ?????");
+            }
+            return false;
+        }
+
+        const [decl] = info.declarations;
+        const varDecl = findParent(decl, isVariableDeclarationList);
+
+        return ((varDecl?.flags ?? 0) & SyntaxKind.ConstKeyword) !== 0 ? [decl] : false;
     }
 
     // TODO: add tests for this

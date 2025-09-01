@@ -77,3 +77,9 @@ export function areVersionsIncompatible(minVersion: SemVerVersion, actualVersion
     // Versions are compatible
     return false;
 }
+
+export function runtime_assert(condition: any, message: string = ""): asserts condition {
+    if (!condition) {
+        throw new Error(`Runtime assertion failed: ${message}`);
+    }
+}

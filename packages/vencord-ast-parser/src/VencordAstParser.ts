@@ -1,6 +1,7 @@
 import {
     AstParser,
     findObjectLiteralByKey,
+    findParent,
     getImportName,
     getImportSource,
     Import,
@@ -9,9 +10,10 @@ import {
     WithParent,
 } from "@vencord-companion/ast-parser";
 import { Cache, CacheGetter } from "@vencord-companion/shared/decorators";
+import { Logger, NoopLogger } from "@vencord-companion/shared/Logger";
 
-import { FindUse, FunctionNode, IFindType, IReplacement, PatchData, SourcePatch, TestFind } from "./types";
-import { tryParseRegularExpressionLiteral, tryParseStringLiteral } from "./util";
+import { FindUse, FunctionNode, IFindType, IReplacement, PatchData, SourcePatch, StringNode, TestFind } from "./types";
+import { tryParseRegularExpressionLiteral } from "./util";
 
 import { readFile } from "node:fs/promises";
 import { DeclarationDomain } from "ts-api-utils";
@@ -30,11 +32,21 @@ import {
     isPropertyAssignment,
     isRegularExpressionLiteral,
     isStringLiteral,
+    isStringLiteralLike,
+    isTemplateExpression,
+    isVariableDeclaration,
     Node,
     ObjectLiteralExpression,
     ScriptTarget,
     transpileModule,
 } from "typescript";
+
+
+let logger: Logger = NoopLogger;
+
+export function setLogger(newLogger: Logger) {
+    logger = newLogger;
+}
 
 export class VencordAstParser extends AstParser {
     private readonly _path: string;
@@ -141,6 +153,80 @@ export class VencordAstParser extends AstParser {
         };
     }
 
+    /**
+     * Try to parse a string literal
+     *
+     * if it is a template literal, attempt to extract the string content by inlining variables
+     */
+    tryParseStringLiteral(node: Node): string | null {
+        tryParse: if (isStringLiteralLike(node)) {
+            return node.text;
+            // resolve template literals if they are constant
+        } else if (isTemplateExpression(node)) {
+            const resolvedSpans = [] as string[];
+
+            for (const span of node.templateSpans) {
+                const spanExpr = span.expression;
+
+                if (!this.isIdentifier(spanExpr)) {
+                    logger.debug(`[VencordAstParser] Trying to parse template literal with non-identifier span: ${span.getText()}, FileName: ${span.getSourceFile().fileName}`);
+                    break tryParse;
+                }
+
+                const usageInfo = this.getVarInfoFromUse(spanExpr);
+
+                if (!usageInfo) {
+                    break tryParse;
+                } else if (usageInfo.declarations.length === 0) {
+                    logger.trace(`[VencordAstParser] Could not resolve identifier ${spanExpr.text} to a variable declaration. Is it a global?`);
+                    break tryParse;
+                }
+
+                const isConst = this.isConstDeclared(usageInfo);
+
+                if (!isConst) {
+                    break tryParse;
+                }
+
+                const decl = findParent(isConst[0], isVariableDeclaration);
+
+                if (!decl) {
+                    break tryParse;
+                }
+
+                const init = decl.initializer;
+
+                if (!init) {
+                    break tryParse;
+                }
+
+                const initValue = this.tryParseStringLiteral(init);
+
+                // explicitly check for null to avoid empty string
+                if (initValue == null) {
+                    break tryParse;
+                }
+
+                resolvedSpans.push(initValue + span.literal.text);
+            }
+
+            return node.head.text + resolvedSpans.join("");
+        }
+        return null;
+    }
+
+    tryParseStringLiteralToStringNode(node: Node): StringNode | null {
+        const str = this.tryParseStringLiteral(node);
+
+        if (str == null)
+            return null;
+
+        return {
+            type: "string",
+            value: str,
+        };
+    }
+
     tryParseFunction(node: Node): FunctionNode | null {
         if (!isArrowFunction(node) && !isFunctionExpression(node))
             return null;
@@ -165,11 +251,11 @@ export class VencordAstParser extends AstParser {
     }
 
     parseReplace(node: Expression) {
-        return tryParseStringLiteral(node) ?? this.tryParseFunction(node);
+        return this.tryParseStringLiteralToStringNode(node) ?? this.tryParseFunction(node);
     }
 
     parseMatch(node: Expression) {
-        return tryParseStringLiteral(node) ?? tryParseRegularExpressionLiteral(node);
+        return this.tryParseStringLiteralToStringNode(node) ?? tryParseRegularExpressionLiteral(node);
     }
 
     parseReplacement(patch: ObjectLiteralExpression): IReplacement[] | null {
@@ -242,7 +328,7 @@ export class VencordAstParser extends AstParser {
                     return false;
 
                 const args = call.arguments.map((x) => {
-                    return tryParseStringLiteral(x)
+                    return this.tryParseStringLiteralToStringNode(x)
                       ?? tryParseRegularExpressionLiteral(x)
                       ?? this.tryParseFunction(x);
                 });

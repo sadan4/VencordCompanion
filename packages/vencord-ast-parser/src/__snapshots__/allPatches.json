@@ -355,6 +355,32 @@
                     "match": {
                         "type": "regex",
                         "value": {
+                            "pattern": "switch\\((\\i)\\.type\\){.+?default:return null}",
+                            "flags": ""
+                        }
+                    },
+                    "replace": {
+                        "type": "string",
+                        "value": "return $self.wrapGuildNodeComponent($1,()=>{$&},typeof isBetterFolders!=='undefined'?isBetterFolders:arguments[0]?.isBetterFolders,typeof betterFoldersExpandedIds!=='undefined'?betterFoldersExpandedIds:arguments[0]?.betterFoldersExpandedIds);"
+                    }
+                },
+                {
+                    "match": {
+                        "type": "regex",
+                        "value": {
+                            "pattern": "switch\\(\\i\\.type\\){case \\i\\.\\i\\.FOLDER:.+?folderNode:\\i,",
+                            "flags": ""
+                        }
+                    },
+                    "replace": {
+                        "type": "string",
+                        "value": "$&isBetterFolders:typeof isBetterFolders!=='undefined'?isBetterFolders:arguments[0]?.isBetterFolders,"
+                    }
+                },
+                {
+                    "match": {
+                        "type": "regex",
+                        "value": {
                             "pattern": "switch\\(\\i\\.type\\).+?,\\i,\\i\\.setNodeRef",
                             "flags": ""
                         }
@@ -543,6 +569,19 @@
                     "replace": {
                         "type": "function",
                         "value": "\"use strict\";\n(m, conditions, props) => `${m},${conditions}$self.FolderSideBar(${props})`;\n"
+                    }
+                },
+                {
+                    "match": {
+                        "type": "regex",
+                        "value": {
+                            "pattern": "(?<=className:)\\i\\.base(?=,)",
+                            "flags": ""
+                        }
+                    },
+                    "replace": {
+                        "type": "string",
+                        "value": "\"vc-betterFolders-sidebar-grid \"+$&"
                     }
                 }
             ],

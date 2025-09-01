@@ -14,15 +14,12 @@ import { FindUse, FunctionNode, IFindType, IReplacement, PatchData, SourcePatch,
 import { tryParseRegularExpressionLiteral, tryParseStringLiteral } from "./util";
 
 import { readFile } from "node:fs/promises";
-import { basename } from "node:path";
 import { DeclarationDomain } from "ts-api-utils";
 import {
     CallExpression,
-    CompilerOptions,
     createPrinter,
     EmitHint,
     Expression,
-    findConfigFile,
     Identifier,
     isArrayLiteralExpression,
     isArrowFunction,
@@ -35,10 +32,7 @@ import {
     isStringLiteral,
     Node,
     ObjectLiteralExpression,
-    parseJsonConfigFileContent,
-    readConfigFile,
     ScriptTarget,
-    sys,
     transpileModule,
 } from "typescript";
 

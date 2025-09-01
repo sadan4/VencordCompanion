@@ -10,36 +10,24 @@ import {
 } from "@vencord-companion/ast-parser";
 import { Cache, CacheGetter } from "@vencord-companion/shared/decorators";
 
-import { FindUse, FunctionNode, IFindType, IReplacement, PatchData, SourcePatch, TestFind } from "./types";
-import { tryParseRegularExpressionLiteral, tryParseStringLiteral } from "./util";
+import { FindUse, IFindType, IReplacement, PatchData, SourcePatch, TestFind } from "./types";
+import { tryParseFunction, tryParseRegularExpressionLiteral, tryParseStringLiteral } from "./util";
 
 import { readFile } from "node:fs/promises";
-import { basename } from "node:path";
 import { DeclarationDomain } from "ts-api-utils";
 import {
     CallExpression,
-    CompilerOptions,
-    createPrinter,
-    EmitHint,
     Expression,
-    findConfigFile,
     Identifier,
     isArrayLiteralExpression,
-    isArrowFunction,
     isCallExpression,
-    isFunctionExpression,
     isNamespaceImport,
     isObjectLiteralExpression,
     isPropertyAssignment,
     isRegularExpressionLiteral,
     isStringLiteral,
     NamedDeclaration,
-    Node,
     ObjectLiteralExpression,
-    parseJsonConfigFileContent,
-    readConfigFile,
-    sys,
-    transpileModule,
 } from "typescript";
 
 export class VencordAstParser extends AstParser {
@@ -153,7 +141,7 @@ export class VencordAstParser extends AstParser {
     }
 
     parseReplace(node: Expression) {
-        return tryParseStringLiteral(node) ?? this.tryParseFunction(node);
+        return tryParseStringLiteral(node) ?? tryParseFunction(this.path, node);
     }
 
     parseMatch(node: Expression) {
@@ -212,32 +200,6 @@ export class VencordAstParser extends AstParser {
         };
     }
 
-    tryParseFunction(node: Node): FunctionNode | null {
-        if (!isArrowFunction(node) && !isFunctionExpression(node))
-            return null;
-
-        const code = createPrinter()
-            .printNode(EmitHint.Expression, node, node.getSourceFile());
-
-        let compilerOptions: CompilerOptions = {};
-        const tsConfigPath = findConfigFile(this.path, sys.fileExists);
-
-        if (tsConfigPath) {
-            const configFile = readConfigFile(tsConfigPath, sys.readFile);
-
-            compilerOptions = parseJsonConfigFileContent(configFile.config, sys, basename(tsConfigPath)).options;
-        }
-
-        const res = transpileModule(code, { compilerOptions });
-
-        if (res.diagnostics && res.diagnostics.length > 0)
-            return null;
-
-        return {
-            type: "function",
-            value: res.outputText,
-        };
-    }
 
     /**
      * @returns true if this file is the entry point (if it has a definePlugin call)
@@ -258,7 +220,7 @@ export class VencordAstParser extends AstParser {
                 const args = call.arguments.map((x) => {
                     return tryParseStringLiteral(x)
                       ?? tryParseRegularExpressionLiteral(x)
-                      ?? this.tryParseFunction(x);
+                      ?? tryParseFunction(this.path, x);
                 });
 
                 const range = this.makeRangeFromAstNode(call);

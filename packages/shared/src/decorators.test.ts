@@ -211,5 +211,16 @@ describe("@Cache()", function () {
                 }
             }).to.throw();
         });
+        it("errors on functions with parameters", function () {
+            expect(() => {
+                class _shouldThrow {
+                    // @ts-expect-error should error
+                    @Cache()
+                    func(param) {
+                        return;
+                    }
+                }
+            }).to.throw();
+        });
     });
 });

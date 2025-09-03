@@ -32,6 +32,9 @@ export function Cache(invalidate?: (() => void)[]) {
         if (typeof orig !== "function") {
             throw new Error("Not a function");
         }
+        if (orig.length !== 0) {
+            throw new Error("Function has parameters");
+        }
         descriptor.value = function (...args: A): R {
             if (this[sym] === SYM_UNCACHED) {
                 invalidate?.push(() => {

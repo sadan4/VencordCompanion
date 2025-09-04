@@ -13,12 +13,17 @@ import { Hover, HoverProvider, MarkdownString, Position, TextDocument } from "vs
 const i18nCache = {};
 
 async function getI18nValue(hashedKey: string) {
-    return (i18nCache[hashedKey] ??= (await sendAndGetData<"i18n">({
-        type: "i18n",
-        data: {
-            hashedKey,
-        },
-    }))?.data.value ?? "ERROR FETCHING I18N VALUE");
+    try {
+        return (i18nCache[hashedKey] ??= (await sendAndGetData<"i18n">({
+            type: "i18n",
+            data: {
+                hashedKey,
+            },
+        }))?.data.value ?? "ERROR FETCHING I18N VALUE");
+    } catch (e) {
+        outputChannel.error("Error fetching I18n value");
+        return "ERROR FETCHING I18N VALUE";
+    }
 }
 export class I18nHover implements HoverProvider {
     async provideHover(document: TextDocument, position: Position): PromiseProivderResult<Hover> {

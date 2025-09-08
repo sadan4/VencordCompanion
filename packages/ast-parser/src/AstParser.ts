@@ -186,7 +186,7 @@ export class AstParser {
       & Omit<VariableDeclaration, "name" | "initializer">
       & {
           name: Identifier;
-          initilizer: Exclude<VariableDeclaration["initializer"], undefined>;
+          initializer: Exclude<VariableDeclaration["initializer"], undefined>;
       }
     )
     | (Omit<AssignmentExpression<AssignmentOperatorToken>, "left"> & { left: Identifier; }) {

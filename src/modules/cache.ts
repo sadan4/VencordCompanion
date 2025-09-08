@@ -55,7 +55,7 @@ class _ModuleCache {
 
             const after = performance.now();
 
-            outputChannel.debug(`[perf] Downloading, formatting and writing ${moduleIds.length} modules took ${after - before}ms`);
+            outputChannel.info(`[perf] Downloading, formatting and writing ${moduleIds.length} modules took ${after - before}ms`);
         } catch (error) {
             window.showErrorMessage(`Error downloading modules:\n${String(error)}`);
             outputChannel.error(String(error));
@@ -119,7 +119,7 @@ class _ModuleCache {
 
         const after = performance.now();
 
-        outputChannel.debug(`[perf] Writing ${modmapEntries.length} modules took ${after - before}ms`);
+        outputChannel.info(`[perf] Writing ${modmapEntries.length} modules took ${after - before}ms`);
     }
 
     private async formatModules(modmap: Record<string, string>) {
@@ -142,7 +142,7 @@ class _ModuleCache {
 
         const endTime = performance.now();
 
-        outputChannel.debug(`[perf] Formatting modules took ${endTime - startTime}ms`);
+        outputChannel.info(`[perf] Formatting modules took ${endTime - startTime}ms`);
     }
 
     private async downloadModuleText(moduleIDs: string[]) {
@@ -186,7 +186,7 @@ class _ModuleCache {
 
         const after = performance.now();
 
-        outputChannel.debug(`[perf] Downloading ${moduleIDs.length} modules took ${after - before}ms`);
+        outputChannel.info(`[perf] Downloading ${moduleIDs.length} modules took ${after - before}ms`);
 
         return res;
     }
@@ -394,7 +394,7 @@ export class ModuleDepManager {
 
         const end = performance.now();
 
-        outputChannel.debug(`[perf] Generating Module Dependencies took ${end - start}ms`);
+        outputChannel.info(`[perf] Generating Module Dependencies took ${end - start}ms`);
 
         return [ret, retParsers];
     }
@@ -448,7 +448,7 @@ export class ModuleDepManager {
 
         const end = performance.now();
 
-        outputChannel.debug(`[perf] Locating Key Modules took ${end - start}ms`);
+        outputChannel.info(`[perf] Locating Key Modules took ${end - start}ms`);
 
         return ret;
     }

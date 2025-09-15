@@ -14,6 +14,8 @@ import { setLogger as setAstLogger } from "@vencord-companion/ast-parser";
 import { SourcePatch } from "@vencord-companion/vencord-ast-parser";
 import { setLogger as setWebpackLogger, WebpackAstParser } from "@vencord-companion/webpack-ast-parser";
 
+import { execSync } from "child_process";
+
 import { commands, ExtensionContext, languages, QuickPickItem, TextDocument, Uri, window as vscWindow, window, workspace } from "vscode";
 
 export let extensionUri: Uri;
@@ -48,7 +50,8 @@ export function activate(context: ExtensionContext) {
     });
     extensionUri = context.extensionUri;
     extensionPath = context.extensionPath;
-    startWebSocketServer();
+    if (isVencordRepo())
+        startWebSocketServer();
     context.subscriptions.push(
         window.registerTreeDataProvider("vencordSettings", new treeDataProvider()),
         workspace.onDidChangeTextDocument(onEditCallback),
@@ -388,3 +391,21 @@ export {
     outputChannel,
 };
 
+function isVencordRepo(): boolean {
+    const workspaceFolder = workspace.workspaceFolders?.[0];
+
+    if (!workspaceFolder)
+        return false;
+
+    try {
+        const cwd = workspaceFolder.uri.fsPath;
+
+        const remotes = execSync("git remote -v", { cwd })
+            .toString()
+            .toLowerCase();
+
+        return remotes.includes("vencord");
+    } catch {
+        return false;
+    }
+}

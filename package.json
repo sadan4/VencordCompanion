@@ -43,7 +43,9 @@
         "typecheck": "tsc --noEmit",
         "test": "vitest run",
         "test:watch": "vitest",
-        "test:ui": "vitest --ui"
+        "test:ui": "vitest --ui",
+        "genTypes": "node scripts/generateSettings.mts",
+        "postinstall": "pnpm genTypes"
     },
     "dependencies": {
         "@intrnl/xxhash64": "^0.1.2",
@@ -85,12 +87,12 @@
         "configuration": {
             "title": "Vencord Companion",
             "properties": {
-                "vencord-companion.showSidebar": {
+                "vencord-user-companion.showSidebar": {
                     "default": false,
                     "description": "Show the sidebar. This is intened to be used by workspaces in their .vscode/settings.json file, use alwaysShowSidebar instead to override this setting",
                     "type": "boolean"
                 },
-                "vencord-companion.alwaysShowSidebar": {
+                "vencord-user-companion.alwaysShowSidebar": {
                     "default": false,
                     "description": "Always show the sidebar",
                     "type": "boolean"

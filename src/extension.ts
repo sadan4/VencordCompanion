@@ -14,13 +14,19 @@ import { setLogger as setAstLogger } from "@vencord-companion/ast-parser";
 import { SourcePatch } from "@vencord-companion/vencord-ast-parser";
 import { setLogger as setWebpackLogger, WebpackAstParser } from "@vencord-companion/webpack-ast-parser";
 
+import { Settings } from "./settings";
+
+import * as child_process from "child_process";
+import { promisify } from "util";
+
 import { commands, ExtensionContext, languages, QuickPickItem, TextDocument, Uri, window as vscWindow, window, workspace } from "vscode";
 
 export let extensionUri: Uri;
 export let extensionPath: string;
 
+const exec = promisify(child_process.exec);
 
-export function activate(context: ExtensionContext) {
+export async function activate(context: ExtensionContext) {
     setAstLogger(outputChannel);
     setWebpackLogger(outputChannel);
     WebpackAstParser.setDefaultModuleCache({
@@ -48,7 +54,8 @@ export function activate(context: ExtensionContext) {
     });
     extensionUri = context.extensionUri;
     extensionPath = context.extensionPath;
-    startWebSocketServer();
+    if (await isVencordRepo())
+        startWebSocketServer();
     context.subscriptions.push(
         window.registerTreeDataProvider("vencordSettings", new treeDataProvider()),
         workspace.onDidChangeTextDocument(onEditCallback),
@@ -388,3 +395,26 @@ export {
     outputChannel,
 };
 
+async function isVencordRepo(): Promise<boolean> {
+    const workspaceFolder = workspace.workspaceFolders?.[0];
+
+    if (!workspaceFolder)
+        return false;
+
+    if (Settings.showSidebar) {
+        return true;
+    }
+
+    try {
+        const cwd = workspaceFolder.uri.fsPath;
+
+        const remotes = (await exec("git remote -v", { cwd })).stdout
+            .toString()
+            .toLowerCase();
+
+        return remotes.includes("vencord");
+    } catch (e) {
+        outputChannel.warn("isVencordRepo: error running git remote -v", e);
+        return false;
+    }
+}

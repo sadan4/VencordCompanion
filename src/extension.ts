@@ -1,6 +1,7 @@
 import { onEditCallback, onOpenCallback } from "@ast/vencord/diagnostics";
 import { I18nHover } from "@ast/vencord/hover";
 import { PatchCodeLensProvider, PluginDefCodeLensProvider, WebpackCodeLensProvider } from "@ast/vencord/lenses";
+import { WebpackI18nHover } from "@ast/webpack/hover";
 import { PartialModuleJumpCodeLensProvider } from "@ast/webpack/lenses";
 import { DefinitionProvider, ReferenceProvider } from "@ast/webpack/lsp";
 import { ModuleCache, ModuleDepManager } from "@modules/cache";
@@ -80,6 +81,7 @@ export async function activate(context: ExtensionContext) {
         languages.registerCodeLensProvider({ language: "javascript" }, new PartialModuleJumpCodeLensProvider()),
         languages.registerHoverProvider({ language: "typescript" }, new I18nHover()),
         languages.registerHoverProvider({ language: "typescriptreact" }, new I18nHover()),
+        languages.registerHoverProvider({ language: "javascript" }, new WebpackI18nHover()),
         workspace.registerTextDocumentContentProvider("vencord-patchhelper", PatchHelper),
         workspace.registerTextDocumentContentProvider("vencord-companion", {
             provideTextDocumentContent(uri) {

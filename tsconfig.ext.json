@@ -56,6 +56,9 @@
             ]
         }
     },
+    "files": [
+        "src/ast/webpack/hover/mappings.json"
+    ],
     "include": [
         "src",
         "eslint.config.mts"

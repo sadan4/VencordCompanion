@@ -216,7 +216,7 @@ describe("@Cache()", function () {
                 class _shouldThrow {
                     // @ts-expect-error should error
                     @Cache()
-                    func(param) {
+                    func(_param) {
                         return;
                     }
                 }

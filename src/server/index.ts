@@ -68,7 +68,7 @@ export async function sendToSockets(data: OutgoingMessage, dataCb?: (data: any) 
     const { timeout } = opts ?? defaultOpts;
 
     if (activeSocket == null) {
-        throw new Error("No Discord Clients Connected! Make sure you have Discord open, and have the DevCompanion plugin enabled (see README for more info!)");
+        throw new Error("No Discord Clients Connected! Make sure you have Discord open, and have the UserDevCompanion plugin enabled (see README for more info!)");
     }
 
     const nonce = nonceCounter++;
@@ -182,7 +182,7 @@ export function startWebSocketServer() {
                 switch (rec.type) {
                     // @ts-expect-error no longer in types, but want to show error message anyway
                     case "report": {
-                        window.showErrorMessage("The Reporter feature is now removed from vencord companion");
+                        window.showErrorMessage("The Reporter feature is now removed from Vencord Companion");
                         break;
                     }
                     // even if this is sent, we always want to update our internal list

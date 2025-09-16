@@ -1,0 +1,14 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "composite": true,
+        "moduleResolution": "nodenext",
+        "module": "nodenext",
+        "noEmit": true,
+        "verbatimModuleSyntax": true,
+        "strict": true,
+        "allowImportingTsExtensions": true,
+        "allowJs": true,
+    },
+    "include": ["scripts"],
+}

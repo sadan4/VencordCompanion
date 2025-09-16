@@ -32,8 +32,8 @@
     "publisher": "sadan",
     "main": "./dist/extension.js",
     "scripts": {
-        "build": "node ./scripts/build.mjs",
-        "watch": "node ./scripts/watch.mjs",
+        "build": "node ./scripts/build.mts",
+        "watch": "node ./scripts/watch.mts",
         "eslint": "eslint --cache",
         "lint": "pnpm eslint && pnpm typecheck",
         "prepackage": "pnpm build && pnpm lint",
@@ -43,7 +43,9 @@
         "typecheck": "tsc --noEmit",
         "test": "vitest run",
         "test:watch": "vitest",
-        "test:ui": "vitest --ui"
+        "test:ui": "vitest --ui",
+        "genTypes": "node scripts/generateSettings/index.mts",
+        "postinstall": "pnpm genTypes"
     },
     "dependencies": {
         "@intrnl/xxhash64": "^0.1.2",
@@ -60,7 +62,7 @@
     "devDependencies": {
         "@stylistic/eslint-plugin": "^3.0.1",
         "@stylistic/eslint-plugin-ts": "^4.2.0",
-        "@types/node": "~22.13.1",
+        "@types/node": "^24.5.0",
         "@types/vscode": "1.80.0",
         "@types/ws": "^8.5.14",
         "@typescript-eslint/eslint-plugin": "^8.23.0",
@@ -85,12 +87,12 @@
         "configuration": {
             "title": "Vencord Companion",
             "properties": {
-                "vencord-companion.showSidebar": {
+                "vencord-user-companion.showSidebar": {
                     "default": false,
                     "description": "Show the sidebar. This is intened to be used by workspaces in their .vscode/settings.json file, use alwaysShowSidebar instead to override this setting",
                     "type": "boolean"
                 },
-                "vencord-companion.alwaysShowSidebar": {
+                "vencord-user-companion.alwaysShowSidebar": {
                     "default": false,
                     "description": "Always show the sidebar",
                     "type": "boolean"

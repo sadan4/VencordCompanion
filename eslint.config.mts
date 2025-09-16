@@ -582,7 +582,7 @@ const styleRules: Partial<_RuleOptions> = {
 const extensions = "{js,mjs,cjs,jsx,mjsx,cjsx,ts,mts,cts,tsx,mtsx,ctsx}";
 
 export default TSEslint.config({ ignores: ["dist", "src/webview", "node_modules", "**/__test__/**", "packages/vencord-ast-parser/src/.vencord-source/**"] }, {
-    files: [`src/**/*.${extensions}`, `eslint.config.${extensions}`, `packages/**/*.${extensions}`],
+    files: [`src/**/*.${extensions}`, `eslint.config.${extensions}`, `packages/**/*.${extensions}`, `scripts/**/*.${extensions}`],
     plugins: {
         "@stylistic": stylistic,
         "@typescript-eslint": TSEslint.plugin,

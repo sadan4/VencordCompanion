@@ -413,7 +413,8 @@ async function isVencordRepo(): Promise<boolean> {
             .toLowerCase();
 
         return remotes.includes("vencord");
-    } catch {
+    } catch (e) {
+        outputChannel.warn("isVencordRepo: error running git remote -v", e);
         return false;
     }
 }

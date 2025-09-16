@@ -132,8 +132,6 @@ async function isClientOutdated(): Promise<[boolean, SemVerVersion]> {
         data: {
             server_version: SERVER_VERSION,
         },
-    }, {
-        timeout: 2000,
     });
 
     const { clientVersion } = res.data;

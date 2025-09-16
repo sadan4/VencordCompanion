@@ -57,6 +57,9 @@ export async function activate(context: ExtensionContext) {
     extensionPath = context.extensionPath;
     if (await isVencordRepo())
         startWebSocketServer();
+
+    WebpackI18nHover.register(context);
+
     context.subscriptions.push(
         window.registerTreeDataProvider("vencordSettings", new treeDataProvider()),
         workspace.onDidChangeTextDocument(onEditCallback),
@@ -81,7 +84,6 @@ export async function activate(context: ExtensionContext) {
         languages.registerCodeLensProvider({ language: "javascript" }, new PartialModuleJumpCodeLensProvider()),
         languages.registerHoverProvider({ language: "typescript" }, new I18nHover()),
         languages.registerHoverProvider({ language: "typescriptreact" }, new I18nHover()),
-        languages.registerHoverProvider({ language: "javascript" }, new WebpackI18nHover()),
         workspace.registerTextDocumentContentProvider("vencord-patchhelper", PatchHelper),
         workspace.registerTextDocumentContentProvider("vencord-companion", {
             provideTextDocumentContent(uri) {

@@ -10,9 +10,16 @@ import { sendAndGetData } from "@server/index";
 import { PromiseProviderResult } from "@type/index";
 
 import { isElementAccessExpression, isIdentifier, isPropertyAccessExpression, isStringLiteralLike } from "typescript";
-import { CancellationToken, Hover, HoverProvider, MarkdownString, Position, TextDocument } from "vscode";
+import { CancellationToken, commands, env, ExtensionContext, Hover, HoverProvider, languages, MarkdownString, Position, TextDocument, Uri } from "vscode";
+
+interface CopyHoverDataArgs {
+    hashedKey: string;
+    maybeUnHashedKey: string | undefined;
+}
 
 export class WebpackI18nHover implements HoverProvider {
+    private constructor() { }
+
     async provideHover(
         document: TextDocument,
         position: Position,
@@ -65,12 +72,49 @@ export class WebpackI18nHover implements HoverProvider {
             resolvedString.appendText("failed to fetch i18n value");
         }
 
+
+        const copyString = new MarkdownString();
+
+        const commandUri = WebpackI18nHover
+            .createCommandUri({
+                hashedKey,
+                maybeUnHashedKey,
+            })
+            .toString();
+
+        copyString.supportThemeIcons = true;
+        copyString.isTrusted = {
+            enabledCommands: [WebpackI18nHover.COMMAND_NAME],
+        };
+
+        copyString.appendMarkdown(`$(copy) [Copy As Find](${commandUri})`);
+
         return {
             range: toVscodeRange(parser.makeRangeFromAstNode(node)),
             contents: [
                 new MarkdownString(maybeUnHashedKey ?? "no mapping found"),
+                copyString,
                 resolvedString,
             ],
         };
+    }
+
+    private static COMMAND_NAME = "vencord-user-companion.webpack-i18n-hover-copy";
+
+    private static handleCopyHoverData({ hashedKey, maybeUnHashedKey }: CopyHoverDataArgs) {
+        const toCopy = maybeUnHashedKey
+            ? `#{intl::${maybeUnHashedKey}}`
+            : `#{intl::${hashedKey}::raw}`;
+
+        env.clipboard.writeText(toCopy);
+    }
+
+    private static createCommandUri(props: CopyHoverDataArgs): Uri {
+        return Uri.parse(`command:${this.COMMAND_NAME}?${encodeURIComponent(JSON.stringify([props]))}`);
+    }
+
+    public static register({ subscriptions }: ExtensionContext) {
+        subscriptions.push(languages.registerHoverProvider({ language: "javascript" }, new this()));
+        subscriptions.push(commands.registerCommand(this.COMMAND_NAME, this.handleCopyHoverData));
     }
 }

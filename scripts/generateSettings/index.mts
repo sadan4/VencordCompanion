@@ -5,6 +5,7 @@ import { join } from "path";
 
 
 const __dirname = import.meta.dirname;
+const rootDir = join(__dirname, "..", "..");
 const SUPPORTED_TYPES = Object.freeze(["boolean"] as const);
 
 
@@ -21,7 +22,7 @@ export interface ConfEntry {
 }
 
 export async function genSettings() {
-    const packageJson = JSON.parse(await readFile("package.json", "utf-8"));
+    const packageJson = JSON.parse(await readFile(join(rootDir, "package.json"), "utf-8"));
     const EXT_ID = packageJson.name as string;
     const EXT_PREFIX = `${EXT_ID}.`;
     const entries: ConfEntry[] = [];
@@ -73,7 +74,7 @@ export async function genSettings() {
 
     const generatedFile = gen.toString();
 
-    await writeFile(join(__dirname, "..", "src", "settings.ts"), generatedFile, "utf-8");
+    await writeFile(join(rootDir, "src", "settings.ts"), generatedFile, "utf-8");
 }
 
 if (import.meta.main) {

@@ -4,6 +4,7 @@ import packageJson from "../package.json" with {type: "json"};
 import { readFile } from "fs/promises";
 import { join, relative } from "path";
 
+import type { BuildOptions, Plugin } from "esbuild";
 import { glob } from "glob";
 
 const { version } = packageJson;
@@ -11,10 +12,7 @@ const { version } = packageJson;
 const sourceFiles
     = await glob("src/**/*.{ts,cts,mts}", { ignore: ["src/webview/**"] });
 
-/**
- * @type {import("esbuild").Plugin}
- */
-const fileUrlPlugin = {
+const fileUrlPlugin: Plugin = {
     name: "file-uri-plugin",
     setup: (build) => {
         const filter = /^test:\/\/.+$/;
@@ -44,14 +42,11 @@ const fileUrlPlugin = {
     },
 };
 
-/**
- * @type {import("esbuild").Plugin}
- */
-const bundleESMPlugin = {
+const bundleESMPlugin: Plugin = {
     name: "bundle-esm-plugin",
     setup(build) {
         const bundle = ["@intrnl/xxhash64", "nanoid"];
-        const bundlePaths = [];
+        const bundlePaths: string[] = [];
         const nodeDir = join(process.cwd(), "node_modules");
 
         build.onResolve(
@@ -105,9 +100,6 @@ const commonDefines = {
     IS_TEST: "false",
 };
 
-/**
- * @type {import("esbuild").BuildOptions}
- */
 const testOpts = {
     entryPoints: sourceFiles,
     outdir: "dist.test",
@@ -133,12 +125,9 @@ const testOpts = {
         IS_TEST: "true",
     },
     plugins: [fileUrlPlugin, bundleESMPlugin],
-};
+} satisfies BuildOptions;
 
-export const testOptions = [testOpts];
-/**
- * @type {import("esbuild").BuildOptions}
- */
+export const testOptions = [testOpts] as const;
 export const commonOpts = {
     entryPoints: ["./src/extension.ts"],
     minify: true,
@@ -150,4 +139,4 @@ export const commonOpts = {
     logLevel: "info",
     define: { ...commonDefines },
     outfile: "dist/extension.js",
-};
+} satisfies BuildOptions;

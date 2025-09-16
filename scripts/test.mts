@@ -1,4 +1,4 @@
-import { testOptions } from "./common.mjs";
+import { testOptions } from "./common.mts";
 
 import { rm } from "fs/promises";
 

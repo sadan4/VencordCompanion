@@ -1,7 +1,6 @@
-import { commonOpts } from "./common.mjs";
+import { commonOpts } from "./common.mts";
 
 import esbuild from "esbuild";
-// @ts-check
 
 const extCtx = await esbuild.context({
     ...commonOpts,

@@ -2,7 +2,7 @@ import { makeRange } from "@ast/util";
 import { outputChannel } from "@modules/logging";
 import { Format } from "@sadan4/devtools-pretty-printer";
 import { sendAndGetData } from "@server/index";
-import { PromiseProivderResult } from "@type/index";
+import { PromiseProviderResult } from "@type/index";
 import { ExtractModuleR } from "@type/server";
 import { SourcePatch, VencordAstParser } from "@vencord-companion/vencord-ast-parser";
 import { formatModule } from "@vencord-companion/webpack-ast-parser";
@@ -16,6 +16,7 @@ import {
     commands,
     Event,
     EventEmitter,
+    ExtensionContext,
     TabChangeEvent,
     TabInputText,
     TextDocument,
@@ -237,7 +238,7 @@ export class PatchHelper {
 
     private lastPatchedModule = new LastTwo("", "");
 
-    async patch(): PromiseProivderResult<string> {
+    async patch(): PromiseProviderResult<string> {
         if (!this.moduleData)
             return null;
 
@@ -276,7 +277,7 @@ export class PatchHelper {
     private static changeEmitter = new EventEmitter<Uri>();
     public static onDidChange: Event<Uri> = PatchHelper.changeEmitter.event;
 
-    public static async provideTextDocumentContent(uri: Uri, _token: CancellationToken): PromiseProivderResult<string> {
+    public static async provideTextDocumentContent(uri: Uri, _token: CancellationToken): PromiseProviderResult<string> {
         try {
             const helper = PatchHelper.activeWindowsById.get(PatchHelper.idFromUri(uri));
 
@@ -346,4 +347,12 @@ export class PatchHelper {
             .forEach((x) => x.end());
     }
     // #endregion
+
+    public static register({ subscriptions }: ExtensionContext) {
+        subscriptions.push(workspace.onDidCloseTextDocument(PatchHelper.onCloseDocument));
+        subscriptions.push(workspace.onDidChangeTextDocument(PatchHelper.changeDocument));
+        subscriptions.push(window.onDidChangeActiveTextEditor(PatchHelper.changeActiveEditor));
+        subscriptions.push(window.tabGroups.onDidChangeTabs(PatchHelper.onTabClose));
+        subscriptions.push(workspace.registerTextDocumentContentProvider("vencord-patchhelper", this));
+    }
 }

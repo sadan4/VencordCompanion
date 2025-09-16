@@ -5,10 +5,12 @@ import { References } from "@type/ast";
 import { Position as WP_Position } from "@vencord-companion/shared/Position";
 import { isWebpackModule, WebpackAstParser } from "@vencord-companion/webpack-ast-parser";
 
-import { Position, ReferenceProvider as IReferenceProvider, TextDocument, window } from "vscode";
+import { ExtensionContext, languages, Position, ReferenceProvider as IReferenceProvider, TextDocument, window } from "vscode";
 
 
 export class ReferenceProvider implements IReferenceProvider {
+    private constructor() { }
+
     async provideReferences(document: TextDocument, position: Position): References {
         if (!isWebpackModule(document.getText()))
             return;
@@ -28,5 +30,9 @@ export class ReferenceProvider implements IReferenceProvider {
             window.showErrorMessage(String(e));
             outputChannel.error(String(e));
         }
+    }
+
+    public static register({ subscriptions }: ExtensionContext) {
+        subscriptions.push(languages.registerReferenceProvider({ language: "javascript" }, new ReferenceProvider()));
     }
 }

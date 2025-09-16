@@ -16,11 +16,12 @@ import { SourcePatch } from "@vencord-companion/vencord-ast-parser";
 import { setLogger as setWebpackLogger, WebpackAstParser } from "@vencord-companion/webpack-ast-parser";
 
 import { Settings } from "./settings";
+import { Registerable } from "./types";
 
 import * as child_process from "child_process";
 import { promisify } from "util";
 
-import { commands, ExtensionContext, languages, QuickPickItem, TextDocument, Uri, window as vscWindow, window, workspace } from "vscode";
+import { commands, ExtensionContext, QuickPickItem, TextDocument, Uri, window as vscWindow, window, workspace } from "vscode";
 
 export let extensionUri: Uri;
 export let extensionPath: string;
@@ -58,33 +59,21 @@ export async function activate(context: ExtensionContext) {
     if (await isVencordRepo())
         startWebSocketServer();
 
-    WebpackI18nHover.register(context);
+    register(WebpackI18nHover);
+    register(PluginDefCodeLensProvider);
+    register(PatchHelper);
+    register(DefinitionProvider);
+    register(ReferenceProvider);
+    register(WebpackCodeLensProvider);
+    register(I18nHover);
+    register(PartialModuleJumpCodeLensProvider);
+    register(PatchCodeLensProvider);
 
     context.subscriptions.push(
         window.registerTreeDataProvider("vencordSettings", new treeDataProvider()),
         workspace.onDidChangeTextDocument(onEditCallback),
         workspace.onDidOpenTextDocument(onOpenCallback),
-        workspace.onDidCloseTextDocument(PatchHelper.onCloseDocument),
-        workspace.onDidChangeTextDocument(PatchHelper.changeDocument),
-        window.onDidChangeActiveTextEditor(PatchHelper.changeActiveEditor),
-        window.tabGroups.onDidChangeTabs(PatchHelper.onTabClose),
-        languages.registerCodeLensProvider(
-            { pattern: "**/{*plugins,plugins/_*}/{*.ts,*.tsx,**/index.ts,**/index.tsx}" },
-            new PluginDefCodeLensProvider(),
-        ),
-        languages.registerCodeLensProvider(
-            { pattern: "**/{*plugins,plugins/_*}/{*.ts,*.tsx,**/index.ts,**/index.tsx}" },
-            new PatchCodeLensProvider(),
-        ),
-        languages.registerDefinitionProvider({ language: "javascript" }, new DefinitionProvider()),
-        languages.registerReferenceProvider({ language: "javascript" }, new ReferenceProvider()),
 
-        languages.registerCodeLensProvider({ language: "typescript" }, WebpackCodeLensProvider),
-        languages.registerCodeLensProvider({ language: "typescriptreact" }, WebpackCodeLensProvider),
-        languages.registerCodeLensProvider({ language: "javascript" }, new PartialModuleJumpCodeLensProvider()),
-        languages.registerHoverProvider({ language: "typescript" }, new I18nHover()),
-        languages.registerHoverProvider({ language: "typescriptreact" }, new I18nHover()),
-        workspace.registerTextDocumentContentProvider("vencord-patchhelper", PatchHelper),
         workspace.registerTextDocumentContentProvider("vencord-companion", {
             provideTextDocumentContent(uri) {
                 // FIXME: full uri shows up in title bar
@@ -389,6 +378,10 @@ export async function activate(context: ExtensionContext) {
     );
     if (window.activeTextEditor) {
         onOpenCallback(window.activeTextEditor.document);
+    }
+
+    function register(r: Registerable) {
+        r.register(context);
     }
 }
 

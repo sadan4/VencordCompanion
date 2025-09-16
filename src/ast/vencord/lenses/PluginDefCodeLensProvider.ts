@@ -13,7 +13,7 @@ import {
     ScriptTarget,
     StringLiteral,
 } from "typescript";
-import { CodeLens, CodeLensProvider, ProviderResult, Range, TextDocument } from "vscode";
+import { CodeLens, CodeLensProvider, ExtensionContext, languages, ProviderResult, Range, TextDocument } from "vscode";
 
 enum ParseResult {
     INVALID,
@@ -74,7 +74,9 @@ function parsePossiblePatches(node: Node): {
 }
 
 export class PluginDefCodeLensProvider implements CodeLensProvider {
-    check(text: string) {
+    private constructor() {}
+
+    private check(text: string) {
         return text.includes("definePlugin") && text.includes("name:");
     }
 
@@ -123,5 +125,12 @@ export class PluginDefCodeLensProvider implements CodeLensProvider {
             }));
         }
         return lenses;
+    }
+
+    public static register({ subscriptions }: ExtensionContext) {
+        subscriptions.push(languages.registerCodeLensProvider(
+            { pattern: "**/{*plugins,plugins/_*}/{*.ts,*.tsx,**/index.ts,**/index.tsx}" },
+            new this(),
+        ));
     }
 }

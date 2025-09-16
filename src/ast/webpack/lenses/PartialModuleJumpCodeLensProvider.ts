@@ -1,6 +1,8 @@
-import { CodeLens, CodeLensProvider, Position, ProviderResult, Range, TextDocument } from "vscode";
+import { CodeLens, CodeLensProvider, ExtensionContext, languages, Position, ProviderResult, Range, TextDocument } from "vscode";
 
 export class PartialModuleJumpCodeLensProvider implements CodeLensProvider {
+    private constructor() { }
+
     provideCodeLenses(document: TextDocument): ProviderResult<CodeLens[]> {
         const text = document.getText();
 
@@ -23,5 +25,9 @@ export class PartialModuleJumpCodeLensProvider implements CodeLensProvider {
                 isResolved: true,
             },
         ];
+    }
+
+    public static register({ subscriptions }: ExtensionContext) {
+        subscriptions.push(languages.registerCodeLensProvider({ language: "javascript" }, new this()));
     }
 }

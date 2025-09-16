@@ -2,11 +2,13 @@ import { AnyFindType, Discriminate, OutgoingMessage } from "@type/server";
 import { tryParseFunction, tryParseRegularExpressionLiteral, tryParseStringLiteral } from "@vencord-companion/vencord-ast-parser";
 
 import { createSourceFile, isCallExpression, Node, ScriptTarget } from "typescript";
-import { CodeLens, CodeLensProvider, Range } from "vscode";
+import { CodeLens, CodeLensProvider, ExtensionContext, languages, Range } from "vscode";
 
 const vencordWebpackImportRegex = /import \{(.+?)\} from ['`"]@webpack(\/.+?)?['`"]/;
 
-export const WebpackCodeLensProvider: CodeLensProvider = {
+export class WebpackCodeLensProvider implements CodeLensProvider {
+    private constructor() { }
+
     provideCodeLenses(document) {
         const text = document.getText();
         const match = vencordWebpackImportRegex.exec(text);
@@ -69,5 +71,10 @@ export const WebpackCodeLensProvider: CodeLensProvider = {
         walk(sourceFile);
 
         return lenses;
-    },
-};
+    }
+
+    public static register({ subscriptions }: ExtensionContext) {
+        subscriptions.push(languages.registerCodeLensProvider({ language: "typescript" }, new this()));
+        subscriptions.push(languages.registerCodeLensProvider({ language: "typescriptreact" }, new this()));
+    }
+}

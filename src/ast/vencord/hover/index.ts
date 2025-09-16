@@ -8,7 +8,7 @@ import { AstParser } from "@vencord-companion/ast-parser";
 
 // import mappings from "./mappings.json";
 import { isRegularExpressionLiteral } from "typescript";
-import { Hover, HoverProvider, MarkdownString, Position, TextDocument } from "vscode";
+import { ExtensionContext, Hover, HoverProvider, languages, MarkdownString, Position, TextDocument } from "vscode";
 
 const i18nCache = {};
 
@@ -26,6 +26,8 @@ async function getI18nValue(hashedKey: string) {
     }
 }
 export class I18nHover implements HoverProvider {
+    private constructor() {}
+
     async provideHover(document: TextDocument, position: Position): PromiseProviderResult<Hover> {
         try {
             const ast = new AstParser(document.getText());
@@ -71,5 +73,10 @@ export class I18nHover implements HoverProvider {
         } catch (e) {
             outputChannel.error(e);
         }
+    }
+
+    public static register({ subscriptions }: ExtensionContext) {
+        subscriptions.push(languages.registerHoverProvider({ language: "typescript" }, new this()));
+        subscriptions.push(languages.registerHoverProvider({ language: "typescriptreact" }, new this()));
     }
 }

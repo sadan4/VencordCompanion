@@ -4,10 +4,12 @@ import { Definitions } from "@type/ast";
 import { Position as WP_Position } from "@vencord-companion/shared/Position";
 import { isWebpackModule, WebpackAstParser } from "@vencord-companion/webpack-ast-parser";
 
-import { DefinitionProvider as IDefinitionProvider, Position, TextDocument } from "vscode";
+import { DefinitionProvider as IDefinitionProvider, ExtensionContext, languages, Position, TextDocument } from "vscode";
 
 
 export class DefinitionProvider implements IDefinitionProvider {
+    private constructor() {}
+
     async provideDefinition(document: TextDocument, position: Position): Definitions {
         try {
             if (!isWebpackModule(document.getText()))
@@ -17,5 +19,9 @@ export class DefinitionProvider implements IDefinitionProvider {
         } catch (e) {
             outputChannel.error(e);
         }
+    }
+
+    public static register({ subscriptions }: ExtensionContext) {
+        subscriptions.push(languages.registerDefinitionProvider({ language: "javascript" }, new DefinitionProvider()));
     }
 }

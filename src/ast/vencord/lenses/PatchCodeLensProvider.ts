@@ -1,9 +1,11 @@
 import { toVscodeRange } from "@ast/util";
 import { VencordAstParser } from "@vencord-companion/vencord-ast-parser";
 
-import { CodeLens, CodeLensProvider, TextDocument } from "vscode";
+import { CodeLens, CodeLensProvider, ExtensionContext, languages, TextDocument } from "vscode";
 
 export class PatchCodeLensProvider implements CodeLensProvider {
+    private constructor() { }
+
     provideCodeLenses(document: TextDocument) {
         const lenses: CodeLens[] = [];
         const file = new VencordAstParser(document.getText(), document.uri.fsPath);
@@ -36,5 +38,12 @@ export class PatchCodeLensProvider implements CodeLensProvider {
             }));
         }
         return lenses;
+    }
+
+    public static register({ subscriptions }: ExtensionContext) {
+        subscriptions.push(languages.registerCodeLensProvider(
+            { pattern: "**/{*plugins,plugins/_*}/{*.ts,*.tsx,**/index.ts,**/index.tsx}" },
+            new this(),
+        ));
     }
 }

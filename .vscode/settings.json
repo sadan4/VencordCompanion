@@ -34,6 +34,7 @@
         "moduleid",
         "nodenext",
         "outdir",
+        "patchhelper",
         "tsutils",
         "typeguard",
         "USERPLUGIN",

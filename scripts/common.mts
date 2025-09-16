@@ -8,6 +8,8 @@ import type { BuildOptions, Plugin } from "esbuild";
 import { glob } from "glob";
 
 const { version } = packageJson;
+const __dirname = import.meta.dirname;
+const rootDir = join(__dirname, "..");
 
 const sourceFiles
     = await glob("src/**/*.{ts,cts,mts}", { ignore: ["src/webview/**"] });
@@ -125,6 +127,7 @@ const testOpts = {
         IS_TEST: "true",
     },
     plugins: [fileUrlPlugin, bundleESMPlugin],
+    tsconfig: join(rootDir, "tsconfig.ext.json"),
 } satisfies BuildOptions;
 
 export const testOptions = [testOpts] as const;
@@ -138,5 +141,6 @@ export const commonOpts = {
     sourcemap: "inline",
     logLevel: "info",
     define: { ...commonDefines },
+    tsconfig: join(rootDir, "tsconfig.ext.json"),
     outfile: "dist/extension.js",
 } satisfies BuildOptions;

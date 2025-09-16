@@ -15,6 +15,7 @@ import { Position } from "@vencord-companion/shared/Position";
 import { Range, zeroRange } from "@vencord-companion/shared/Range";
 
 import {
+    AnyExportKey,
     Definition,
     ExportMap,
     ExportRange,
@@ -27,7 +28,7 @@ import {
     Reference,
     Store,
 } from "./types";
-import { allEntries, containsPosition, formatModule } from "./util";
+import { allEntries, assertNotHover, containsPosition, formatModule, fromEntries } from "./util";
 
 import { isAccessorDeclaration, VariableInfo } from "ts-api-utils";
 import {
@@ -103,7 +104,11 @@ export class WebpackAstParser extends AstParser {
     /**
      * This is set on {@link RangeExportMap} when the default export is commonjs and has no properties, eg, string literal, function
      */
-    static readonly SYM_CJS_DEFAULT: unique symbol = Symbol.for("CommonJS Default Export");
+    public static readonly SYM_CJS_DEFAULT: unique symbol = Symbol.for("CommonJS Default Export");
+    /**
+     * set on raw export maps to give a hover hint for LSP
+     */
+    public static readonly SYM_HOVER: unique symbol = Symbol.for("WebpackAstParser.Hover");
 
     /**
      * 
@@ -391,7 +396,7 @@ export class WebpackAstParser extends AstParser {
         // };
     }
 
-    doesReExportFromExport(exportName: (string | symbol)[]):
+    doesReExportFromExport(exportName: AnyExportKey[]):
         [importSourceId: string, exportName: MemberName[]] | undefined {
         const map = this.getExportMapRaw();
         const exp = this.getNestedExportFromMap(exportName, map);
@@ -469,7 +474,7 @@ export class WebpackAstParser extends AstParser {
             type ElementType = [
                 moduleId: string,
                 importedId: string,
-                exportName: string | symbol,
+                exportName: AnyExportKey,
             ];
 
             const left: ElementType[] = where?.sync.map((x) => [x, this.moduleId!, exportedName] as const) ?? [];
@@ -584,8 +589,8 @@ export class WebpackAstParser extends AstParser {
    */
     public doesReExportFromImport(
         moduleId: string,
-        exportName: string | symbol,
-    ): string | symbol | undefined {
+        exportName: AnyExportKey,
+    ): AnyExportKey | undefined {
         // we can't re-export anything if we don't import anything
         if (!this.wreq || !this.moduleId)
             return;
@@ -987,7 +992,7 @@ export class WebpackAstParser extends AstParser {
             throw new Error("node should not be undefined");
         if (isObjectLiteralExpression(node)) {
             const props = node.properties
-                .map((x): false | [string | symbol, RawExportMap[PropertyKey]][] => {
+                .map((x): false | [AnyExportKey, RawExportMap[AnyExportKey]][] => {
                     if (isSpreadAssignment(x)) {
                         if (!isIdentifier(x.expression)) {
                             logger.error("Spread assignment is not an identifier, this should be handled");
@@ -1000,7 +1005,11 @@ export class WebpackAstParser extends AstParser {
                             return false;
                         }
 
-                        const { [WebpackAstParser.SYM_CJS_DEFAULT]: _default, ...rest } = spread;
+                        const {
+                            [WebpackAstParser.SYM_CJS_DEFAULT]: _default,
+                            [WebpackAstParser.SYM_HOVER]: _,
+                            ...rest
+                        } = spread;
 
                         return Object.entries(rest);
                     }
@@ -1012,7 +1021,7 @@ export class WebpackAstParser extends AstParser {
             if (props.length !== 0)
                 props.push([WebpackAstParser.SYM_CJS_DEFAULT, [node.getChildAt(0)]]);
 
-            return Object.fromEntries(props);
+            return fromEntries<RawExportMap>(props);
         } else if (this.isLiteralish(node)) {
             return [node];
         } else if (isPropertyAssignment(node)) {
@@ -1087,6 +1096,10 @@ export class WebpackAstParser extends AstParser {
         }
         return Object.fromEntries(allEntries(map)
             .map(([k, v]) => {
+                if (k === WebpackAstParser.SYM_HOVER) {
+                    return [k, v];
+                }
+                assertNotHover(v);
                 return [k, this.rawMapToExportMap(v)];
             }));
     }
@@ -1197,7 +1210,7 @@ export class WebpackAstParser extends AstParser {
 
                 ret ||= this.makeExportMapRecursive(x);
                 // ensure we aren't nested
-                ret = (function nestLoop(curName: string | symbol, obj: RangeExportMap | ExportRange):
+                ret = (function nestLoop(curName: AnyExportKey, obj: RangeExportMap | ExportRange):
                     RangeExportMap | ExportRange {
                     if (Array.isArray(obj)) {
                         return obj;
@@ -1205,17 +1218,23 @@ export class WebpackAstParser extends AstParser {
 
                     const keys = allEntries(obj);
 
-                    if (keys.length === 1) {
+                    if (keys.length === 1 && keys[0][0] !== WebpackAstParser.SYM_HOVER) {
                         if (obj[curName]) {
                             return nestLoop(curName, obj[curName]);
                         }
 
                         const [[key]] = keys;
 
+                        assertNotHover(obj[key]);
+
                         obj[key] = nestLoop(key, obj[key]);
                         return obj;
                     }
                     for (const [k] of keys) {
+                        if (k === WebpackAstParser.SYM_HOVER) {
+                            continue;
+                        }
+                        assertNotHover(obj[k]);
                         obj[k] = nestLoop(k, obj[k]);
                     }
                     return obj;
@@ -1488,7 +1507,7 @@ export class WebpackAstParser extends AstParser {
         return this.parseClassDeclaration(decl.parent, extraExportRanges);
     }
 
-    getNestedExportFromMap<T>(keys: readonly (string | symbol)[], map: ExportMap<T>): T[] | undefined {
+    getNestedExportFromMap<T>(keys: readonly AnyExportKey[], map: ExportMap<T>): T[] | undefined {
         let i = 0;
         let cur: ExportMap<T>[keyof ExportMap<T>] = map;
 
@@ -1503,8 +1522,8 @@ export class WebpackAstParser extends AstParser {
         return undefined;
     }
 
-    findExportLocation(exportNames: readonly (string | symbol)[]): Range {
-        let cur: RangeExportMap | ExportRange = this.getExportMap();
+    findExportLocation(exportNames: readonly AnyExportKey[]): Range {
+        let cur: RangeExportMap[AnyExportKey] = this.getExportMap();
         let range = zeroRange;
         let i = 0;
 
@@ -1674,9 +1693,9 @@ export class WebpackAstParser extends AstParser {
     }
 
     // TODO: support lazy requires
-    async getAllReExportsForExport(exportName: string | symbol):
-    Promise<[moduleId: string, exportChain: (string | symbol)[]][]> {
-        type R = [moduleId: string, exportChain: (string | symbol)[]][];
+    async getAllReExportsForExport(exportName: AnyExportKey):
+    Promise<[moduleId: string, exportChain: AnyExportKey[]][]> {
+        type R = [moduleId: string, exportChain: AnyExportKey[]][];
 
         const ret: R = [];
         const thisExports = this.getExportMapRaw();
@@ -1685,7 +1704,7 @@ export class WebpackAstParser extends AstParser {
             throw new Error(`Export ${exportName.toString()} not found in module ${this.moduleId}`);
         }
 
-        type SearchItem = (readonly [parser: WebpackAstParser, moduleId: string, exportName: string | symbol]);
+        type SearchItem = (readonly [parser: WebpackAstParser, moduleId: string, exportName: AnyExportKey]);
 
         const toSearch: SearchItem[]
             = this.getModulesThatRequireThisModule()

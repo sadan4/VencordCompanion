@@ -3,7 +3,7 @@ import { runtimeHashMessageKey } from "@modules/intlHash";
 import { outputChannel } from "@modules/logging";
 import { intlRegex } from "@modules/patches";
 import { sendAndGetData } from "@server/index";
-import { PromiseProivderResult } from "@type/index";
+import { PromiseProviderResult } from "@type/index";
 import { AstParser } from "@vencord-companion/ast-parser";
 
 // import mappings from "./mappings.json";
@@ -26,7 +26,7 @@ async function getI18nValue(hashedKey: string) {
     }
 }
 export class I18nHover implements HoverProvider {
-    async provideHover(document: TextDocument, position: Position): PromiseProivderResult<Hover> {
+    async provideHover(document: TextDocument, position: Position): PromiseProviderResult<Hover> {
         try {
             const ast = new AstParser(document.getText());
             const offset = ast.offsetAt(position);
@@ -43,7 +43,7 @@ export class I18nHover implements HoverProvider {
                 return null;
 
             /**
-             * index from the start of the string. this would be 0 `"|as"`
+             * index from the start of the string. this would be 0 `"|string literal"`
              */
             const stringStartingIndex = token.getStart(ast.sourceFile, true) - +isRegularExpressionLiteral(token);
             const stringIndex = offset - stringStartingIndex - 1;

@@ -1,1 +1,1 @@
-export type PromiseProivderResult<T> = Promise<T | null | undefined>;
+export type PromiseProviderResult<T> = Promise<T | null | undefined>;

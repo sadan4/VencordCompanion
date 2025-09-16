@@ -1,0 +1,70 @@
+{
+    "compilerOptions": {
+        "composite": true,
+        "module": "ESNext",
+        "moduleResolution": "bundler",
+        "target": "ES2020",
+        "outDir": "dist.test",
+        "lib": [
+            "ESNext"
+        ],
+        "sourceMap": true,
+        "rootDirs": [
+            "src"
+        ],
+        "strict": true /* enable all strict type-checking options */,
+        "noImplicitOverride": true,
+        "noImplicitAny": false,
+        "noImplicitThis": true,
+        "esModuleInterop": true,
+        "useUnknownInCatchVariables": false,
+        "resolveJsonModule": true,
+        "experimentalDecorators": true,
+        "skipLibCheck": true,
+        "allowJs": true,
+        /* Additional Checks */
+        // "noImplicitReturns": true, /* Report error when not all code paths in function return a value. */
+        // "noFallthroughCasesInSwitch": true, /* Report errors for fallthrough cases in switch statement. */
+        // "noUnusedParameters": true,  /* Report errors on unused parameters. */
+        "paths": {
+            "@server/*": [
+                "./src/server/*"
+            ],
+            "@server": [
+                "./src/server"
+            ],
+            "@ast/*": [
+                "./src/ast/*"
+            ],
+            "@modules/*": [
+                "./src/modules/*"
+            ],
+            "@type/*": [
+                "./src/types/*"
+            ],
+            "@sidebar/*": [
+                "./src/sidebar/*"
+            ],
+            "@sidebar": [
+                "./src/sidebar"
+            ],
+            "@extension": [
+                "./src/extension"
+            ],
+            "@tests/*": [
+                "./src/tests/*"
+            ]
+        }
+    },
+    "include": [
+        "src",
+        "eslint.config.mts"
+    ],
+    "exclude": [
+        "assets/**",
+        "packages",
+        "node_modules",
+        "dist",
+        "dist.test"
+    ]
+}

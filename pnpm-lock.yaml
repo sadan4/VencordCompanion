@@ -21,7 +21,7 @@ catalogs:
 
 patchedDependencies:
   '@types/ws@8.5.14':
-    hash: 4rqekdfg2emsdizkn65uvvyh3q
+    hash: 431d7dda5df72ef614bdb1190df56f7422570166615913953407418c8eb9b713
     path: patches/@types__ws@8.5.14.patch
 
 importers:
@@ -73,7 +73,7 @@ importers:
         version: 1.80.0
       '@types/ws':
         specifier: ^8.5.14
-        version: 8.5.14(patch_hash=4rqekdfg2emsdizkn65uvvyh3q)
+        version: 8.5.14(patch_hash=431d7dda5df72ef614bdb1190df56f7422570166615913953407418c8eb9b713)
       '@typescript-eslint/eslint-plugin':
         specifier: ^8.23.0
         version: 8.25.0(@typescript-eslint/parser@8.25.0(eslint@9.21.0(jiti@2.4.2))(typescript@5.8.2))(eslint@9.21.0(jiti@2.4.2))(typescript@5.8.2)
@@ -3151,7 +3151,7 @@ snapshots:
 
   '@types/vscode@1.80.0': {}
 
-  '@types/ws@8.5.14(patch_hash=4rqekdfg2emsdizkn65uvvyh3q)':
+  '@types/ws@8.5.14(patch_hash=431d7dda5df72ef614bdb1190df56f7422570166615913953407418c8eb9b713)':
     dependencies:
       '@types/node': 22.13.8
 

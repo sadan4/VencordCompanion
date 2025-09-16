@@ -1,9 +1,11 @@
-import esbuild from "esbuild";
 import { commonOpts } from "./common.mjs";
-//@ts-check
 
-const extCtx = await esbuild.context({...commonOpts, minify: false});
+import esbuild from "esbuild";
+// @ts-check
 
-await Promise.all([
-    extCtx.watch(),
-])
+const extCtx = await esbuild.context({
+    ...commonOpts,
+    minify: false,
+});
+
+await Promise.all([extCtx.watch()]);

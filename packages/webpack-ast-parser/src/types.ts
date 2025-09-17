@@ -106,4 +106,5 @@ export interface Store {
     props: {
         [name: string]: PropertyAssignment["initializer"];
     };
+    [WebpackAstParser.SYM_HOVER]: string | undefined;
 }

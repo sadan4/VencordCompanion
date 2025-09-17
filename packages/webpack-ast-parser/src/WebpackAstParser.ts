@@ -3,11 +3,13 @@ import {
     AstParser,
     findObjectLiteralByKey,
     findParent,
+    findParentLimited,
     findReturnIdentifier,
     findReturnPropertyAccessExpression,
     getLeadingIdentifier,
     isSyntaxList,
     lastParent,
+    nonNull,
 } from "@vencord-companion/ast-parser";
 import { Cache, CacheGetter } from "@vencord-companion/shared/decorators";
 import { Logger, NoopLogger } from "@vencord-companion/shared/Logger";
@@ -55,6 +57,7 @@ import {
     isPropertyDeclaration,
     isSemicolonClassElement,
     isSpreadAssignment,
+    isStringLiteralLike,
     isVariableDeclaration,
     MemberName,
     NewExpression,
@@ -1309,6 +1312,7 @@ export class WebpackAstParser extends AstParser {
         def.push(...extraStoreLocs);
         def.push(...store.store.map((x) => this.makeRangeFromAstNode(x)));
         ret[WebpackAstParser.SYM_CJS_DEFAULT] = def;
+        ret[WebpackAstParser.SYM_HOVER] = store[WebpackAstParser.SYM_HOVER];
         for (const [name, loc] of allEntries(store.methods)) {
             const map = this.makeExportMapRecursive(loc);
 
@@ -1329,6 +1333,7 @@ export class WebpackAstParser extends AstParser {
             fluxEvents: {},
             methods: {},
             props: {},
+            [WebpackAstParser.SYM_HOVER]: undefined,
         };
 
         const storeVar = storeInit.expression;
@@ -1403,6 +1408,7 @@ export class WebpackAstParser extends AstParser {
             logger.debug("[WebpackAstParser] Store class does not extend Store");
             return;
         }
+        ret[WebpackAstParser.SYM_HOVER] = this.tryFindStoreDisplayName(storeVarInfo);
 
         for (const member of classDecl.members) {
             if (isMethodDeclaration(member)) {
@@ -1427,6 +1433,89 @@ export class WebpackAstParser extends AstParser {
             }
         }
         return ret;
+    }
+
+    tryFindStoreDisplayName(storeVar: VariableInfo): string | undefined {
+        // Display names can be set in two ways:
+        // 1. define(store, "displayName", "MyStore")
+        // OR sometimes the bundler will inline the function so it will look something like this
+        // 2. (i = "displayName")in m ? Object.defineProperty(store, i, {
+        //     value: myStoreNameVar,
+        //     enumerable: !0,
+        //     configurable: !0,
+        //     writable: !0
+        // }) : store[i] = myStoreNameVar;
+
+        const uses = storeVar.uses
+            .map(({ location }) => {
+                return findParentLimited(location, isCallExpression, 2);
+            })
+            .filter(nonNull)
+            .filter((call) => call && call.arguments.length === 3);
+
+        for (const use of uses) {
+            const [arg1, arg2, arg3] = use.arguments;
+
+            if (isStringLiteralLike(arg2) && arg2.text === "displayName" && isStringLiteralLike(arg3)) {
+                return arg3.text;
+            }
+
+            // Object.defineProperty(store)
+            // store must be an identifier
+            // store must be the same as storeVar
+            if (!isIdentifier(arg1) || this.usesToVars.get(arg1) !== storeVar) {
+                continue;
+            }
+
+            // Object.defineProperty's second arg must be an identifier
+            if (!isIdentifier(arg2)) {
+                continue;
+            }
+
+            // The second arg must be "displayName"
+            const arg2Info = this.getVarInfoFromUse(arg2);
+
+            if (!arg2Info) {
+                continue;
+            }
+
+            const arg2Init = this.findSingleAssignment(arg2Info);
+
+            if (!arg2Init || !isStringLiteralLike(arg2Init) || arg2Init.text !== "displayName") {
+                continue;
+            }
+
+            // the third arg of Object.defineProperty must be an object literal expression
+
+            if (!isObjectLiteralExpression(arg3)) {
+                continue;
+            }
+
+            const valueProp = findObjectLiteralByKey(arg3, "value");
+
+            if (!valueProp || !isPropertyAssignment(valueProp)) {
+                continue;
+            }
+
+            const valueInit = valueProp.initializer;
+
+            if (!this.isIdentifier(valueInit)) {
+                continue;
+            }
+
+            const valueInfo = this.getVarInfoFromUse(valueInit);
+
+            if (!valueInfo) {
+                continue;
+            }
+
+            const maybeStoreName = this.findSingleAssignment(valueInfo);
+
+            if (!maybeStoreName || !isStringLiteralLike(maybeStoreName)) {
+                continue;
+            }
+            return maybeStoreName.text;
+        }
     }
 
     /**

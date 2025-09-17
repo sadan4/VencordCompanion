@@ -282,6 +282,48 @@ export class AstParser {
     }
 
     /**
+     * given a variable, if it has a single assignment in this file, return the expression assigned to it
+     * 
+     * returns undefined if there are multiple assignments, or if the variable is assigned more than once
+     */
+    public findSingleAssignment(info: VariableInfo): Expression | undefined {
+        const { declarations, uses } = info;
+
+        if (declarations.length !== 1) {
+            logger.warn("[AstParser] findSingleAssignment: multiple declarations");
+            return;
+        }
+
+        const [decl] = declarations;
+
+        if (this.isConstDeclared(info)) {
+            const init = this.getVariableInitializer(decl);
+
+            if (!init) {
+                logger.warn("[AstParser] findSingleAssignment: const variable without initializer");
+            }
+            return init;
+        }
+
+        let init: Expression | undefined;
+
+        for (const { location } of uses) {
+            if (this.isAssignmentExpression(location.parent)) {
+                // filter out cases like `<some other thing> = location`
+                if (location.parent.left !== location) {
+                    continue;
+                }
+                if (init || location.parent.operatorToken.kind !== SyntaxKind.EqualsToken) {
+                    return;
+                }
+                init = location.parent.right;
+            }
+        }
+
+        return init;
+    }
+
+    /**
      * Create the source file for this parser
      *
      * MUST SET PARENT NODES

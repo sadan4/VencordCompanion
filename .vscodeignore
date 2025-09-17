@@ -18,7 +18,7 @@ src/**
 .yarnrc
 pnpm-lock.yaml
 vsc-extension-quickstart.md
-**/tsconfig.json
+**/tsconfig*.json
 eslint.config.mts
 **/*.map
 **/*.ts

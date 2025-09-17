@@ -103,6 +103,28 @@ export const findParent: CBAssertion<undefined, undefined> = (node, func) => {
     return node;
 };
 
+export function findParentLimited<
+    F extends (n: Node) => n is Node,
+    R extends Node = AssertedType<F, Node>,
+>(
+    node: Node,
+    func: F extends (n: Node) => n is R ? F : never,
+    limit: number,
+): R | undefined {
+    if (!node)
+        return undefined;
+    limit += 1;
+    while (limit-- && !func(node)) {
+        if (!node.parent)
+            return undefined;
+        node = node.parent;
+    }
+    if (limit < 0) {
+        return undefined;
+    }
+    return node as R;
+}
+
 // FIXME: try simplifying this
 /**
  * @param node the node to start from
@@ -364,4 +386,8 @@ export function getAstNodeAtPosition(node: Node, pos: number): Node | undefined 
  */
 function isNodeKind(kind: SyntaxKind) {
     return kind >= SyntaxKind.FirstNode;
+}
+
+export function nonNull<T>(x: T | null | undefined): x is T {
+    return x != null;
 }

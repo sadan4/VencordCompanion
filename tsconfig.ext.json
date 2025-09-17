@@ -61,7 +61,8 @@
     ],
     "include": [
         "src",
-        "eslint.config.mts"
+        "eslint.config.mts",
+        "packages"
     ],
     "exclude": [
         "assets/**",

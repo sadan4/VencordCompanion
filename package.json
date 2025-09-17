@@ -40,7 +40,7 @@
         "package": "vsce pack",
         "publishExtension": "pnpm build && pnpm lint && vsce publish --no-dependencies",
         "publishOvsx": "pnpm build && pnpm lint && ovsx publish --no-dependencies",
-        "typecheck": "tsc --noEmit",
+        "typecheck": "tsc --noEmit -p ./tsconfig.ext.json",
         "test": "vitest run",
         "test:watch": "vitest",
         "test:ui": "vitest --ui",

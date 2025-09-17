@@ -89,3 +89,51 @@ function(e, t, n) {
   },
 ]
 `;
+
+exports[`WebpackAstParser > cache parsing > hover text cross-module > finds the hover text for a store from another module 1`] = `
+[
+  [
+    {
+      "character": 11,
+      "line": 38,
+    },
+    {
+      "character": 13,
+      "line": 38,
+    },
+  ],
+  "MyTestingStore",
+]
+`;
+
+exports[`WebpackAstParser > cache parsing > hover text cross-module > finds the hover text for a store from another module 2`] = `
+[
+  [
+    {
+      "character": 23,
+      "line": 15,
+    },
+    {
+      "character": 25,
+      "line": 15,
+    },
+  ],
+  "MyTestingStore",
+]
+`;
+
+exports[`WebpackAstParser > cache parsing > hover text cross-module > finds the hover text for a store from another module 3`] = `
+[
+  [
+    {
+      "character": 23,
+      "line": 30,
+    },
+    {
+      "character": 25,
+      "line": 30,
+    },
+  ],
+  "MyTestingStore",
+]
+`;

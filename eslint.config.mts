@@ -4,7 +4,7 @@ import { Linter } from "eslint";
 import { ESLintRules as IESLintRules } from "eslint/rules";
 import simpleImportSort from "eslint-plugin-simple-import-sort";
 import unusedImports from "eslint-plugin-unused-imports";
-import TSEslint from "typescript-eslint";
+import TSEslint, { ConfigArray } from "typescript-eslint";
 
 // cursed
 type ExtractRules<Rules = typeof import("./node_modules/@typescript-eslint/eslint-plugin/dist/rules")> = {
@@ -581,7 +581,7 @@ const styleRules: Partial<_RuleOptions> = {
 
 const extensions = "{js,mjs,cjs,jsx,mjsx,cjsx,ts,mts,cts,tsx,mtsx,ctsx}";
 
-export default TSEslint.config({ ignores: ["dist", "src/webview", "node_modules", "**/__test__/**", "packages/vencord-ast-parser/src/.vencord-source/**"] }, {
+const typescript_is_stupid_and_errors_if_i_inline_this: ConfigArray = TSEslint.config({ ignores: ["dist", "src/webview", "node_modules", "**/__test__/**", "packages/vencord-ast-parser/src/.vencord-source/**"] }, {
     files: [`src/**/*.${extensions}`, `eslint.config.${extensions}`, `packages/**/*.${extensions}`, `scripts/**/*.${extensions}`],
     plugins: {
         "@stylistic": stylistic,
@@ -625,3 +625,5 @@ export default TSEslint.config({ ignores: ["dist", "src/webview", "node_modules"
         "simple-import-sort/exports": "error",
     },
 });
+
+export default typescript_is_stupid_and_errors_if_i_inline_this;

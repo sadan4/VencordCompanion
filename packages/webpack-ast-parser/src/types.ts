@@ -1,13 +1,21 @@
 import { IRange, Range } from "@vencord-companion/shared/Range";
 
+import { WebpackAstParser } from "./WebpackAstParser";
+
 import { ConstructorDeclaration, FunctionLikeDeclaration, Identifier, Node, PropertyAssignment } from "typescript";
+
 export type ExportMap<T> = {
-    [exportedName: string | symbol]: T[] | ExportMap<T>;
+    [WebpackAstParser.SYM_CJS_DEFAULT]?: T[] | ExportMap<T>;
+    [WebpackAstParser.SYM_HOVER]?: string;
+    [exportedName: string]: T[] | ExportMap<T>;
 };
+
 
 export type RawExportRange = Node[];
 
 export type RawExportMap = ExportMap<Node>;
+
+export type AnyExportKey = string | typeof WebpackAstParser.SYM_CJS_DEFAULT;
 
 export type ExportRange = Range[];
 
@@ -98,4 +106,5 @@ export interface Store {
     props: {
         [name: string]: PropertyAssignment["initializer"];
     };
+    [WebpackAstParser.SYM_HOVER]: string | undefined;
 }

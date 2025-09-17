@@ -3,11 +3,13 @@ import {
     AstParser,
     findObjectLiteralByKey,
     findParent,
+    findParentLimited,
     findReturnIdentifier,
     findReturnPropertyAccessExpression,
     getLeadingIdentifier,
     isSyntaxList,
     lastParent,
+    nonNull,
 } from "@vencord-companion/ast-parser";
 import { Cache, CacheGetter } from "@vencord-companion/shared/decorators";
 import { Logger, NoopLogger } from "@vencord-companion/shared/Logger";
@@ -15,6 +17,7 @@ import { Position } from "@vencord-companion/shared/Position";
 import { Range, zeroRange } from "@vencord-companion/shared/Range";
 
 import {
+    AnyExportKey,
     Definition,
     ExportMap,
     ExportRange,
@@ -27,7 +30,7 @@ import {
     Reference,
     Store,
 } from "./types";
-import { allEntries, containsPosition, formatModule } from "./util";
+import { allEntries, assertNotHover, containsPosition, formatModule, fromEntries } from "./util";
 
 import { isAccessorDeclaration, VariableInfo } from "ts-api-utils";
 import {
@@ -54,6 +57,7 @@ import {
     isPropertyDeclaration,
     isSemicolonClassElement,
     isSpreadAssignment,
+    isStringLiteralLike,
     isVariableDeclaration,
     MemberName,
     NewExpression,
@@ -103,7 +107,11 @@ export class WebpackAstParser extends AstParser {
     /**
      * This is set on {@link RangeExportMap} when the default export is commonjs and has no properties, eg, string literal, function
      */
-    static readonly SYM_CJS_DEFAULT: unique symbol = Symbol.for("CommonJS Default Export");
+    public static readonly SYM_CJS_DEFAULT: unique symbol = Symbol.for("CommonJS Default Export");
+    /**
+     * set on raw export maps to give a hover hint for LSP
+     */
+    public static readonly SYM_HOVER: unique symbol = Symbol.for("WebpackAstParser.Hover");
 
     /**
      * 
@@ -275,17 +283,8 @@ export class WebpackAstParser extends AstParser {
         if (!this.uses)
             throw new Error("Wreq isn't used anywhere");
 
-        // map the assignment of required modules to their uses
-        const modules = new Map([...this.vars.entries()].filter(([k]) => {
-            return this.uses!.uses.some((e) => {
-                const node = findParent(e.location, isVariableDeclaration);
-
-                return node?.name === k;
-            });
-        }));
-
-        const x = this.getTokenAtOffset(this.offsetAt(position));
-        const accessChain = findParent(x, isPropertyAccessExpression);
+        const selectedNode = this.getTokenAtOffset(this.offsetAt(position));
+        const accessChain = findParent(selectedNode, isPropertyAccessExpression);
 
         if (!accessChain)
             return;
@@ -297,19 +296,21 @@ export class WebpackAstParser extends AstParser {
 
         let [requiredModule, ...names] = importChain;
 
-        if (!requiredModule)
+        if (!this.isIdentifier(requiredModule))
             return;
 
-        const [, dec] = [...modules.entries()].find(([, v]) => {
-            return v.uses.some(({ location }) => requiredModule === location);
-        }) ?? [];
+        const dec = this.getVarInfoFromUse(requiredModule);
 
-        const moduleId = this.getModuleId(dec);
+        if (!dec) {
+            return;
+        }
+
+        const moduleId = this.getModuleIdForImport(dec);
 
         if (!moduleId)
             return;
 
-        const res: string | undefined = await this.tryGetFreshModuleFallbackToCache(moduleId);
+        const res = await this.tryGetFreshModuleFallbackToCache(moduleId);
 
         if (res == null)
             return;
@@ -351,7 +352,7 @@ export class WebpackAstParser extends AstParser {
 
             [, names] = ret;
 
-            const res = await this.moduleCache.getLatestModuleFromNum(importSourceId)
+            const res = await this.tryGetFreshModuleFallbackToCache(importSourceId)
                 .catch(logger.error);
 
             if (!res) {
@@ -372,26 +373,92 @@ export class WebpackAstParser extends AstParser {
                 content: cur.text,
             },
         ];
-        // const maybeRange = new WebpackAstParser(res.data)
-        //     .findExportLocation(names.map((x) => x.text));
-
-        // if (maybeRange instanceof Range) {
-        //     return {
-        //         range: maybeRange,
-        //         uri: mkStringUri(res.data),
-        //     };
-        // }
-        // return {
-        //     range:
-        // names.length >= 1
-        //     ? new WebpackAstParser(res.data)
-        //         .findExportLocation(names.map((x) => x.text))
-        //     : zeroRange,
-        //     uri: mkStringUri(res.data),
-        // };
     }
 
-    doesReExportFromExport(exportName: (string | symbol)[]):
+    public async generateHover(position: Position): Promise<[Range, string] | undefined> {
+        if (!this.uses)
+            throw new Error("Wreq isn't used anywhere");
+
+        const selectedNode = this.getTokenAtOffset(this.offsetAt(position));
+        const accessChain = findParent(selectedNode, isPropertyAccessExpression);
+
+        if (!accessChain)
+            return;
+
+        const importChain = this.flattenPropertyAccessExpression(accessChain);
+
+        if (!importChain)
+            return;
+
+        let [requiredModule, ...names] = importChain;
+
+        if (names.length < 1) {
+            return;
+        }
+
+        if (!this.isIdentifier(requiredModule))
+            return;
+
+        const dec = this.getVarInfoFromUse(requiredModule);
+
+        if (!dec) {
+            return;
+        }
+
+        const moduleId = this.getModuleIdForImport(dec);
+
+        if (!moduleId)
+            return;
+
+        const res = await this.tryGetFreshModuleFallbackToCache(moduleId);
+
+        if (res == null)
+            return;
+
+        let cur = WebpackAstParser.withFormattedModule(res, moduleId);
+
+        while (true) {
+            // check for an explicit re-export before falling back to checking for a whole module re-export
+            const ret = cur.doesReExportFromExport(names.map((x) => x.text));
+
+            if (!ret) {
+                // if no explicit re-export was found, try a whole module re-export
+                const wholeModuleExportId = cur.doesReExportWholeModule();
+
+                if (wholeModuleExportId) {
+                    const content = await this.tryGetFreshModuleFallbackToCache(wholeModuleExportId);
+
+                    if (content) {
+                        cur = WebpackAstParser.withFormattedModule(content, wholeModuleExportId);
+                        // go again with the new module
+                        continue;
+                    }
+                }
+                break;
+            }
+
+
+            const [importSourceId] = ret;
+
+            [, names] = ret;
+
+            const res = await this.tryGetFreshModuleFallbackToCache(importSourceId);
+
+            if (!res) {
+                logger.error("Failed to get new module");
+                return;
+            }
+
+            cur = WebpackAstParser.withFormattedModule(res, importSourceId);
+        }
+
+        const hoverText = cur.findHoverText(names.map((x) => x.text));
+        const hoverRange = this.makeRangeFromAstNode(names.at(-1)!);
+
+        return hoverText === undefined ? undefined : [hoverRange, hoverText];
+    }
+
+    doesReExportFromExport(exportName: AnyExportKey[]):
         [importSourceId: string, exportName: MemberName[]] | undefined {
         const map = this.getExportMapRaw();
         const exp = this.getNestedExportFromMap(exportName, map);
@@ -427,18 +494,26 @@ export class WebpackAstParser extends AstParser {
      * @see {@link getVariableInitializer} which can than be passed into {@link vars|vars.get}
      * @returns `123456`
      */
-    getModuleId(dec: VariableInfo | undefined): number | undefined {
+    getModuleIdForImport(dec: VariableInfo | undefined): number | undefined {
         if (!dec)
-            return undefined;
+            return;
         if (dec.declarations.length !== 1)
-            return undefined;
+            return;
 
         const init = findParent(dec.declarations[0], isVariableDeclaration)?.initializer;
 
-        if (!init || !isCallExpression(init))
-            return undefined;
+        if (!init || !isCallExpression(init) || !isIdentifier(init.expression))
+            return;
+
+        // make sure init is a call to wreq
+        const initInfo = this.getVarInfoFromUse(init.expression);
+
+        if (initInfo !== this.uses) {
+            return;
+        }
+        // TODO: support string literals here
         if (init.arguments.length !== 1 || !isNumericLiteral(init.arguments[0]))
-            return undefined;
+            return;
 
         const num = +init.arguments[0].text;
 
@@ -469,7 +544,7 @@ export class WebpackAstParser extends AstParser {
             type ElementType = [
                 moduleId: string,
                 importedId: string,
-                exportName: string | symbol,
+                exportName: AnyExportKey,
             ];
 
             const left: ElementType[] = where?.sync.map((x) => [x, this.moduleId!, exportedName] as const) ?? [];
@@ -584,8 +659,8 @@ export class WebpackAstParser extends AstParser {
    */
     public doesReExportFromImport(
         moduleId: string,
-        exportName: string | symbol,
-    ): string | symbol | undefined {
+        exportName: AnyExportKey,
+    ): AnyExportKey | undefined {
         // we can't re-export anything if we don't import anything
         if (!this.wreq || !this.moduleId)
             return;
@@ -987,7 +1062,7 @@ export class WebpackAstParser extends AstParser {
             throw new Error("node should not be undefined");
         if (isObjectLiteralExpression(node)) {
             const props = node.properties
-                .map((x): false | [string | symbol, RawExportMap[PropertyKey]][] => {
+                .map((x): false | [AnyExportKey, RawExportMap[AnyExportKey]][] => {
                     if (isSpreadAssignment(x)) {
                         if (!isIdentifier(x.expression)) {
                             logger.error("Spread assignment is not an identifier, this should be handled");
@@ -1000,7 +1075,11 @@ export class WebpackAstParser extends AstParser {
                             return false;
                         }
 
-                        const { [WebpackAstParser.SYM_CJS_DEFAULT]: _default, ...rest } = spread;
+                        const {
+                            [WebpackAstParser.SYM_CJS_DEFAULT]: _default,
+                            [WebpackAstParser.SYM_HOVER]: _,
+                            ...rest
+                        } = spread;
 
                         return Object.entries(rest);
                     }
@@ -1012,7 +1091,7 @@ export class WebpackAstParser extends AstParser {
             if (props.length !== 0)
                 props.push([WebpackAstParser.SYM_CJS_DEFAULT, [node.getChildAt(0)]]);
 
-            return Object.fromEntries(props);
+            return fromEntries<RawExportMap>(props);
         } else if (this.isLiteralish(node)) {
             return [node];
         } else if (isPropertyAssignment(node)) {
@@ -1087,6 +1166,10 @@ export class WebpackAstParser extends AstParser {
         }
         return Object.fromEntries(allEntries(map)
             .map(([k, v]) => {
+                if (k === WebpackAstParser.SYM_HOVER) {
+                    return [k, v];
+                }
+                assertNotHover(v);
                 return [k, this.rawMapToExportMap(v)];
             }));
     }
@@ -1197,7 +1280,7 @@ export class WebpackAstParser extends AstParser {
 
                 ret ||= this.makeExportMapRecursive(x);
                 // ensure we aren't nested
-                ret = (function nestLoop(curName: string | symbol, obj: RangeExportMap | ExportRange):
+                ret = (function nestLoop(curName: AnyExportKey, obj: RangeExportMap | ExportRange):
                     RangeExportMap | ExportRange {
                     if (Array.isArray(obj)) {
                         return obj;
@@ -1205,17 +1288,23 @@ export class WebpackAstParser extends AstParser {
 
                     const keys = allEntries(obj);
 
-                    if (keys.length === 1) {
+                    if (keys.length === 1 && keys[0][0] !== WebpackAstParser.SYM_HOVER) {
                         if (obj[curName]) {
                             return nestLoop(curName, obj[curName]);
                         }
 
                         const [[key]] = keys;
 
+                        assertNotHover(obj[key]);
+
                         obj[key] = nestLoop(key, obj[key]);
                         return obj;
                     }
                     for (const [k] of keys) {
+                        if (k === WebpackAstParser.SYM_HOVER) {
+                            continue;
+                        }
+                        assertNotHover(obj[k]);
                         obj[k] = nestLoop(k, obj[k]);
                     }
                     return obj;
@@ -1290,6 +1379,7 @@ export class WebpackAstParser extends AstParser {
         def.push(...extraStoreLocs);
         def.push(...store.store.map((x) => this.makeRangeFromAstNode(x)));
         ret[WebpackAstParser.SYM_CJS_DEFAULT] = def;
+        ret[WebpackAstParser.SYM_HOVER] = store[WebpackAstParser.SYM_HOVER];
         for (const [name, loc] of allEntries(store.methods)) {
             const map = this.makeExportMapRecursive(loc);
 
@@ -1310,6 +1400,7 @@ export class WebpackAstParser extends AstParser {
             fluxEvents: {},
             methods: {},
             props: {},
+            [WebpackAstParser.SYM_HOVER]: undefined,
         };
 
         const storeVar = storeInit.expression;
@@ -1384,6 +1475,7 @@ export class WebpackAstParser extends AstParser {
             logger.debug("[WebpackAstParser] Store class does not extend Store");
             return;
         }
+        ret[WebpackAstParser.SYM_HOVER] = this.tryFindStoreDisplayName(storeVarInfo);
 
         for (const member of classDecl.members) {
             if (isMethodDeclaration(member)) {
@@ -1408,6 +1500,89 @@ export class WebpackAstParser extends AstParser {
             }
         }
         return ret;
+    }
+
+    tryFindStoreDisplayName(storeVar: VariableInfo): string | undefined {
+        // Display names can be set in two ways:
+        // 1. define(store, "displayName", "MyStore")
+        // OR sometimes the bundler will inline the function so it will look something like this
+        // 2. (i = "displayName")in m ? Object.defineProperty(store, i, {
+        //     value: myStoreNameVar,
+        //     enumerable: !0,
+        //     configurable: !0,
+        //     writable: !0
+        // }) : store[i] = myStoreNameVar;
+
+        const uses = storeVar.uses
+            .map(({ location }) => {
+                return findParentLimited(location, isCallExpression, 2);
+            })
+            .filter(nonNull)
+            .filter((call) => call && call.arguments.length === 3);
+
+        for (const use of uses) {
+            const [arg1, arg2, arg3] = use.arguments;
+
+            if (isStringLiteralLike(arg2) && arg2.text === "displayName" && isStringLiteralLike(arg3)) {
+                return arg3.text;
+            }
+
+            // Object.defineProperty(store)
+            // store must be an identifier
+            // store must be the same as storeVar
+            if (!isIdentifier(arg1) || this.usesToVars.get(arg1) !== storeVar) {
+                continue;
+            }
+
+            // Object.defineProperty's second arg must be an identifier
+            if (!isIdentifier(arg2)) {
+                continue;
+            }
+
+            // The second arg must be "displayName"
+            const arg2Info = this.getVarInfoFromUse(arg2);
+
+            if (!arg2Info) {
+                continue;
+            }
+
+            const arg2Init = this.findSingleAssignment(arg2Info);
+
+            if (!arg2Init || !isStringLiteralLike(arg2Init) || arg2Init.text !== "displayName") {
+                continue;
+            }
+
+            // the third arg of Object.defineProperty must be an object literal expression
+
+            if (!isObjectLiteralExpression(arg3)) {
+                continue;
+            }
+
+            const valueProp = findObjectLiteralByKey(arg3, "value");
+
+            if (!valueProp || !isPropertyAssignment(valueProp)) {
+                continue;
+            }
+
+            const valueInit = valueProp.initializer;
+
+            if (!this.isIdentifier(valueInit)) {
+                continue;
+            }
+
+            const valueInfo = this.getVarInfoFromUse(valueInit);
+
+            if (!valueInfo) {
+                continue;
+            }
+
+            const maybeStoreName = this.findSingleAssignment(valueInfo);
+
+            if (!maybeStoreName || !isStringLiteralLike(maybeStoreName)) {
+                continue;
+            }
+            return maybeStoreName.text;
+        }
     }
 
     /**
@@ -1488,7 +1663,7 @@ export class WebpackAstParser extends AstParser {
         return this.parseClassDeclaration(decl.parent, extraExportRanges);
     }
 
-    getNestedExportFromMap<T>(keys: readonly (string | symbol)[], map: ExportMap<T>): T[] | undefined {
+    getNestedExportFromMap<T>(keys: readonly AnyExportKey[], map: ExportMap<T>): T[] | undefined {
         let i = 0;
         let cur: ExportMap<T>[keyof ExportMap<T>] = map;
 
@@ -1503,8 +1678,8 @@ export class WebpackAstParser extends AstParser {
         return undefined;
     }
 
-    findExportLocation(exportNames: readonly (string | symbol)[]): Range {
-        let cur: RangeExportMap | ExportRange = this.getExportMap();
+    findExportLocation(exportNames: readonly AnyExportKey[]): Range {
+        let cur: RangeExportMap[AnyExportKey] = this.getExportMap();
         let range = zeroRange;
         let i = 0;
 
@@ -1529,12 +1704,24 @@ export class WebpackAstParser extends AstParser {
             }
         }
         return range;
-    // return (
-    //     this.tryFindExportwreq_d(exportName)
-    //     || this.tryFindExportWreq_t(exportName)
-    //     || this.tryFindExportsWreq_e(exportName)
-    //     || zeroRange
-    // );
+    }
+
+    findHoverText(exportNames: readonly AnyExportKey[]): string | undefined {
+        let cur: RangeExportMap[keyof RangeExportMap] = this.getExportMap();
+        let lastHover: string | undefined;
+        let i = 0;
+
+
+        while ((cur = cur[exportNames[i++]])) {
+            if (cur[WebpackAstParser.SYM_HOVER]) {
+                lastHover = cur[WebpackAstParser.SYM_HOVER];
+            } else if (cur[WebpackAstParser.SYM_CJS_DEFAULT]?.[WebpackAstParser.SYM_HOVER]) {
+                lastHover = cur[WebpackAstParser.SYM_CJS_DEFAULT]?.[WebpackAstParser.SYM_HOVER];
+            } else {
+                lastHover = undefined;
+            }
+        }
+        return lastHover;
     }
 
     @Cache()
@@ -1674,9 +1861,9 @@ export class WebpackAstParser extends AstParser {
     }
 
     // TODO: support lazy requires
-    async getAllReExportsForExport(exportName: string | symbol):
-    Promise<[moduleId: string, exportChain: (string | symbol)[]][]> {
-        type R = [moduleId: string, exportChain: (string | symbol)[]][];
+    async getAllReExportsForExport(exportName: AnyExportKey):
+    Promise<[moduleId: string, exportChain: AnyExportKey[]][]> {
+        type R = [moduleId: string, exportChain: AnyExportKey[]][];
 
         const ret: R = [];
         const thisExports = this.getExportMapRaw();
@@ -1685,7 +1872,7 @@ export class WebpackAstParser extends AstParser {
             throw new Error(`Export ${exportName.toString()} not found in module ${this.moduleId}`);
         }
 
-        type SearchItem = (readonly [parser: WebpackAstParser, moduleId: string, exportName: string | symbol]);
+        type SearchItem = (readonly [parser: WebpackAstParser, moduleId: string, exportName: AnyExportKey]);
 
         const toSearch: SearchItem[]
             = this.getModulesThatRequireThisModule()

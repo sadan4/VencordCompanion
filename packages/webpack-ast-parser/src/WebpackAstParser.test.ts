@@ -194,9 +194,9 @@ describe("WebpackAstParser", function () {
                 const parser = new WebpackAstParser(getFile("webpack/e.exports/identReExport.js"));
                 const map = parser.getExportMap();
 
-                expect(map).to.have.keys(WebpackAstParser.SYM_CJS_DEFAULT);
-                expect(map[WebpackAstParser.SYM_CJS_DEFAULT]).to.have.length(1);
-                expect(map[WebpackAstParser.SYM_CJS_DEFAULT][0]).to.deep.equal(new Range(4, 12, 4, 21));
+                expect(map).to.deep.equal({
+                    [WebpackAstParser.SYM_CJS_DEFAULT]: [new Range(4, 12, 4, 21)],
+                });
             });
             it("parses exports in an intermediate variable", function () {
                 const parser = new WebpackAstParser(getFile("webpack/e.exports/ident.js"));
@@ -246,9 +246,9 @@ describe("WebpackAstParser", function () {
                 const parser = new WebpackAstParser(getFile("webpack/e.exports/function.js"));
                 const map = parser.getExportMap();
 
-                expect(map).to.have.keys(WebpackAstParser.SYM_CJS_DEFAULT);
-                expect(map[WebpackAstParser.SYM_CJS_DEFAULT]).to.have.length(1);
-                expect(map[WebpackAstParser.SYM_CJS_DEFAULT][0]).to.deep.equal(new Range(9, 16, 9, 27));
+                expect(map).to.deep.equal({
+                    [WebpackAstParser.SYM_CJS_DEFAULT]: [new Range(9, 16, 9, 27)],
+                });
             });
             it("parses a module with a class default export", function () {
                 const parser = new WebpackAstParser(getFile("webpack/e.exports/classExport.js"));
@@ -281,9 +281,9 @@ describe("WebpackAstParser", function () {
                 const parser = new WebpackAstParser(getFile("webpack/e.exports/everythingElse.js"));
                 const map = parser.getExportMap();
 
-                expect(map).to.have.keys(WebpackAstParser.SYM_CJS_DEFAULT);
-                expect(map[WebpackAstParser.SYM_CJS_DEFAULT]).to.have.length(1);
-                expect(map[WebpackAstParser.SYM_CJS_DEFAULT][0]).to.deep.equal(new Range(5, 16, 5, 44));
+                expect(map).to.deep.equal({
+                    [WebpackAstParser.SYM_CJS_DEFAULT]: [new Range(5, 16, 5, 44)],
+                });
             });
         });
         describe("exports", function () {
@@ -318,17 +318,18 @@ describe("WebpackAstParser", function () {
                 const parser = new WebpackAstParser(getFile("webpack/stores/store1.js"));
                 const map = parser.getExportMap();
 
-                expect(map).to.have.keys("Z");
-
-                expect(map.Z).to.have.keys(["initialize", "isVisible", WebpackAstParser.SYM_CJS_DEFAULT]);
-                TAssert<RangeExportMap>(map.Z);
-                expect(map.Z[WebpackAstParser.SYM_CJS_DEFAULT]).to.deep.equal([
-                    new Range(4, 8, 4, 9),
-                    new Range(32, 16, 32, 17),
-                    new Range(10, 10, 10, 11),
-                ]);
-                expect(map.Z.initialize).to.deep.equal([new Range(11, 8, 11, 18)]);
-                expect(map.Z.isVisible).to.deep.equal([new Range(18, 8, 18, 17)]);
+                expect(map).to.deep.equal({
+                    Z: {
+                        initialize: [new Range(11, 8, 11, 18)],
+                        isVisible: [new Range(18, 8, 18, 17)],
+                        [WebpackAstParser.SYM_CJS_DEFAULT]: [
+                            new Range(4, 8, 4, 9),
+                            new Range(32, 16, 32, 17),
+                            new Range(10, 10, 10, 11),
+                        ],
+                        [WebpackAstParser.SYM_HOVER]: "EnablePublicGuildUpsellNoticeStore",
+                    },
+                });
             });
             it("generates the proper export map for a store constructed with no arguments", function () {
                 const parser = new WebpackAstParser(getFile("webpack/stores/store2.js"));
@@ -353,6 +354,7 @@ describe("WebpackAstParser", function () {
                         new Range(211, 10, 211, 12),
                         new Range(273, 8, 282, 9),
                     ],
+                    [WebpackAstParser.SYM_HOVER]: "UserStore",
                 });
                 expect(map.ASSISTANT_WUMPUS_VOICE_USER).to.deep.equal([
                     new Range(6, 8, 6, 35),
@@ -367,24 +369,26 @@ describe("WebpackAstParser", function () {
                 const parser = new WebpackAstParser(getFile("webpack/stores/store3.js"));
                 const map = parser.getExportMap();
 
-                expect(map).to.have.keys("Z");
-                expect(map.Z).to.deep.equal({
-                    getGuild: [new Range(199, 8, 199, 16)],
-                    getGuilds: [new Range(203, 8, 203, 17)],
-                    getGuildIds: [new Range(206, 8, 206, 19)],
-                    // getGuildCount: [new Range(209, 8, 209, 21)],
-                    getGuildCount: [new Range(4, 8, 4, 9)],
-                    // isLoaded: [new Range(212, 8, 212, 16)],
-                    isLoaded: [new Range(52, 12, 52, 14)],
-                    getGeoRestrictedGuilds: [new Range(53, 12, 53, 14)],
-                    getAllGuildsRoles: [new Range(218, 8, 218, 25)],
-                    getRoles: [new Range(221, 8, 221, 16)],
-                    getRole: [new Range(225, 8, 225, 15)],
-                    [WebpackAstParser.SYM_CJS_DEFAULT]: [
-                        new Range(6, 8, 6, 9),
-                        new Range(231, 16, 231, 17),
-                        new Range(198, 10, 198, 11),
-                    ],
+                expect(map).to.deep.equal({
+                    Z: {
+                        getGuild: [new Range(199, 8, 199, 16)],
+                        getGuilds: [new Range(203, 8, 203, 17)],
+                        getGuildIds: [new Range(206, 8, 206, 19)],
+                        // getGuildCount: [new Range(209, 8, 209, 21)],
+                        getGuildCount: [new Range(4, 8, 4, 9)],
+                        // isLoaded: [new Range(212, 8, 212, 16)],
+                        isLoaded: [new Range(52, 12, 52, 14)],
+                        getGeoRestrictedGuilds: [new Range(53, 12, 53, 14)],
+                        getAllGuildsRoles: [new Range(218, 8, 218, 25)],
+                        getRoles: [new Range(221, 8, 221, 16)],
+                        getRole: [new Range(225, 8, 225, 15)],
+                        [WebpackAstParser.SYM_CJS_DEFAULT]: [
+                            new Range(6, 8, 6, 9),
+                            new Range(231, 16, 231, 17),
+                            new Range(198, 10, 198, 11),
+                        ],
+                        [WebpackAstParser.SYM_HOVER]: "GuildStore",
+                    },
                 });
             });
             it("generates the proper export map for a store with getters", function () {
@@ -401,6 +405,7 @@ describe("WebpackAstParser", function () {
                         ],
                         keepOpen: [new Range(8, 12, 8, 14)],
                         enabled: [new Range(7, 12, 7, 14)],
+                        [WebpackAstParser.SYM_HOVER]: "SoundboardOverlayStore",
                     },
                 });
             });
@@ -410,6 +415,32 @@ describe("WebpackAstParser", function () {
             it.skip("generates the proper export map for a store exported with wreq.e", function () {
                 // I've never seen a store exported with wreq.e
             });
+        });
+    });
+    describe("hover text parsing", function () {
+        it("finds hover text 1", function () {
+            const parser = new WebpackAstParser(getFile("webpack/stores/store1.js"));
+            const hover = parser.findHoverText(["Z"]);
+
+            expect(hover).to.equal("EnablePublicGuildUpsellNoticeStore");
+        });
+        it("finds hover text 2", function () {
+            const parser = new WebpackAstParser(getFile("webpack/stores/store2.js"));
+            const hover = parser.findHoverText(["default"]);
+
+            expect(hover).to.equal("UserStore");
+        });
+        it("finds hover text 3", function () {
+            const parser = new WebpackAstParser(getFile("webpack/stores/store3.js"));
+            const hover = parser.findHoverText(["Z"]);
+
+            expect(hover).to.equal("GuildStore");
+        });
+        it("finds hover text 4", function () {
+            const parser = new WebpackAstParser(getFile("webpack/stores/getter.js"));
+            const hover = parser.findHoverText(["Z"]);
+
+            expect(hover).to.equal("SoundboardOverlayStore");
         });
     });
     describe("import parsing", function () {
@@ -632,6 +663,25 @@ describe("WebpackAstParser", function () {
             it.todo("finds all uses of a store from the class name", async function () {
                 // const parser = new WebpackAstParser(getFile(".modules/999999.js"));
                 // const locs = await parser.generateReferences(new Position(8, 11));
+            });
+        });
+        describe("hover text cross-module", function () {
+            it("finds the hover text for a store from another module", async function () {
+                const parser = new WebpackAstParser(getFile(".modules/555555.js"));
+                const hover = await parser.generateHover(new Position(38, 8));
+
+                expect(hover)
+                    .toMatchSnapshot();
+            });
+            it("finds the hover text for a store from another module", async function () {
+                const parser = new WebpackAstParser(getFile(".modules/111111.js"));
+                const hover = await parser.generateHover(new Position(15, 23));
+                const hover2 = await parser.generateHover(new Position(30, 23));
+
+                expect(hover)
+                    .toMatchSnapshot();
+                expect(hover2)
+                    .toMatchSnapshot();
             });
         });
     });

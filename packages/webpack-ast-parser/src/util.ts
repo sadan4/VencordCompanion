@@ -2,6 +2,7 @@ import { Position } from "@vencord-companion/shared/Position";
 import { Range } from "@vencord-companion/shared/Range";
 
 import { ExportMap } from "./types";
+import { WebpackAstParser } from "./WebpackAstParser";
 
 export function allEntries<T extends object, K extends keyof T & (string | symbol)>(obj: T): (readonly [K, T[K]])[] {
     const SYM_NON_ENUMERABLE = Symbol("non-enumerable");
@@ -23,9 +24,31 @@ export function allEntries<T extends object, K extends keyof T & (string | symbo
         .filter((x) => x !== SYM_NON_ENUMERABLE);
 }
 
+export function fromEntries<T extends Object>(entries: Iterable<readonly [keyof T, T[keyof T]]>): T {
+    return Object.fromEntries(entries) as any;
+}
+
 export function allValues<T extends object>(obj: T): (T[keyof T])[] {
     return allEntries(obj)
         .map(([, v]) => v);
+}
+
+export function allKeys<T extends object>(obj: T): (keyof T)[] {
+    return allEntries(obj)
+        .map(([k]) => k);
+}
+
+export function mapEntries<
+    T extends object,
+    K extends keyof T = keyof T,
+>(obj: T, fn: (key: K, value: T[K]) => T[K]): T {
+    const newObj = { ...obj };
+
+    for (const key in allKeys(newObj)) {
+        newObj[key] = fn(key as K, newObj[key]);
+    }
+
+    return newObj;
 }
 
 export function containsPosition(range: ExportMap<Range> | Range[], pos: Position): boolean {
@@ -33,6 +56,7 @@ export function containsPosition(range: ExportMap<Range> | Range[], pos: Positio
         return range.some((r) => r.contains(pos));
     }
     return allValues(range)
+        .filter((r) => typeof r !== "string" && r != null)
         .some((r) => containsPosition(r, pos));
 }
 
@@ -64,4 +88,9 @@ export function formatModule(moduleContents: string, moduleId: string | number |
 }
 
 export function TAssert<T>(thing: any): asserts thing is T {
+}
+
+export function assertNotHover<T>(thing: ExportMap<T>[keyof ExportMap<T>]):
+    asserts thing is Exclude<ExportMap<T>[keyof ExportMap<T>], ExportMap<T>[typeof WebpackAstParser.SYM_HOVER]> {
+
 }

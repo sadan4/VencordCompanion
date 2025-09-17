@@ -428,6 +428,32 @@ describe("WebpackAstParser", function () {
             });
         });
     });
+    describe("hover text parsing", function () {
+        it("finds hover text 1", function () {
+            const parser = new WebpackAstParser(getFile("webpack/stores/store1.js"));
+            const hover = parser.findHoverText(["Z"]);
+
+            expect(hover).to.equal("EnablePublicGuildUpsellNoticeStore");
+        });
+        it("finds hover text 2", function () {
+            const parser = new WebpackAstParser(getFile("webpack/stores/store2.js"));
+            const hover = parser.findHoverText(["default"]);
+
+            expect(hover).to.equal("UserStore");
+        });
+        it("finds hover text 3", function () {
+            const parser = new WebpackAstParser(getFile("webpack/stores/store3.js"));
+            const hover = parser.findHoverText(["Z"]);
+
+            expect(hover).to.equal("GuildStore");
+        });
+        it("finds hover text 4", function () {
+            const parser = new WebpackAstParser(getFile("webpack/stores/getter.js"));
+            const hover = parser.findHoverText(["Z"]);
+
+            expect(hover).to.equal("SoundboardOverlayStore");
+        });
+    });
     describe("import parsing", function () {
         it("parses an only re-exported export properly", function () {
             const parser = new WebpackAstParser(getFile("webpack/imports/reExport.js"));
@@ -648,6 +674,21 @@ describe("WebpackAstParser", function () {
             it.todo("finds all uses of a store from the class name", async function () {
                 // const parser = new WebpackAstParser(getFile(".modules/999999.js"));
                 // const locs = await parser.generateReferences(new Position(8, 11));
+            });
+        });
+        describe("hover text cross-module", function () {
+            it("finds the hover text for a store from another module", async function () {
+                const parser = new WebpackAstParser(getFile(".modules/555555.js"));
+                const hover = await parser.generateHover(new Position(38, 8));
+
+                expect(hover).to.equal("MyTestingStore");
+            });
+            it("finds the hover text for a store from another module", async function () {
+                const parser = new WebpackAstParser(getFile(".modules/111111.js"));
+                const hover = await parser.generateHover(new Position(15, 23));
+                const hover2 = await parser.generateHover(new Position(30, 23));
+
+                expect(hover).to.equal(hover2).and.equal("MyTestingStore");
             });
         });
     });

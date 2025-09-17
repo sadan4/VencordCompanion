@@ -283,17 +283,8 @@ export class WebpackAstParser extends AstParser {
         if (!this.uses)
             throw new Error("Wreq isn't used anywhere");
 
-        // map the assignment of required modules to their uses
-        const modules = new Map([...this.vars.entries()].filter(([k]) => {
-            return this.uses!.uses.some((e) => {
-                const node = findParent(e.location, isVariableDeclaration);
-
-                return node?.name === k;
-            });
-        }));
-
-        const x = this.getTokenAtOffset(this.offsetAt(position));
-        const accessChain = findParent(x, isPropertyAccessExpression);
+        const selectedNode = this.getTokenAtOffset(this.offsetAt(position));
+        const accessChain = findParent(selectedNode, isPropertyAccessExpression);
 
         if (!accessChain)
             return;
@@ -305,19 +296,21 @@ export class WebpackAstParser extends AstParser {
 
         let [requiredModule, ...names] = importChain;
 
-        if (!requiredModule)
+        if (!this.isIdentifier(requiredModule))
             return;
 
-        const [, dec] = [...modules.entries()].find(([, v]) => {
-            return v.uses.some(({ location }) => requiredModule === location);
-        }) ?? [];
+        const dec = this.getVarInfoFromUse(requiredModule);
 
-        const moduleId = this.getModuleId(dec);
+        if (!dec) {
+            return;
+        }
+
+        const moduleId = this.getModuleIdForImport(dec);
 
         if (!moduleId)
             return;
 
-        const res: string | undefined = await this.tryGetFreshModuleFallbackToCache(moduleId);
+        const res = await this.tryGetFreshModuleFallbackToCache(moduleId);
 
         if (res == null)
             return;
@@ -359,7 +352,7 @@ export class WebpackAstParser extends AstParser {
 
             [, names] = ret;
 
-            const res = await this.moduleCache.getLatestModuleFromNum(importSourceId)
+            const res = await this.tryGetFreshModuleFallbackToCache(importSourceId)
                 .catch(logger.error);
 
             if (!res) {
@@ -380,23 +373,88 @@ export class WebpackAstParser extends AstParser {
                 content: cur.text,
             },
         ];
-        // const maybeRange = new WebpackAstParser(res.data)
-        //     .findExportLocation(names.map((x) => x.text));
+    }
 
-        // if (maybeRange instanceof Range) {
-        //     return {
-        //         range: maybeRange,
-        //         uri: mkStringUri(res.data),
-        //     };
-        // }
-        // return {
-        //     range:
-        // names.length >= 1
-        //     ? new WebpackAstParser(res.data)
-        //         .findExportLocation(names.map((x) => x.text))
-        //     : zeroRange,
-        //     uri: mkStringUri(res.data),
-        // };
+    public async generateHover(position: Position): Promise<string | undefined> {
+        if (!this.uses)
+            throw new Error("Wreq isn't used anywhere");
+
+        const selectedNode = this.getTokenAtOffset(this.offsetAt(position));
+        const accessChain = findParent(selectedNode, isPropertyAccessExpression);
+
+        if (!accessChain)
+            return;
+
+        const importChain = this.flattenPropertyAccessExpression(accessChain);
+
+        if (!importChain)
+            return;
+
+        let [requiredModule, ...names] = importChain;
+
+        if (names.length < 1) {
+            return;
+        }
+
+        if (!this.isIdentifier(requiredModule))
+            return;
+
+        const dec = this.getVarInfoFromUse(requiredModule);
+
+        if (!dec) {
+            return;
+        }
+
+        const moduleId = this.getModuleIdForImport(dec);
+
+        if (!moduleId)
+            return;
+
+        const res = await this.tryGetFreshModuleFallbackToCache(moduleId);
+
+        if (res == null)
+            return;
+
+        let cur = WebpackAstParser.withFormattedModule(res, moduleId);
+
+        while (true) {
+            // check for an explicit re-export before falling back to checking for a whole module re-export
+            const ret = cur.doesReExportFromExport(names.map((x) => x.text));
+
+            if (!ret) {
+                // if no explicit re-export was found, try a whole module re-export
+                const wholeModuleExportId = cur.doesReExportWholeModule();
+
+                if (wholeModuleExportId) {
+                    const content = await this.tryGetFreshModuleFallbackToCache(wholeModuleExportId);
+
+                    if (content) {
+                        cur = WebpackAstParser.withFormattedModule(content, wholeModuleExportId);
+                        // go again with the new module
+                        continue;
+                    }
+                }
+                break;
+            }
+
+
+            const [importSourceId] = ret;
+
+            [, names] = ret;
+
+            const res = await this.tryGetFreshModuleFallbackToCache(importSourceId);
+
+            if (!res) {
+                logger.error("Failed to get new module");
+                return;
+            }
+
+            cur = WebpackAstParser.withFormattedModule(res, importSourceId);
+        }
+
+        const hoverText = cur.findHoverText(names.map((x) => x.text));
+
+        return hoverText;
     }
 
     doesReExportFromExport(exportName: AnyExportKey[]):
@@ -435,18 +493,26 @@ export class WebpackAstParser extends AstParser {
      * @see {@link getVariableInitializer} which can than be passed into {@link vars|vars.get}
      * @returns `123456`
      */
-    getModuleId(dec: VariableInfo | undefined): number | undefined {
+    getModuleIdForImport(dec: VariableInfo | undefined): number | undefined {
         if (!dec)
-            return undefined;
+            return;
         if (dec.declarations.length !== 1)
-            return undefined;
+            return;
 
         const init = findParent(dec.declarations[0], isVariableDeclaration)?.initializer;
 
-        if (!init || !isCallExpression(init))
-            return undefined;
+        if (!init || !isCallExpression(init) || !isIdentifier(init.expression))
+            return;
+
+        // make sure init is a call to wreq
+        const initInfo = this.getVarInfoFromUse(init.expression);
+
+        if (initInfo !== this.uses) {
+            return;
+        }
+        // TODO: support string literals here
         if (init.arguments.length !== 1 || !isNumericLiteral(init.arguments[0]))
-            return undefined;
+            return;
 
         const num = +init.arguments[0].text;
 
@@ -1637,12 +1703,24 @@ export class WebpackAstParser extends AstParser {
             }
         }
         return range;
-    // return (
-    //     this.tryFindExportwreq_d(exportName)
-    //     || this.tryFindExportWreq_t(exportName)
-    //     || this.tryFindExportsWreq_e(exportName)
-    //     || zeroRange
-    // );
+    }
+
+    findHoverText(exportNames: readonly AnyExportKey[]): string | undefined {
+        let cur: RangeExportMap[keyof RangeExportMap] = this.getExportMap();
+        let lastHover: string | undefined;
+        let i = 0;
+
+
+        while ((cur = cur[exportNames[i++]])) {
+            if (cur[WebpackAstParser.SYM_HOVER]) {
+                lastHover = cur[WebpackAstParser.SYM_HOVER];
+            } else if (cur[WebpackAstParser.SYM_CJS_DEFAULT]?.[WebpackAstParser.SYM_HOVER]) {
+                lastHover = cur[WebpackAstParser.SYM_CJS_DEFAULT]?.[WebpackAstParser.SYM_HOVER];
+            } else {
+                lastHover = undefined;
+            }
+        }
+        return lastHover;
     }
 
     @Cache()

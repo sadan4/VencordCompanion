@@ -56,6 +56,12 @@ export class WebpackI18nHover implements HoverProvider {
         }
 
         const maybeUnHashedKey = mappings[hashedKey];
+
+        // return early so we don't clog up the hover with "no mapping found" when there's no mapping;
+        if (!maybeUnHashedKey && hashedKey.length !== 6) {
+            return;
+        }
+
         const resolvedString = new MarkdownString();
 
         try {

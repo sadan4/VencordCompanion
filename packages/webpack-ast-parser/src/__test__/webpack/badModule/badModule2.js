@@ -1,4 +1,3 @@
-// Webpack Module 
 0,
 function(e, t, n) {
     n.d(t, {

@@ -125,7 +125,7 @@ export class WebpackAstParser extends AstParser {
     }
 
     public static withFormattedModule(text: string, moduleId: string | number): WebpackAstParser {
-        return new this(Format(formatModule(text, moduleId)));
+        return this.withFormattedText(formatModule(text, moduleId));
     }
 
     /**
@@ -140,7 +140,7 @@ export class WebpackAstParser extends AstParser {
      */
     @CacheGetter()
     get wreq(): Identifier | undefined {
-        return this.findWebpackArg();
+        return this.findWebpackArg(2);
     }
 
     /** where {@link WebpackAstParser.wreq this.wreq} is used*/
@@ -184,8 +184,14 @@ export class WebpackAstParser extends AstParser {
      * @param paramIndex the index of the param 0, 1, 2 etc...
      * @param start finds a webpack arg from the source tree
      * @returns the identifier of the param if found or undef
+     * 
+     * NOTE: you should probably not use this
+     * 
+     * @see {@link findWreq_t}
+     * @see {@link findWreq_e}
+     * @see {@link wreq}
      */
-    findWebpackArg(paramIndex = 2, start: Node = this.sourceFile): Identifier | undefined {
+    private findWebpackArg(paramIndex: number, start: Node = this.sourceFile): Identifier | undefined {
         for (const n of start.getChildren()) {
             if (isSyntaxList(n) || isExpressionStatement(n) || isBinaryExpression(n))
                 return this.findWebpackArg(paramIndex, n);
@@ -1820,6 +1826,7 @@ export class WebpackAstParser extends AstParser {
         return exports ? this.makeRangeFromAstNode(exports.location) : undefined;
     }
 
+    @Cache()
     findWreq_e(): Identifier | undefined {
         return this.findWebpackArg(0);
     }

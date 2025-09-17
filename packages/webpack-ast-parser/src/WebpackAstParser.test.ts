@@ -330,17 +330,6 @@ describe("WebpackAstParser", function () {
                         [WebpackAstParser.SYM_HOVER]: "EnablePublicGuildUpsellNoticeStore",
                     },
                 });
-                // expect(map).to.have.keys("Z");
-
-                // expect(map.Z).to.have.keys(["initialize", "isVisible", WebpackAstParser.SYM_CJS_DEFAULT]);
-                // TAssert<RangeExportMap>(map.Z);
-                // expect(map.Z[WebpackAstParser.SYM_CJS_DEFAULT]).to.deep.equal([
-                //     new Range(4, 8, 4, 9),
-                //     new Range(32, 16, 32, 17),
-                //     new Range(10, 10, 10, 11),
-                // ]);
-                // expect(map.Z.initialize).to.deep.equal([new Range(11, 8, 11, 18)]);
-                // expect(map.Z.isVisible).to.deep.equal([new Range(18, 8, 18, 17)]);
             });
             it("generates the proper export map for a store constructed with no arguments", function () {
                 const parser = new WebpackAstParser(getFile("webpack/stores/store2.js"));

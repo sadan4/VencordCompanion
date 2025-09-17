@@ -62,6 +62,7 @@ import {
     MemberName,
     NewExpression,
     Node,
+    NumericLiteral,
     ObjectLiteralExpression,
     ScriptKind,
     ScriptTarget,
@@ -285,11 +286,63 @@ export class WebpackAstParser extends AstParser {
         return;
     }
 
+    /**
+     * @param idNode the numeric literal node that is the module id
+     * This is called internally by {@link generateDefinitions}
+     * 
+     * given
+     * ```js
+     * var mod = n(123456);
+     * //          ^^^^^^
+     * ```
+     * returns the definitions for that module
+     */
+    private generateDirectModuleDefinition(idNode: NumericLiteral): Definition[] | undefined {
+        const maybeCall = idNode.parent;
+
+        if (!isCallExpression(maybeCall)) {
+            return;
+        }
+
+        if (maybeCall.arguments.length !== 1) {
+            return;
+        }
+
+        const func = maybeCall.expression;
+
+        if (!isIdentifier(func)) {
+            return;
+        }
+
+        if (!this.isUseOf(func, this.wreq)) {
+            return;
+        }
+
+        const filePath = this.moduleCache.getModuleFilepath(idNode.text);
+
+        if (!filePath) {
+            return;
+        }
+
+        return [
+            {
+                locationType: "file_path",
+                filePath,
+                range: zeroRange,
+            },
+        ];
+    }
+
     public async generateDefinitions(position: Position): Promise<Definition[] | undefined> {
         if (!this.uses)
             throw new Error("Wreq isn't used anywhere");
 
         const selectedNode = this.getTokenAtOffset(this.offsetAt(position));
+
+        if (selectedNode && isNumericLiteral(selectedNode)) {
+            return this.generateDirectModuleDefinition(selectedNode);
+        }
+
         const accessChain = findParent(selectedNode, isPropertyAccessExpression);
 
         if (!accessChain)

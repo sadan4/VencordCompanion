@@ -1,5 +1,43 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`WebpackAstParser > cache parsing > definitions > from wreq(number) > finds the module for a simple wreq call 1`] = `
+[
+  {
+    "filePath": "C:\\Users\\meyer\\dev\\FreeNitroGenerator\\packages\\webpack-ast-parser\\src\\__test__\\.modules\\555555.js",
+    "locationType": "file_path",
+    "range": [
+      {
+        "character": 0,
+        "line": 0,
+      },
+      {
+        "character": 0,
+        "line": 0,
+      },
+    ],
+  },
+]
+`;
+
+exports[`WebpackAstParser > cache parsing > definitions > from wreq(number) > finds the module for a wreq call not in imports 1`] = `
+[
+  {
+    "filePath": "C:\\Users\\meyer\\dev\\FreeNitroGenerator\\packages\\webpack-ast-parser\\src\\__test__\\.modules\\333333.js",
+    "locationType": "file_path",
+    "range": [
+      {
+        "character": 0,
+        "line": 0,
+      },
+      {
+        "character": 0,
+        "line": 0,
+      },
+    ],
+  },
+]
+`;
+
 exports[`WebpackAstParser > cache parsing > definitions > wreq.d > finds the use of a simple import 1`] = `
 [
   {

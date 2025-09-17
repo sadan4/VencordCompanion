@@ -670,6 +670,28 @@ describe("WebpackAstParser", function () {
                         .toMatchSnapshot();
                 });
             });
+            describe("from wreq(number)", function () {
+                it("finds the module for a simple wreq call", async function () {
+                    const parser = new WebpackAstParser(getFile(".modules/333333.js"));
+                    const def = await parser.generateDefinitions(new Position(9, 18));
+
+                    expect(def)
+                        .toMatchSnapshot();
+                });
+                it("returns undefined for a module that doesn't exist", async function () {
+                    const parser = new WebpackAstParser(getFile(".modules/333333.js"));
+                    const def = await parser.generateDefinitions(new Position(8, 18));
+
+                    expect(def).to.be.undefined;
+                });
+                it("finds the module for a wreq call not in imports", async function () {
+                    const parser = new WebpackAstParser(getFile(".modules/444444.js"));
+                    const def = await parser.generateDefinitions(new Position(8, 18));
+
+                    expect(def)
+                        .toMatchSnapshot();
+                });
+            });
         });
         describe("stores", function () {
             it.todo("finds all uses of a store from the class name", async function () {

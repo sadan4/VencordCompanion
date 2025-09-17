@@ -375,7 +375,7 @@ export class WebpackAstParser extends AstParser {
         ];
     }
 
-    public async generateHover(position: Position): Promise<string | undefined> {
+    public async generateHover(position: Position): Promise<[Range, string] | undefined> {
         if (!this.uses)
             throw new Error("Wreq isn't used anywhere");
 
@@ -453,8 +453,9 @@ export class WebpackAstParser extends AstParser {
         }
 
         const hoverText = cur.findHoverText(names.map((x) => x.text));
+        const hoverRange = this.makeRangeFromAstNode(names.at(-1)!);
 
-        return hoverText;
+        return hoverText === undefined ? undefined : [hoverRange, hoverText];
     }
 
     doesReExportFromExport(exportName: AnyExportKey[]):

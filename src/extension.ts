@@ -1,7 +1,7 @@
 import { onEditCallback, onOpenCallback } from "@ast/vencord/diagnostics";
 import { I18nHover } from "@ast/vencord/hover";
 import { PatchCodeLensProvider, PluginDefCodeLensProvider, WebpackCodeLensProvider } from "@ast/vencord/lenses";
-import { WebpackI18nHover } from "@ast/webpack/hover";
+import { WebpackExportHover, WebpackI18nHover } from "@ast/webpack/hover";
 import { PartialModuleJumpCodeLensProvider } from "@ast/webpack/lenses";
 import { DefinitionProvider, ReferenceProvider } from "@ast/webpack/lsp";
 import { ModuleCache, ModuleDepManager } from "@modules/cache";
@@ -60,6 +60,7 @@ export async function activate(context: ExtensionContext) {
         startWebSocketServer();
 
     register(WebpackI18nHover);
+    register(WebpackExportHover);
     register(PluginDefCodeLensProvider);
     register(PatchHelper);
     register(DefinitionProvider);

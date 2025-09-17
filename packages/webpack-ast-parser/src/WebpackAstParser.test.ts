@@ -681,14 +681,18 @@ describe("WebpackAstParser", function () {
                 const parser = new WebpackAstParser(getFile(".modules/555555.js"));
                 const hover = await parser.generateHover(new Position(38, 8));
 
-                expect(hover).to.equal("MyTestingStore");
+                expect(hover)
+                    .toMatchSnapshot();
             });
             it("finds the hover text for a store from another module", async function () {
                 const parser = new WebpackAstParser(getFile(".modules/111111.js"));
                 const hover = await parser.generateHover(new Position(15, 23));
                 const hover2 = await parser.generateHover(new Position(30, 23));
 
-                expect(hover).to.equal(hover2).and.equal("MyTestingStore");
+                expect(hover)
+                    .toMatchSnapshot();
+                expect(hover2)
+                    .toMatchSnapshot();
             });
         });
     });

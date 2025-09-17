@@ -7,7 +7,8 @@ import { TAssert } from "./util";
 import { WebpackAstParser } from "./WebpackAstParser";
 
 import { readdir, readFile } from "node:fs/promises";
-import { basename, join } from "node:path";
+import { basename, join, relative } from "node:path";
+import * as posix from "node:path/posix";
 import { beforeAll, describe, expect, it } from "vitest";
 
 const __dirname = import.meta.dirname;
@@ -528,7 +529,10 @@ describe("WebpackAstParser", function () {
                     return Promise.reject(new Error("Not implemented"));
                 },
                 getModuleFilepath(id) {
-                    return modulesOnDisk[String(id)];
+                    const fullPath: string | undefined = modulesOnDisk[String(id)];
+
+                    return fullPath && relative(__dirname, fullPath)
+                        .replaceAll("\\", "/");
                 },
                 async getModuleFromNum(id) {
                     return await readFile(join(__dirname, "__test__", ".modules", `${id}.js`), "utf-8");
@@ -570,7 +574,7 @@ describe("WebpackAstParser", function () {
             file = `${file}.js`;
             return {
                 locationType: "file_path",
-                filePath: join(__dirname, "__test__", ".modules", file),
+                filePath: posix.join("__test__", ".modules", file),
                 range: new Range(y1, x1, y1, x1 + len),
             } satisfies Reference;
         }

@@ -10,5 +10,9 @@
         "allowImportingTsExtensions": true,
         "allowJs": true,
     },
-    "include": ["scripts"],
+    "include": [
+        "scripts",
+        "eslint.config.mts",
+        "vitest.config.mts"
+    ],
 }

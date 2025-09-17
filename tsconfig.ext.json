@@ -61,7 +61,6 @@
     ],
     "include": [
         "src",
-        "eslint.config.mts",
         "packages"
     ],
     "exclude": [

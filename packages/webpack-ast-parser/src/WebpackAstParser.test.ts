@@ -20,10 +20,22 @@ describe("WebpackAstParser", function () {
         new WebpackAstParser(normalModule);
     });
 
-    it("parses the module ID", function () {
-        const parser = new WebpackAstParser(normalModule);
+    describe("module id", function () {
+        it("parses the module ID", function () {
+            const parser = new WebpackAstParser(normalModule);
 
-        expect(parser.moduleId).to.equal("317269");
+            expect(parser.moduleId).to.equal("317269");
+        });
+        it("fails to parse a malformed module id", function () {
+            const parser = new WebpackAstParser(getFile("webpack/badModule/badModule1.js"));
+
+            expect(parser.moduleId).to.be.null;
+        });
+        it("parses the module ID", function () {
+            const parser = new WebpackAstParser(getFile("webpack/badModule/badModule2.js"));
+
+            expect(parser.moduleId).to.be.null;
+        });
     });
 
     describe("export parsing", function () {

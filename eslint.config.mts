@@ -1,13 +1,13 @@
-import stylistic, { RuleOptions } from "@stylistic/eslint-plugin";
+import stylistic, { type RuleOptions } from "@stylistic/eslint-plugin";
 
 import { Linter } from "eslint";
-import { ESLintRules as IESLintRules } from "eslint/rules";
+import type { ESLintRules as IESLintRules } from "eslint/rules";
 import simpleImportSort from "eslint-plugin-simple-import-sort";
 import unusedImports from "eslint-plugin-unused-imports";
-import TSEslint, { ConfigArray } from "typescript-eslint";
+import TSEslint, { type ConfigArray } from "typescript-eslint";
 
 // cursed
-type ExtractRules<Rules = typeof import("./node_modules/@typescript-eslint/eslint-plugin/dist/rules")> = {
+type ExtractRules<Rules = typeof import("./node_modules/@typescript-eslint/eslint-plugin/dist/rules/index.js")> = {
     [K in keyof Rules as K extends string ? `@typescript-eslint/${K}` : never]: Rules[K] extends { defaultOptions: infer Options extends any[]; } ? Linter.RuleEntry<Options> : never;
 };
 
@@ -582,9 +582,9 @@ const styleRules: Partial<_RuleOptions> = {
 const extensions = "{js,mjs,cjs,jsx,mjsx,cjsx,ts,mts,cts,tsx,mtsx,ctsx}";
 
 const typescript_is_stupid_and_errors_if_i_inline_this: ConfigArray = TSEslint.config({ ignores: ["dist", "src/webview", "node_modules", "**/__test__/**", "packages/vencord-ast-parser/src/.vencord-source/**"] }, {
-    files: [`src/**/*.${extensions}`, `eslint.config.${extensions}`, `packages/**/*.${extensions}`, `scripts/**/*.${extensions}`],
+    files: [`src/**/*.${extensions}`, `eslint.config.${extensions}`, `packages/**/*.${extensions}`, `scripts/**/*.${extensions}`, `vitest.config.${extensions}`],
     plugins: {
-        "@stylistic": stylistic,
+        "@stylistic": stylistic as any,
         "@typescript-eslint": TSEslint.plugin,
         "simple-import-sort": simpleImportSort,
         "unused-imports": unusedImports,

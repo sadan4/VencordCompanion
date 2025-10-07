@@ -113,7 +113,7 @@
                 {
                     "id": "vencordSettings",
                     "name": "Settings",
-                    "when": "config.vencord-companion.showSidebar || config.vencord-companion.alwaysShowSidebar",
+                    "when": "config.vencord-companion.showSidebar || config.vencord-companion.alwaysShowSidebar || config.vencord-user-companion.showSidebar || config.vencord-user-companion.alwaysShowSidebar",
                     "visibility": "visible",
                     "icon": "assets/oneko.svg"
                 }

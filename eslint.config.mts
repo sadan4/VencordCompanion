@@ -629,6 +629,8 @@ const typescript_is_stupid_and_errors_if_i_inline_this: ConfigArray = TSEslint.c
         "unicorn/no-anonymous-default-export": "error",
         "unicorn/no-array-for-each": "error",
         "unicorn/no-array-method-this-argument": "error",
+        "unicorn/no-array-reverse": "error",
+        "unicorn/no-array-sort": "error",
     },
 });
 

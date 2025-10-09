@@ -45,18 +45,15 @@
         "test:watch": "vitest",
         "test:ui": "vitest --ui --api 9972",
         "genTypes": "node scripts/generateSettings/index.mts",
-        "postinstall": "pnpm genTypes"
+        "installDeps": "(cd parsers && pnpm i && pnpm build-all)",
+        "postinstall": "pnpm genTypes && pnpm installDeps"
     },
     "dependencies": {
         "@intrnl/xxhash64": "^0.1.2",
-        "@sadan4/devtools-pretty-printer": "catalog:",
-        "@vencord-companion/ast-parser": "workspace:",
-        "@vencord-companion/shared": "workspace:",
-        "@vencord-companion/vencord-ast-parser": "workspace:",
-        "@vencord-companion/webpack-ast-parser": "workspace:",
+        "@sadan4/devtools-pretty-printer": "^1.0.4",
         "fast-diff": "^1.3.0",
         "nanoid": "^5.0.9",
-        "typescript": "catalog:",
+        "typescript": "^5.8.2",
         "ws": "^8.18.0"
     },
     "devDependencies": {
@@ -67,7 +64,6 @@
         "@types/ws": "^8.5.14",
         "@typescript-eslint/eslint-plugin": "^8.23.0",
         "@typescript-eslint/parser": "^8.23.0",
-        "@vencord-companion/tsconfig": "workspace:",
         "@vitest/coverage-v8": "^3.2.4",
         "@vitest/ui": "^3.2.4",
         "@vscode/vsce": "^3.6.0",
@@ -82,7 +78,7 @@
         "resolve-tspaths": "^0.8.23",
         "source-map-support": "^0.5.21",
         "typescript-eslint": "^8.23.0",
-        "vitest": "catalog:"
+        "vitest": "^3.2.4"
     },
     "contributes": {
         "configuration": {

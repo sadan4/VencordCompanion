@@ -1,0 +1,3 @@
+[submodule "parsers"]
+	path = parsers
+	url = git@github.com:sadan4/DiscordBundleParser.git

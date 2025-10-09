@@ -32,8 +32,9 @@
     "publisher": "sadan",
     "main": "./dist/extension.js",
     "scripts": {
+        "buildDeps": "pnpm -r --parallel -F ./parsers/packages/* build",
+        "prebuild": "pnpm buildDeps",
         "build": "node ./scripts/build.mts",
-        "watch": "node ./scripts/watch.mts",
         "eslint": "eslint --cache",
         "lint": "pnpm eslint && pnpm typecheck",
         "prepackage": "pnpm build && pnpm lint",
@@ -45,8 +46,7 @@
         "test:watch": "vitest",
         "test:ui": "vitest --ui --api 9972",
         "genTypes": "node scripts/generateSettings/index.mts",
-        "installDeps": "pnpm -C parsers i && pnpm -C parsers build-all)",
-        "postinstall": "pnpm genTypes && pnpm installDeps"
+        "postinstall": "pnpm genTypes && pnpm buildDeps"
     },
     "dependencies": {
         "@intrnl/xxhash64": "^0.1.2",
@@ -54,12 +54,16 @@
         "fast-diff": "^1.3.0",
         "nanoid": "^5.0.9",
         "typescript": "^5.8.2",
-        "ws": "^8.18.0"
+        "ws": "^8.18.0",
+        "@vencord-companion/vencord-ast-parser": "link:./parsers/packages/vencord-ast-parser",
+        "@vencord-companion/webpack-ast-parser": "link:./parsers/packages/webpack-ast-parser",
+        "@vencord-companion/ast-parser": "link:./parsers/packages/ast-parser",
+        "@vencord-companion/shared": "link:./parsers/packages/shared"
     },
     "devDependencies": {
         "@stylistic/eslint-plugin": "^3.0.1",
         "@stylistic/eslint-plugin-ts": "^4.2.0",
-        "@types/node": "^24.5.0",
+        "@types/node": "catalog:",
         "@types/vscode": "1.80.0",
         "@types/ws": "^8.5.14",
         "@typescript-eslint/eslint-plugin": "^8.23.0",
@@ -168,9 +172,6 @@
     "homepage": "https://github.com/sadan4/VencordCompanion",
     "packageManager": "pnpm@10.15.0+sha512.486ebc259d3e999a4e8691ce03b5cac4a71cbeca39372a9b762cb500cfdf0873e2cb16abe3d951b1ee2cf012503f027b98b6584e4df22524e0c7450d9ec7aa7b",
     "pnpm": {
-        "patchedDependencies": {
-            "@types/ws@8.5.14": "patches/@types__ws@8.5.14.patch"
-        },
         "onlyBuiltDependencies": [
             "@vscode/vsce-sign",
             "esbuild",

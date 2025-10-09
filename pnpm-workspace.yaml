@@ -1,0 +1,13 @@
+packages:
+  - ./parsers/packages/*
+
+catalog:
+  '@sadan4/devtools-pretty-printer': 1.0.4
+  '@types/node': ^24.5.0
+  ts-api-utils: 2.1.0
+  typescript: ^5.8.2
+  vitest: 3.2.4
+
+patchedDependencies:
+  ts-api-utils: patches/ts-api-utils.patch
+  '@types/ws@8.5.14': 'patches/@types__ws@8.5.14.patch'

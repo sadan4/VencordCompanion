@@ -1,0 +1,26 @@
+diff --git a/lib/index.d.cts b/lib/index.d.cts
+index 87946f8c9207756e177290449c0698d127e43137..54100f442289c44550be8e163bc21c40b8050131 100644
+--- a/lib/index.d.cts
++++ b/lib/index.d.cts
+@@ -138,7 +138,7 @@ declare const isSymbolFlagSet: (symbol: ts.Symbol, flag: ts.SymbolFlags) => bool
+  * Test if the given symbol's links has the given `CheckFlags` set.
+  * @internal
+  */
+-declare function isTransientSymbolLinksFlagSet(links: ts.TransientSymbolLinks, flag: ts.CheckFlags): boolean;
++declare function isTransientSymbolLinksFlagSet(links: object, flag: number): boolean;
+ /**
+  * Test if the given node has the given `TypeFlags` set.
+  * @category Nodes - Flag Utilities
+diff --git a/lib/index.d.ts b/lib/index.d.ts
+index 87946f8c9207756e177290449c0698d127e43137..54100f442289c44550be8e163bc21c40b8050131 100644
+--- a/lib/index.d.ts
++++ b/lib/index.d.ts
+@@ -138,7 +138,7 @@ declare const isSymbolFlagSet: (symbol: ts.Symbol, flag: ts.SymbolFlags) => bool
+  * Test if the given symbol's links has the given `CheckFlags` set.
+  * @internal
+  */
+-declare function isTransientSymbolLinksFlagSet(links: ts.TransientSymbolLinks, flag: ts.CheckFlags): boolean;
++declare function isTransientSymbolLinksFlagSet(links: object, flag: number): boolean;
+ /**
+  * Test if the given node has the given `TypeFlags` set.
+  * @category Nodes - Flag Utilities

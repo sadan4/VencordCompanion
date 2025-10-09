@@ -1007,7 +1007,7 @@ export class WebpackAstParser extends AstParser {
                         if (!decl || !isIdentifier(decl))
                             break nmd;
 
-                        this.vars
+                        const usesToAdd = this.vars
                             .get(decl)
                             ?.uses?.map((x) => x.location.parent)
                             .filter(isCallExpression)
@@ -1023,28 +1023,27 @@ export class WebpackAstParser extends AstParser {
                                         isPropertyAccessExpression,
                                     );
 
-                                    if (
-                                        !(
-                                            !!expr
-                                            && expr.expression === calledUse
-                                            && expr.name.text === exportName
-                                        )
-                                    )
+                                    if (!(
+                                        !!expr
+                                        && expr.expression === calledUse
+                                        && expr.name.text === exportName
+                                    ))
                                         return undefined;
 
                                     return [this.makeRangeFromAstNode(expr.name)];
                                 }
                                 throw new Error("Invalid exportName");
                             })
-                            .filter((x) => x !== undefined)
-                            .forEach((use) => {
-                                const final = use.at(-1);
+                            .filter((x) => x !== undefined) ?? [];
 
-                                if (!final)
-                                    throw new Error("Final is undefined, this should have been filtered out by the previous line as there should be no empty arrays");
+                        for (const use of usesToAdd) {
+                            const final = use.at(-1);
 
-                                uses.push(final);
-                            });
+                            if (!final)
+                                throw new Error("Final is undefined, this should have been filtered out by the previous line as there should be no empty arrays");
+
+                            uses.push(final);
+                        }
                     }
                 }
 

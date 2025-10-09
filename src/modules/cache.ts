@@ -426,14 +426,16 @@ export class ModuleDepManager {
                         }
                         ret.fluxDispatcherClass.push([parser.moduleId, fluxDispatcherModuleExport]);
 
-                        (await parser.getAllReExportsForExport(fluxDispatcherModuleExport))
-                            .filter(([, exportChain]) => exportChain.length === 1)
-                            .forEach(([moduleId, [exportName]]) => {
-                                if (typeof exportName === "symbol") {
-                                    exportName = ModuleDepManager.SYM_CJS_DEFAULT_PLACEHOLDER;
-                                }
-                                ret.fluxDispatcherClass.push([moduleId, exportName]);
-                            });
+                        const arr = (await parser
+                            .getAllReExportsForExport(fluxDispatcherModuleExport))
+                            .filter(([, exportChain]) => exportChain.length === 1);
+
+                        for (let [moduleId, [exportName]] of arr) {
+                            if (typeof exportName === "symbol") {
+                                exportName = ModuleDepManager.SYM_CJS_DEFAULT_PLACEHOLDER;
+                            }
+                            ret.fluxDispatcherClass.push([moduleId, exportName]);
+                        }
                     }
                 }
                 await progress.increment();

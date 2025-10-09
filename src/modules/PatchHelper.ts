@@ -339,12 +339,15 @@ export class PatchHelper {
     }
 
     public static onTabClose({ closed }: TabChangeEvent) {
-        closed.flatMap(({ input }) => {
+        const arr = closed.flatMap(({ input }) => {
             if (!(input instanceof TabInputText))
                 return [];
             return PatchHelper.activeWindowsById.get(PatchHelper.idFromUri(input.uri)) ?? [];
-        })
-            .forEach((x) => x.end());
+        });
+
+        for (const x of arr) {
+            x.end();
+        }
     }
     // #endregion
 

@@ -164,7 +164,9 @@ export function startWebSocketServer() {
 
         outputChannel.info(`[WS] New Connection (Origin: ${req.headers.origin || "-"})`);
         activeSocket = sock;
-        onConnectCbs.forEach((cb) => cb(sock));
+        for (const cb of onConnectCbs) {
+            cb(sock);
+        }
 
         sock.on("close", () => {
             outputChannel.warn("[WS] Connection Closed");

@@ -313,13 +313,13 @@ describe("WebpackAstParser", function () {
                 const map = parser.getExportMap();
 
                 expect(map).to.have.keys(keys);
-                keys.forEach((key) => {
+                for (const key of keys) {
                     expect(map[key]).to.have.length(3);
-                });
-                keys.forEach((key, i) => {
+                }
+                for (const [i, key] of keys.entries()) {
                     expect(map[key][0]).to.deep.equal(new Range(101 + i, 6, 101 + i, 6 + key.length));
                     expect(map[key][1]).to.deep.equal(new Range(101 + i, 9 + key.length, 101 + i, 10 + key.length));
-                });
+                }
                 expect(map.Deflate[2]).to.deep.equal(new Range(18, 13, 18, 14));
                 expect(map.deflate[2]).to.deep.equal(new Range(49, 13, 49, 14));
                 expect(map.deflateRaw[2]).to.deep.equal(new Range(56, 13, 56, 14));

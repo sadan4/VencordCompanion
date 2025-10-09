@@ -58,7 +58,9 @@ describe("@CacheGetter()", function () {
         const inst = new cls();
         const val1 = inst.rand;
 
-        arr.forEach((x) => x());
+        for (const x of arr) {
+            x();
+        }
 
         const val2 = inst.rand;
 
@@ -156,7 +158,9 @@ describe("@Cache()", function () {
         const inst = new cls();
         const val1 = inst.rand();
 
-        arr.forEach((x) => x());
+        for (const x of arr) {
+            x();
+        }
 
         const val2 = inst.rand();
 

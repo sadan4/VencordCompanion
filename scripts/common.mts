@@ -1,11 +1,10 @@
 // @ts-check
 import packageJson from "../package.json" with {type: "json"};
 
-import { readFile } from "fs/promises";
-import { join, relative } from "path";
-
 import type { BuildOptions, Plugin } from "esbuild";
 import { glob } from "glob";
+import { readFile } from "node:fs/promises";
+import { join, relative } from "node:path";
 
 const { version } = packageJson;
 const __dirname = import.meta.dirname;

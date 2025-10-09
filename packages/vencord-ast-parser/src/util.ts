@@ -1,7 +1,6 @@
 import { FunctionNode, RegexNode, StringNode } from "./types";
 
-import { basename } from "path";
-
+import { basename } from "node:path";
 import {
     CompilerOptions,
     createPrinter,

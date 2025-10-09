@@ -5,9 +5,8 @@ import { sendAndGetData } from "@server";
 import { compareVersions, SemVerVersion } from "@vencord-companion/shared/util";
 import { formatModule, ModuleDep, WebpackAstParser } from "@vencord-companion/webpack-ast-parser";
 
-import { mkdir, readdir, readFile, rm, writeFile } from "fs/promises";
-import { join, resolve } from "path";
-
+import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { join, resolve } from "node:path";
 import { ProgressLocation, window } from "vscode";
 
 class _ModuleCache {

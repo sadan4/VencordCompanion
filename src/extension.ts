@@ -18,9 +18,8 @@ import { setLogger as setWebpackLogger, WebpackAstParser } from "@vencord-compan
 import { Settings } from "./settings";
 import { Registerable } from "./types";
 
-import * as child_process from "child_process";
-import { promisify } from "util";
-
+import * as child_process from "node:child_process";
+import { promisify } from "node:util";
 import { commands, ExtensionContext, QuickPickItem, TextDocument, Uri, window as vscWindow, window, workspace } from "vscode";
 
 export let extensionUri: Uri;

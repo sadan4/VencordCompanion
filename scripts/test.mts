@@ -1,8 +1,7 @@
 import { testOptions } from "./common.mts";
 
-import { rm } from "fs/promises";
-
 import { build } from "esbuild";
+import { rm } from "node:fs/promises";
 import { resolveTsPaths } from "resolve-tspaths";
 
 await rm(testOptions[0].outdir, {

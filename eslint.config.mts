@@ -3,6 +3,7 @@ import stylistic, { type RuleOptions } from "@stylistic/eslint-plugin";
 import { Linter } from "eslint";
 import type { ESLintRules as IESLintRules } from "eslint/rules";
 import simpleImportSort from "eslint-plugin-simple-import-sort";
+import unicorn from "eslint-plugin-unicorn";
 import unusedImports from "eslint-plugin-unused-imports";
 import TSEslint, { type ConfigArray } from "typescript-eslint";
 
@@ -588,6 +589,7 @@ const typescript_is_stupid_and_errors_if_i_inline_this: ConfigArray = TSEslint.c
         "@typescript-eslint": TSEslint.plugin,
         "simple-import-sort": simpleImportSort,
         "unused-imports": unusedImports,
+        unicorn,
     },
     languageOptions: {
         parser: TSEslint.parser,
@@ -623,6 +625,7 @@ const typescript_is_stupid_and_errors_if_i_inline_this: ConfigArray = TSEslint.c
             },
         ],
         "simple-import-sort/exports": "error",
+        "unicorn/prefer-node-protocol": "error",
     },
 });
 

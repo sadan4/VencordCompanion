@@ -45,7 +45,7 @@
         "test:watch": "vitest",
         "test:ui": "vitest --ui --api 9972",
         "genTypes": "node scripts/generateSettings/index.mts",
-        "installDeps": "(cd parsers && pnpm i && pnpm build-all)",
+        "installDeps": "pnpm -C parsers i && pnpm -C parsers build-all)",
         "postinstall": "pnpm genTypes && pnpm installDeps"
     },
     "dependencies": {

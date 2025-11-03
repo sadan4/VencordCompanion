@@ -11,3 +11,5 @@ catalog:
 patchedDependencies:
   ts-api-utils: patches/ts-api-utils.patch
   '@types/ws@8.5.14': 'patches/@types__ws@8.5.14.patch'
+
+verifyDepsBeforeRun: install

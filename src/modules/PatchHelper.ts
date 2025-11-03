@@ -1,16 +1,3 @@
-import { makeRange } from "@ast/util";
-import { outputChannel } from "@modules/logging";
-import { Format } from "@sadan4/devtools-pretty-printer";
-import { sendAndGetData } from "@server/index";
-import { PromiseProviderResult } from "@type/index";
-import { ExtractModuleR } from "@type/server";
-import { SourcePatch, VencordAstParser } from "@vencord-companion/vencord-ast-parser";
-import { formatModule } from "@vencord-companion/webpack-ast-parser";
-
-import { canonicalizeMatch, canonicalizeReplace, parseMatch, parseReplace } from "./patches";
-
-import DiffFunc, { DELETE, Diff } from "fast-diff";
-import { nanoid } from "nanoid";
 import {
     CancellationToken,
     commands,
@@ -28,6 +15,21 @@ import {
     window,
     workspace,
 } from "vscode";
+
+import { Format } from "@sadan4/devtools-pretty-printer";
+import DiffFunc, { DELETE, Diff } from "fast-diff";
+import { nanoid } from "nanoid";
+
+import { SourcePatch, VencordAstParser } from "@vencord-companion/vencord-ast-parser";
+import { formatModule } from "@vencord-companion/webpack-ast-parser";
+
+import { makeRange } from "@ast/util";
+import { outputChannel } from "@modules/logging";
+import { sendAndGetData } from "@server/index";
+import { PromiseProviderResult } from "@type/index";
+import { ExtractModuleR } from "@type/server";
+
+import { canonicalizeMatch, canonicalizeReplace, parseMatch, parseReplace } from "./patches";
 class LastTwo<T> {
     constructor(private one: T, private two: T) {
     }

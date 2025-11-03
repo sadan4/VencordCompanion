@@ -1,8 +1,10 @@
-import { AnyFindType, Discriminate, OutgoingMessage } from "@type/server";
-import { tryParseFunction, tryParseRegularExpressionLiteral, tryParseStringLiteral } from "@vencord-companion/vencord-ast-parser";
+import { CodeLens, CodeLensProvider, ExtensionContext, languages, Range } from "vscode";
 
 import { createSourceFile, isCallExpression, Node, ScriptTarget } from "typescript";
-import { CodeLens, CodeLensProvider, ExtensionContext, languages, Range } from "vscode";
+
+import { tryParseFunction, tryParseRegularExpressionLiteral, tryParseStringLiteral } from "@vencord-companion/vencord-ast-parser";
+
+import { AnyFindType, Discriminate, OutgoingMessage } from "@type/server";
 
 const vencordWebpackImportRegex = /import \{(.+?)\} from ['`"]@webpack(\/.+?)?['`"]/;
 

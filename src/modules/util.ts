@@ -1,6 +1,6 @@
+import { CancellationToken, Progress, ProgressLocation, ProgressOptions, Uri, window, workspace } from "vscode";
 import { PathLike } from "node:fs";
 import { stat } from "node:fs/promises";
-import { CancellationToken, Progress, ProgressLocation, ProgressOptions, Uri, window, workspace } from "vscode";
 
 
 export class ProgressBar {

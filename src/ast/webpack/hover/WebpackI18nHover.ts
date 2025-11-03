@@ -1,16 +1,18 @@
-import { outputChannel } from "@extension";
 import { isWebpackModule, WebpackAstParser } from "@vencord-companion/webpack-ast-parser";
+
+import { outputChannel } from "@extension";
 
 import _mappings from "./mappings.json";
 
 const mappings: Record<string, string | undefined> = _mappings;
 
+import { CancellationToken, commands, env, ExtensionContext, Hover, HoverProvider, languages, MarkdownString, Position, TextDocument, Uri } from "vscode";
+
+import { isElementAccessExpression, isIdentifier, isPropertyAccessExpression, isStringLiteralLike } from "typescript";
+
 import { toVscodeRange } from "@ast/util";
 import { sendAndGetData } from "@server/index";
 import { PromiseProviderResult } from "@type/index";
-
-import { isElementAccessExpression, isIdentifier, isPropertyAccessExpression, isStringLiteralLike } from "typescript";
-import { CancellationToken, commands, env, ExtensionContext, Hover, HoverProvider, languages, MarkdownString, Position, TextDocument, Uri } from "vscode";
 
 interface CopyHoverDataArgs {
     hashedKey: string;

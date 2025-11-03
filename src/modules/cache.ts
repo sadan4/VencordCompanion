@@ -1,13 +1,15 @@
-import { outputChannel } from "@modules/logging";
-import { BufferedProgressBar, exists, getCurrentFolder, isDirectory, ProgressBar, SecTo } from "@modules/util";
+import { ProgressLocation, window } from "vscode";
+import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { join, resolve } from "node:path";
+
 import { Format } from "@sadan4/devtools-pretty-printer";
-import { sendAndGetData } from "@server";
+
 import { compareVersions, SemVerVersion } from "@vencord-companion/shared/util";
 import { formatModule, ModuleDep, WebpackAstParser } from "@vencord-companion/webpack-ast-parser";
 
-import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
-import { join, resolve } from "node:path";
-import { ProgressLocation, window } from "vscode";
+import { outputChannel } from "@modules/logging";
+import { BufferedProgressBar, exists, getCurrentFolder, isDirectory, ProgressBar, SecTo } from "@modules/util";
+import { sendAndGetData } from "@server";
 
 class _ModuleCache {
     folder: string;

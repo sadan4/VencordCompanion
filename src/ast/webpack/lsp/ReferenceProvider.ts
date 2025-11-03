@@ -1,11 +1,12 @@
+import { ExtensionContext, languages, Position, ReferenceProvider as IReferenceProvider, TextDocument, window } from "vscode";
+
+import { Position as WP_Position } from "@vencord-companion/shared/Position";
+import { isWebpackModule, WebpackAstParser } from "@vencord-companion/webpack-ast-parser";
+
 import { webpackDefinitionsToVscodeDefinitions } from "@ast/util";
 import { ModuleCache, ModuleDepManager } from "@modules/cache";
 import { outputChannel } from "@modules/logging";
 import { References } from "@type/ast";
-import { Position as WP_Position } from "@vencord-companion/shared/Position";
-import { isWebpackModule, WebpackAstParser } from "@vencord-companion/webpack-ast-parser";
-
-import { ExtensionContext, languages, Position, ReferenceProvider as IReferenceProvider, TextDocument, window } from "vscode";
 
 
 export class ReferenceProvider implements IReferenceProvider {

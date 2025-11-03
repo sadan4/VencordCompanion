@@ -1,8 +1,8 @@
+import { TreeItem, TreeItemCollapsibleState } from "vscode";
+
 import { TNode } from "@type/sidebar";
 
 import RuntimeCommand from "./RuntimeCommand";
-
-import { TreeItem, TreeItemCollapsibleState } from "vscode";
 
 export class Item extends TreeItem {
     parrent: TNode | null = null;

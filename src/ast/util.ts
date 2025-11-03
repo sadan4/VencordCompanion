@@ -1,8 +1,4 @@
-import { mkStringUri } from "@modules/util";
-import * as Shared from "@vencord-companion/shared/Range";
-import * as wp from "@vencord-companion/webpack-ast-parser";
-
-import { getNumberAndColumnFromPos } from "./lineUtil";
+import { Location, Position, Range, Uri } from "vscode";
 
 import {
     isRegularExpressionLiteral,
@@ -14,7 +10,13 @@ import {
     StringLiteral,
     TemplateLiteralLikeNode,
 } from "typescript";
-import { Location, Position, Range, Uri } from "vscode";
+
+import * as Shared from "@vencord-companion/shared/Range";
+import * as wp from "@vencord-companion/webpack-ast-parser";
+
+import { mkStringUri } from "@modules/util";
+
+import { getNumberAndColumnFromPos } from "./lineUtil";
 
 export * from "@ast/lineUtil";
 

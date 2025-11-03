@@ -1,7 +1,7 @@
-import { Generator } from "./Generator.mts";
-
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+
+import { Generator } from "./Generator.mts";
 
 
 const __dirname = import.meta.dirname;

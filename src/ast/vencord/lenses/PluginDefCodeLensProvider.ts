@@ -1,4 +1,4 @@
-import { DisablePluginData } from "@type/server";
+import { CodeLens, CodeLensProvider, ExtensionContext, languages, ProviderResult, Range, TextDocument } from "vscode";
 
 import {
     createSourceFile,
@@ -13,7 +13,8 @@ import {
     ScriptTarget,
     StringLiteral,
 } from "typescript";
-import { CodeLens, CodeLensProvider, ExtensionContext, languages, ProviderResult, Range, TextDocument } from "vscode";
+
+import { DisablePluginData } from "@type/server";
 
 enum ParseResult {
     INVALID,

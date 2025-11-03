@@ -1,14 +1,16 @@
+import { ExtensionContext, Hover, HoverProvider, languages, MarkdownString, Position, TextDocument } from "vscode";
+
+// import mappings from "./mappings.json";
+import { isRegularExpressionLiteral } from "typescript";
+
+import { AstParser } from "@vencord-companion/ast-parser";
+
 import { isStringLiteralLikeOrTemplateLiteralFragmentOrRegexLiteral, toVscodeRange } from "@ast/util";
 import { runtimeHashMessageKey } from "@modules/intlHash";
 import { outputChannel } from "@modules/logging";
 import { intlRegex } from "@modules/patches";
 import { sendAndGetData } from "@server/index";
 import { PromiseProviderResult } from "@type/index";
-import { AstParser } from "@vencord-companion/ast-parser";
-
-// import mappings from "./mappings.json";
-import { isRegularExpressionLiteral } from "typescript";
-import { ExtensionContext, Hover, HoverProvider, languages, MarkdownString, Position, TextDocument } from "vscode";
 
 const i18nCache = {};
 

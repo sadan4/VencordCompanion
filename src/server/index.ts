@@ -1,13 +1,15 @@
-import { reloadDiagnostics } from "@ast/vencord/diagnostics";
-import { outputChannel } from "@modules/logging";
-import { mkStringUri } from "@modules/util";
+import { commands, window, workspace } from "vscode";
+
 import { Format } from "@sadan4/devtools-pretty-printer";
-import { Base, DiffModule, Discriminate, ExtractModuleR, FullIncomingMessage, IncomingMessage, OutgoingMessage } from "@type/server";
+import { BufferLike, RawData, WebSocket, WebSocketServer } from "ws";
+
 import { areVersionsIncompatible, SemVerVersion } from "@vencord-companion/shared/util";
 import { formatModule } from "@vencord-companion/webpack-ast-parser";
 
-import { commands, window, workspace } from "vscode";
-import { BufferLike, RawData, WebSocket, WebSocketServer } from "ws";
+import { reloadDiagnostics } from "@ast/vencord/diagnostics";
+import { outputChannel } from "@modules/logging";
+import { mkStringUri } from "@modules/util";
+import { Base, DiffModule, Discriminate, ExtractModuleR, FullIncomingMessage, IncomingMessage, OutgoingMessage } from "@type/server";
 
 const MIN_CLIENT_VERSION: SemVerVersion = [0, 1, 1];
 const SERVER_VERSION: SemVerVersion = Object.freeze(SERVER_VERSION_FROM_BUILD);

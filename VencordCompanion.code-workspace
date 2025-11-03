@@ -1,0 +1,40 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "parsers/packages/ast-parser"
+		},
+		{
+			"path": "parsers/packages/webpack-ast-parser"
+		},
+		{
+			"path": "parsers/packages/vencord-ast-parser"
+		},
+		{
+			"path": "parsers/packages/shared"
+		},
+	],
+	"settings": {
+		"typescript.tsc.autoDetect": "off",
+		"typescript.tsdk": "node_modules/typescript/lib",
+		"extension-test-runner.extractSettings": {
+			"suite": [
+				"describe",
+				"suite"
+			],
+			"test": [
+				"it",
+				"test"
+			],
+			"extractWith": "evaluation"
+		},
+		"extension-test-runner.debugOptions": {
+			"outFiles": [
+				"${workspaceFolder}/dist.test/**/*.js"
+			],
+			"pauseForSourceMap": true
+		}
+	}
+}

@@ -1,9 +1,10 @@
-import { toVscodeRange } from "@ast/util";
-import { PromiseProviderResult } from "@type/index";
+import { CancellationToken, ExtensionContext, Hover, HoverProvider, languages, MarkdownString, Position, TextDocument } from "vscode";
+
 import { Position as WP_Position } from "@vencord-companion/shared/Position";
 import { isWebpackModule, WebpackAstParser } from "@vencord-companion/webpack-ast-parser";
 
-import { CancellationToken, ExtensionContext, Hover, HoverProvider, languages, MarkdownString, Position, TextDocument } from "vscode";
+import { toVscodeRange } from "@ast/util";
+import { PromiseProviderResult } from "@type/index";
 
 export class WebpackExportHover implements HoverProvider {
     private constructor() { }

@@ -1,5 +1,4 @@
 import stylistic, { type RuleOptions } from "@stylistic/eslint-plugin";
-
 import { Linter } from "eslint";
 import type { ESLintRules as IESLintRules } from "eslint/rules";
 import simpleImportSort from "eslint-plugin-simple-import-sort";
@@ -582,7 +581,7 @@ const styleRules: Partial<_RuleOptions> = {
 
 const extensions = "{js,mjs,cjs,jsx,mjsx,cjsx,ts,mts,cts,tsx,mtsx,ctsx}";
 
-const typescript_is_stupid_and_errors_if_i_inline_this: ConfigArray = TSEslint.config({ ignores: ["dist", "src/webview", "node_modules", "**/__test__/**", "packages/vencord-ast-parser/src/.vencord-source/**"] }, {
+const typescript_is_stupid_and_errors_if_i_inline_this: ConfigArray = TSEslint.config({ ignores: ["dist", "src/webview", "node_modules", "**/__test__/**", "packages/vencord-ast-parser/src/.vencord-source/**", "parsers/**"] }, {
     files: [`src/**/*.${extensions}`, `eslint.config.${extensions}`, `packages/**/*.${extensions}`, `scripts/**/*.${extensions}`, `vitest.config.${extensions}`],
     plugins: {
         "@stylistic": stylistic as any,
@@ -618,9 +617,12 @@ const typescript_is_stupid_and_errors_if_i_inline_this: ConfigArray = TSEslint.c
             "error",
             {
                 groups: [
-                    ["^@.+$"],
+                    ["^vscode$", "^node:.*$"],
+                    ["^"],
+                    ["^@vencord-companion/"],
+                    ["^@(?:server|ast|modules|type|sidebar|extension)"],
+                    ["@tests"],
                     ["^\\./(?=.*/)(?!/?$)", "^\\.(?!/?$)", "^\\./?$", "^\\.\\.(?!/?$)", "^\\.\\./?$"],
-                    ["^(assert|buffer|child_process|cluster|console|constants|crypto|dgram|dns|domain|events|fs|http|https|module|net|os|path|punycode|querystring|readline|repl|stream|string_decoder|sys|timers|tls|tty|url|util|vm|zlib|freelist|v8|process|async_hooks|http2|perf_hooks)(/.*|$)"],
                 ],
             },
         ],

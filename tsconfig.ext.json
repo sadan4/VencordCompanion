@@ -69,5 +69,19 @@
         "node_modules",
         "dist",
         "dist.test"
+    ],
+    "references": [
+        {
+            "path": "./parsers/packages/ast-parser",
+        },
+        {
+            "path": "./parsers/packages/webpack-ast-parser",
+        },
+        {
+            "path": "./parsers/packages/vencord-ast-parser",
+        },
+        {
+            "path": "./parsers/packages/shared",
+        }
     ]
 }

@@ -12,6 +12,12 @@ catalogs:
     '@types/node':
       specifier: ^24.5.0
       version: 24.5.0
+    '@vitest/coverage-v8':
+      specifier: ^3.2.4
+      version: 3.2.4
+    '@vitest/ui':
+      specifier: ^3.2.4
+      version: 3.2.4
     ts-api-utils:
       specifier: 2.1.0
       version: 2.1.0
@@ -19,7 +25,7 @@ catalogs:
       specifier: ^5.8.2
       version: 5.8.2
     vitest:
-      specifier: 3.2.4
+      specifier: ^3.2.4
       version: 3.2.4
 
 patchedDependencies:
@@ -59,7 +65,7 @@ importers:
         specifier: ^5.0.9
         version: 5.1.2
       typescript:
-        specifier: ^5.8.2
+        specifier: 'catalog:'
         version: 5.8.2
       ws:
         specifier: ^8.18.0
@@ -87,10 +93,10 @@ importers:
         specifier: ^8.23.0
         version: 8.25.0(eslint@9.21.0(jiti@2.4.2))(typescript@5.8.2)
       '@vitest/coverage-v8':
-        specifier: ^3.2.4
+        specifier: 'catalog:'
         version: 3.2.4(vitest@3.2.4)
       '@vitest/ui':
-        specifier: ^3.2.4
+        specifier: 'catalog:'
         version: 3.2.4(vitest@3.2.4)
       '@vscode/vsce':
         specifier: ^3.6.0
@@ -132,7 +138,7 @@ importers:
         specifier: ^8.23.0
         version: 8.25.0(eslint@9.21.0(jiti@2.4.2))(typescript@5.8.2)
       vitest:
-        specifier: ^3.2.4
+        specifier: 'catalog:'
         version: 3.2.4(@types/debug@4.1.12)(@types/node@24.5.0)(@vitest/ui@3.2.4)(jiti@2.4.2)(yaml@2.8.1)
 
   parsers/packages/ast-parser:
@@ -3489,7 +3495,7 @@ snapshots:
       sirv: 3.0.1
       tinyglobby: 0.2.14
       tinyrainbow: 2.0.0
-      vitest: 3.2.4(@types/debug@4.1.12)(@types/node@24.5.0)(@vitest/ui@3.2.4)(jiti@2.4.2)(yaml@2.8.1)
+      vitest: 3.2.4(@types/debug@4.1.12)(@types/node@24.5.0)(@vitest/ui@3.2.4)(jiti@2.5.1)(yaml@2.8.1)
 
   '@vitest/utils@3.2.4':
     dependencies:

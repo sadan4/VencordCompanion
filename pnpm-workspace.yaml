@@ -6,7 +6,9 @@ catalog:
   '@types/node': ^24.5.0
   ts-api-utils: 2.1.0
   typescript: ^5.8.2
-  vitest: 3.2.4
+  vitest: ^3.2.4
+  "@vitest/coverage-v8": ^3.2.4
+  "@vitest/ui": ^3.2.4
 
 patchedDependencies:
   ts-api-utils: patches/ts-api-utils.patch

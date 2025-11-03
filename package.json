@@ -32,7 +32,7 @@
     "publisher": "sadan",
     "main": "./dist/extension.js",
     "scripts": {
-        "buildDeps": "pnpm -r --parallel -F ./parsers/packages/* build",
+        "buildDeps": "pnpm -r --parallel -F \"./parsers/packages/*\" build",
         "prebuild": "pnpm buildDeps",
         "build": "node ./scripts/build.mts",
         "eslint": "eslint --cache",

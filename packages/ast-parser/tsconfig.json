@@ -1,7 +1,0 @@
-{
-  "extends": "@vencord-companion/tsconfig",
-  // Visit https://aka.ms/tsconfig to read more about this file
-  "compilerOptions": {
-  },
-  "include": ["src"]
-}

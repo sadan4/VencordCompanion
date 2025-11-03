@@ -9,6 +9,15 @@ catalogs:
     '@sadan4/devtools-pretty-printer':
       specifier: 1.0.4
       version: 1.0.4
+    '@types/node':
+      specifier: ^24.5.0
+      version: 24.5.0
+    '@vitest/coverage-v8':
+      specifier: ^3.2.4
+      version: 3.2.4
+    '@vitest/ui':
+      specifier: ^3.2.4
+      version: 3.2.4
     ts-api-utils:
       specifier: 2.1.0
       version: 2.1.0
@@ -16,13 +25,16 @@ catalogs:
       specifier: ^5.8.2
       version: 5.8.2
     vitest:
-      specifier: 3.2.4
+      specifier: ^3.2.4
       version: 3.2.4
 
 patchedDependencies:
   '@types/ws@8.5.14':
     hash: 431d7dda5df72ef614bdb1190df56f7422570166615913953407418c8eb9b713
     path: patches/@types__ws@8.5.14.patch
+  ts-api-utils:
+    hash: 345aaf95fe62bd3fbc109183d2d43f9319d340cd32cc554d31dae15f9887dd67
+    path: patches/ts-api-utils.patch
 
 importers:
 
@@ -32,20 +44,20 @@ importers:
         specifier: ^0.1.2
         version: 0.1.2
       '@sadan4/devtools-pretty-printer':
-        specifier: 'catalog:'
+        specifier: ^1.0.4
         version: 1.0.4
       '@vencord-companion/ast-parser':
-        specifier: 'workspace:'
-        version: link:packages/ast-parser
+        specifier: link:./parsers/packages/ast-parser
+        version: link:parsers/packages/ast-parser
       '@vencord-companion/shared':
-        specifier: 'workspace:'
-        version: link:packages/shared
+        specifier: link:./parsers/packages/shared
+        version: link:parsers/packages/shared
       '@vencord-companion/vencord-ast-parser':
-        specifier: 'workspace:'
-        version: link:packages/vencord-ast-parser
+        specifier: link:./parsers/packages/vencord-ast-parser
+        version: link:parsers/packages/vencord-ast-parser
       '@vencord-companion/webpack-ast-parser':
-        specifier: 'workspace:'
-        version: link:packages/webpack-ast-parser
+        specifier: link:./parsers/packages/webpack-ast-parser
+        version: link:parsers/packages/webpack-ast-parser
       fast-diff:
         specifier: ^1.3.0
         version: 1.3.0
@@ -66,7 +78,7 @@ importers:
         specifier: ^4.2.0
         version: 4.2.0(eslint@9.21.0(jiti@2.4.2))(typescript@5.8.2)
       '@types/node':
-        specifier: ^24.5.0
+        specifier: 'catalog:'
         version: 24.5.0
       '@types/vscode':
         specifier: 1.80.0
@@ -80,18 +92,18 @@ importers:
       '@typescript-eslint/parser':
         specifier: ^8.23.0
         version: 8.25.0(eslint@9.21.0(jiti@2.4.2))(typescript@5.8.2)
-      '@vencord-companion/tsconfig':
-        specifier: 'workspace:'
-        version: link:packages/tsconfig
       '@vitest/coverage-v8':
-        specifier: ^3.2.4
+        specifier: 'catalog:'
         version: 3.2.4(vitest@3.2.4)
       '@vitest/ui':
-        specifier: ^3.2.4
+        specifier: 'catalog:'
         version: 3.2.4(vitest@3.2.4)
       '@vscode/vsce':
         specifier: ^3.6.0
         version: 3.6.0
+      concurrently:
+        specifier: ^9.2.1
+        version: 9.2.1
       esbuild:
         specifier: ^0.25.0
         version: 0.25.0
@@ -129,7 +141,7 @@ importers:
         specifier: 'catalog:'
         version: 3.2.4(@types/debug@4.1.12)(@types/node@24.5.0)(@vitest/ui@3.2.4)(jiti@2.4.2)(yaml@2.8.1)
 
-  packages/ast-parser:
+  parsers/packages/ast-parser:
     dependencies:
       '@sadan4/devtools-pretty-printer':
         specifier: 'catalog:'
@@ -139,7 +151,7 @@ importers:
         version: link:../shared
       ts-api-utils:
         specifier: 'catalog:'
-        version: 2.1.0(typescript@5.8.2)
+        version: 2.1.0(patch_hash=345aaf95fe62bd3fbc109183d2d43f9319d340cd32cc554d31dae15f9887dd67)(typescript@5.8.2)
       typescript:
         specifier: 'catalog:'
         version: 5.8.2
@@ -148,15 +160,13 @@ importers:
         specifier: 'catalog:'
         version: 3.2.4(@types/debug@4.1.12)(@types/node@24.5.0)(@vitest/ui@3.2.4)(jiti@2.5.1)(yaml@2.8.1)
 
-  packages/shared:
+  parsers/packages/shared:
     devDependencies:
       vitest:
         specifier: 'catalog:'
         version: 3.2.4(@types/debug@4.1.12)(@types/node@24.5.0)(@vitest/ui@3.2.4)(jiti@2.5.1)(yaml@2.8.1)
 
-  packages/tsconfig: {}
-
-  packages/vencord-ast-parser:
+  parsers/packages/vencord-ast-parser:
     dependencies:
       '@vencord-companion/ast-parser':
         specifier: workspace:*
@@ -166,13 +176,19 @@ importers:
         version: link:../shared
       ts-api-utils:
         specifier: 'catalog:'
-        version: 2.1.0(typescript@5.8.2)
+        version: 2.1.0(patch_hash=345aaf95fe62bd3fbc109183d2d43f9319d340cd32cc554d31dae15f9887dd67)(typescript@5.8.2)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.8.2
     devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.5.0
       vitest:
         specifier: 'catalog:'
         version: 3.2.4(@types/debug@4.1.12)(@types/node@24.5.0)(@vitest/ui@3.2.4)(jiti@2.5.1)(yaml@2.8.1)
 
-  packages/webpack-ast-parser:
+  parsers/packages/webpack-ast-parser:
     dependencies:
       '@sadan4/devtools-pretty-printer':
         specifier: 'catalog:'
@@ -185,7 +201,10 @@ importers:
         version: link:../shared
       ts-api-utils:
         specifier: 'catalog:'
-        version: 2.1.0(typescript@5.8.2)
+        version: 2.1.0(patch_hash=345aaf95fe62bd3fbc109183d2d43f9319d340cd32cc554d31dae15f9887dd67)(typescript@5.8.2)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.8.2
     devDependencies:
       vitest:
         specifier: 'catalog:'
@@ -1186,6 +1205,10 @@ packages:
     resolution: {integrity: sha512-GfisEZEJvzKrmGWkvfhgzcz/BllN1USeqD2V6tg14OAOgaCD2Z/PUEuxnAZ/nPvmaHRG7a8y77p1T/IRQ4D1Hw==}
     engines: {node: '>=4'}
 
+  cliui@8.0.1:
+    resolution: {integrity: sha512-BSeNnyus75C4//NQ9gQt1/csTXyo/8Sb+afLAkzAptFuMsod9HFokGNudZpi/oQV73hnVK+sR+5PVRMd+Dr7YQ==}
+    engines: {node: '>=12'}
+
   cockatiel@3.2.1:
     resolution: {integrity: sha512-gfrHV6ZPkquExvMh9IOkKsBzNDk6sDuZ6DdBGUBkvFnTCqCxzpuq48RySgP0AnaqQkw2zynOFj9yly6T1Q2G5Q==}
     engines: {node: '>=16'}
@@ -1211,6 +1234,11 @@ packages:
 
   concat-map@0.0.1:
     resolution: {integrity: sha512-/Srv4dswyQNBfohGpz9o6Yb3Gz3SrUDqBH5rTuhGR7ahtlbYKnVxw2bCFMRljaA7EXHaXZ8wsHdodFvbkhKmqg==}
+
+  concurrently@9.2.1:
+    resolution: {integrity: sha512-fsfrO0MxV64Znoy8/l1vVIjjHa29SZyyqPgQBwhiDcaW8wJc2W3XWVOGx4M3oJBnv/zdUZIIp1gDeS98GzP8Ng==}
+    engines: {node: '>=18'}
+    hasBin: true
 
   core-js-compat@3.45.1:
     resolution: {integrity: sha512-tqTt5T4PzsMIZ430XGviK4vzYSoeNJ6CXODi6c/voxOT6IZqBht5/EKaSNnYiEjjRYxjVz7DQIsOsY0XNi8PIA==}
@@ -1553,6 +1581,10 @@ packages:
 
   function-bind@1.1.2:
     resolution: {integrity: sha512-7XHNxH7qX9xG5mIwxkhumTox/MIRNcOgDrxWsMt2pAr23WHp6MrRlN7FBSFpCpr+oVO0F744iUgR82nJMfG2SA==}
+
+  get-caller-file@2.0.5:
+    resolution: {integrity: sha512-DyFP3BM/3YHTQOCUL/w0OZHR0lpKeGrxotcHWcqNEdnltqFwXVfhEBQ94eIo34AfQpo0rGki4cyIiftY06h2Fg==}
+    engines: {node: 6.* || 8.* || >= 10.*}
 
   get-intrinsic@1.3.0:
     resolution: {integrity: sha512-9fSjSaos/fRIVIp+xSJlE6lfwhES7LNtKaCBIamHsjr2na1BiABJPo0mOjjz8GJDURarmCPGqaiVg5mfjb98CQ==}
@@ -2171,6 +2203,10 @@ packages:
     resolution: {integrity: sha512-cnE+y8bz4NhMjISKbgeVJtqNbtf5QpjZP+Bslo+UqkIt9QPnX9q095eiRRASJG1/tz6dlNr6Z5NsBiWYokp6EQ==}
     hasBin: true
 
+  require-directory@2.1.1:
+    resolution: {integrity: sha512-fGxEI7+wsG9xrvdjsrlmL22OMTTiHRwAMroiEeMgq8gzoLC/PQr7RsRDSTLUg/bZAZtF+TVIkHc6/4RIKrui+Q==}
+    engines: {node: '>=0.10.0'}
+
   require-from-string@2.0.2:
     resolution: {integrity: sha512-Xf0nWe6RseziFMu+Ap9biiUbmplq6S9/p+7w7YXP/JBHhrUDDUhwa+vANyubuqfZWTveU//DYVGsDG7RKL/vEw==}
     engines: {node: '>=0.10.0'}
@@ -2200,6 +2236,9 @@ packages:
 
   run-parallel@1.2.0:
     resolution: {integrity: sha512-5l4VyZR86LZ/lDxZTR6jqL8AFE2S0IFLMP26AbjsLVADxHdhB/c0GUsH+y39UfCi3dzz8OlQuPmnaJOMoDHQBA==}
+
+  rxjs@7.8.2:
+    resolution: {integrity: sha512-dhKf903U/PQZY6boNNtAGdWbG85WAbjT/1xYoZIC7FAY0yWapOBQVsVrDl58W86//e1VpMNBtRV4MaXfdMySFA==}
 
   safe-buffer@5.2.1:
     resolution: {integrity: sha512-rp3So07KcdmmKbGvgaNxQSJr7bGVSVk5S9Eq1F+ppbRo70+YeaDxkw5Dd8NPN+GD6bjnYm2VuPuCXmpuYvmCXQ==}
@@ -2231,6 +2270,10 @@ packages:
   shebang-regex@3.0.0:
     resolution: {integrity: sha512-7++dFhtcx3353uBaq8DDR4NuxBetBzC7ZQOhmTQInHEd6bSrXdiEyzCvG07Z44UYdLShWUyXt5M/yhz8ekcb1A==}
     engines: {node: '>=8'}
+
+  shell-quote@1.8.3:
+    resolution: {integrity: sha512-ObmnIF4hXNg1BqhnHmgbDETF8dLPCggZWBjkQfhZpbszZnYur5DUljTcCHii5LC3J5E0yeO/1LIMyH+UvHQgyw==}
+    engines: {node: '>= 0.4'}
 
   side-channel-list@1.0.0:
     resolution: {integrity: sha512-FCLHtRD/gnpCiCHEiJLOwdmFP+wzCmDEkc9y7NsYxeF4u7Btsn1ZuwgwJGxImImHicJArLP4R0yX4c2KCrMrTA==}
@@ -2350,6 +2393,10 @@ packages:
     resolution: {integrity: sha512-qpCAvRl9stuOHveKsn7HncJRvv501qIacKzQlO/+Lwxc9+0q2wLyv4Dfvt80/DPn2pqOBsJdDiogXGR9+OvwRw==}
     engines: {node: '>=8'}
 
+  supports-color@8.1.1:
+    resolution: {integrity: sha512-MpUEN2OodtUzxvKQl72cUF7RQ5EiHsGvSsVG0ia9c5RbWGL2CI4C7EpPS8UTBIplnlzZiNuV56w+FuNxy3ty2Q==}
+    engines: {node: '>=10'}
+
   supports-hyperlinks@3.2.0:
     resolution: {integrity: sha512-zFObLMyZeEwzAoKCyu1B91U79K2t7ApXuQfo8OuxwXLDgcKxuwM+YvcbIhm6QWqz7mHUH1TVytR1PwVVjEuMig==}
     engines: {node: '>=14.18'}
@@ -2413,6 +2460,10 @@ packages:
   totalist@3.0.1:
     resolution: {integrity: sha512-sf4i37nQ2LBx4m3wB74y+ubopq6W/dIzXg0FDGjsYnZHVa1Da8FH853wlL2gtUhg+xJXjfk3kUZS3BRoQeoQBQ==}
     engines: {node: '>=6'}
+
+  tree-kill@1.2.2:
+    resolution: {integrity: sha512-L0Orpi8qGpRG//Nd+H90vFB+3iHnue1zSSGmNOOCh1GLJ7rUKVwV2HvijphGQS2UmhUZewS9VgvxYIdgr+fG1A==}
+    hasBin: true
 
   ts-api-utils@2.1.0:
     resolution: {integrity: sha512-CUgTZL1irw8u29bzrOD/nH85jqyc74D6SshFgujOIA7osm2Rz7dYH77agkx7H4FBNxDq7Cjf+IjaX/8zwFW+ZQ==}
@@ -2634,6 +2685,10 @@ packages:
     resolution: {integrity: sha512-fDlsI/kFEx7gLvbecc0/ohLG50fugQp8ryHzMTuW9vSa1GJ0XYWKnhsUx7oie3G98+r56aTQIUB4kht42R3JvA==}
     engines: {node: '>=4.0'}
 
+  y18n@5.0.8:
+    resolution: {integrity: sha512-0pfFzegeDWJHJIAmTLRP2DwHjdF5s7jo9tuztdQxAhINCdvS+3nGINqPd00AphqJR/0LhANUS6/+7SCb98YOfA==}
+    engines: {node: '>=10'}
+
   yallist@4.0.0:
     resolution: {integrity: sha512-3wdGidZyq5PB084XLES5TpOSRA3wjXAlIWMhum2kRcv/41Sn2emQ0dycQW4uZXLejwKvg6EsvbdlVL+FYEct7A==}
 
@@ -2641,6 +2696,14 @@ packages:
     resolution: {integrity: sha512-lcYcMxX2PO9XMGvAJkJ3OsNMw+/7FKes7/hgerGUYWIoWu5j/+YQqcZr5JnPZWzOsEBgMbSbiSTn/dv/69Mkpw==}
     engines: {node: '>= 14.6'}
     hasBin: true
+
+  yargs-parser@21.1.1:
+    resolution: {integrity: sha512-tVpsJW7DdjecAiFpbIB1e3qxIQsE6NoPc5/eTdrbbIC4h0LVsWhnoa3g+m2HclBIujHzsxZ4VJVA+GUuc2/LBw==}
+    engines: {node: '>=12'}
+
+  yargs@17.7.2:
+    resolution: {integrity: sha512-7dSzzRQ++CKnNI/krKnYRV7JKKPUXMEh61soaHKg9mrWEhzFWhFnxPxGl+69cD1Ou63C13NUPCnmIcrvqCuM6w==}
+    engines: {node: '>=12'}
 
   yauzl-promise@4.0.0:
     resolution: {integrity: sha512-/HCXpyHXJQQHvFq9noqrjfa/WpQC2XYs3vI7tBiAi4QiIU1knvYhZGaO1QPjwIVMdqflxbmwgMXtYeaRiAE0CA==}
@@ -3287,7 +3350,7 @@ snapshots:
       graphemer: 1.4.0
       ignore: 5.3.2
       natural-compare: 1.4.0
-      ts-api-utils: 2.1.0(typescript@5.8.2)
+      ts-api-utils: 2.1.0(patch_hash=345aaf95fe62bd3fbc109183d2d43f9319d340cd32cc554d31dae15f9887dd67)(typescript@5.8.2)
       typescript: 5.8.2
     transitivePeerDependencies:
       - supports-color
@@ -3315,7 +3378,7 @@ snapshots:
       '@typescript-eslint/utils': 8.25.0(eslint@9.21.0(jiti@2.4.2))(typescript@5.8.2)
       debug: 4.4.0
       eslint: 9.21.0(jiti@2.4.2)
-      ts-api-utils: 2.1.0(typescript@5.8.2)
+      ts-api-utils: 2.1.0(patch_hash=345aaf95fe62bd3fbc109183d2d43f9319d340cd32cc554d31dae15f9887dd67)(typescript@5.8.2)
       typescript: 5.8.2
     transitivePeerDependencies:
       - supports-color
@@ -3331,7 +3394,7 @@ snapshots:
       is-glob: 4.0.3
       minimatch: 9.0.5
       semver: 7.7.2
-      ts-api-utils: 2.1.0(typescript@5.8.2)
+      ts-api-utils: 2.1.0(patch_hash=345aaf95fe62bd3fbc109183d2d43f9319d340cd32cc554d31dae15f9887dd67)(typescript@5.8.2)
       typescript: 5.8.2
     transitivePeerDependencies:
       - supports-color
@@ -3395,6 +3458,14 @@ snapshots:
     optionalDependencies:
       vite: 7.1.3(@types/node@24.5.0)(jiti@2.4.2)(yaml@2.8.1)
 
+  '@vitest/mocker@3.2.4(vite@7.1.3(@types/node@24.5.0)(jiti@2.5.1)(yaml@2.8.1))':
+    dependencies:
+      '@vitest/spy': 3.2.4
+      estree-walker: 3.0.3
+      magic-string: 0.30.18
+    optionalDependencies:
+      vite: 7.1.3(@types/node@24.5.0)(jiti@2.5.1)(yaml@2.8.1)
+
   '@vitest/pretty-format@3.2.4':
     dependencies:
       tinyrainbow: 2.0.0
@@ -3424,7 +3495,7 @@ snapshots:
       sirv: 3.0.1
       tinyglobby: 0.2.14
       tinyrainbow: 2.0.0
-      vitest: 3.2.4(@types/debug@4.1.12)(@types/node@24.5.0)(@vitest/ui@3.2.4)(jiti@2.4.2)(yaml@2.8.1)
+      vitest: 3.2.4(@types/debug@4.1.12)(@types/node@24.5.0)(@vitest/ui@3.2.4)(jiti@2.5.1)(yaml@2.8.1)
 
   '@vitest/utils@3.2.4':
     dependencies:
@@ -3700,6 +3771,12 @@ snapshots:
     dependencies:
       escape-string-regexp: 1.0.5
 
+  cliui@8.0.1:
+    dependencies:
+      string-width: 4.2.3
+      strip-ansi: 6.0.1
+      wrap-ansi: 7.0.0
+
   cockatiel@3.2.1: {}
 
   color-convert@2.0.1:
@@ -3717,6 +3794,15 @@ snapshots:
   commander@6.2.1: {}
 
   concat-map@0.0.1: {}
+
+  concurrently@9.2.1:
+    dependencies:
+      chalk: 4.1.2
+      rxjs: 7.8.2
+      shell-quote: 1.8.3
+      supports-color: 8.1.1
+      tree-kill: 1.2.2
+      yargs: 17.7.2
 
   core-js-compat@3.45.1:
     dependencies:
@@ -4094,6 +4180,8 @@ snapshots:
     optional: true
 
   function-bind@1.1.2: {}
+
+  get-caller-file@2.0.5: {}
 
   get-intrinsic@1.3.0:
     dependencies:
@@ -4730,6 +4818,8 @@ snapshots:
     dependencies:
       jsesc: 3.0.2
 
+  require-directory@2.1.1: {}
+
   require-from-string@2.0.2: {}
 
   resolve-from@4.0.0: {}
@@ -4775,6 +4865,10 @@ snapshots:
     dependencies:
       queue-microtask: 1.2.3
 
+  rxjs@7.8.2:
+    dependencies:
+      tslib: 2.8.1
+
   safe-buffer@5.2.1: {}
 
   safer-buffer@2.1.2: {}
@@ -4802,6 +4896,8 @@ snapshots:
       shebang-regex: 3.0.0
 
   shebang-regex@3.0.0: {}
+
+  shell-quote@1.8.3: {}
 
   side-channel-list@1.0.0:
     dependencies:
@@ -4934,6 +5030,10 @@ snapshots:
     dependencies:
       has-flag: 4.0.0
 
+  supports-color@8.1.1:
+    dependencies:
+      has-flag: 4.0.0
+
   supports-hyperlinks@3.2.0:
     dependencies:
       has-flag: 4.0.0
@@ -5004,7 +5104,9 @@ snapshots:
 
   totalist@3.0.1: {}
 
-  ts-api-utils@2.1.0(typescript@5.8.2):
+  tree-kill@1.2.2: {}
+
+  ts-api-utils@2.1.0(patch_hash=345aaf95fe62bd3fbc109183d2d43f9319d340cd32cc554d31dae15f9887dd67)(typescript@5.8.2):
     dependencies:
       typescript: 5.8.2
 
@@ -5196,7 +5298,7 @@ snapshots:
     dependencies:
       '@types/chai': 5.2.2
       '@vitest/expect': 3.2.4
-      '@vitest/mocker': 3.2.4(vite@7.1.3(@types/node@24.5.0)(jiti@2.4.2)(yaml@2.8.1))
+      '@vitest/mocker': 3.2.4(vite@7.1.3(@types/node@24.5.0)(jiti@2.5.1)(yaml@2.8.1))
       '@vitest/pretty-format': 3.2.4
       '@vitest/runner': 3.2.4
       '@vitest/snapshot': 3.2.4
@@ -5280,10 +5382,24 @@ snapshots:
 
   xmlbuilder@11.0.1: {}
 
+  y18n@5.0.8: {}
+
   yallist@4.0.0: {}
 
   yaml@2.8.1:
     optional: true
+
+  yargs-parser@21.1.1: {}
+
+  yargs@17.7.2:
+    dependencies:
+      cliui: 8.0.1
+      escalade: 3.2.0
+      get-caller-file: 2.0.5
+      require-directory: 2.1.1
+      string-width: 4.2.3
+      y18n: 5.0.8
+      yargs-parser: 21.1.1
 
   yauzl-promise@4.0.0:
     dependencies:

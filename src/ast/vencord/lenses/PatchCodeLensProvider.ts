@@ -1,7 +1,8 @@
-import { toVscodeRange } from "@ast/util";
+import { CodeLens, CodeLensProvider, ExtensionContext, languages, TextDocument } from "vscode";
+
 import { VencordAstParser } from "@vencord-companion/vencord-ast-parser";
 
-import { CodeLens, CodeLensProvider, ExtensionContext, languages, TextDocument } from "vscode";
+import { toVscodeRange } from "@ast/util";
 
 export class PatchCodeLensProvider implements CodeLensProvider {
     private constructor() { }

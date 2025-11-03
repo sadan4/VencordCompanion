@@ -1,8 +1,9 @@
-import { genSettings } from "./generateSettings/index.mts";
-import { commonOpts } from "./common.mts";
+import { writeFile } from "node:fs/promises";
 
 import esbuild from "esbuild";
-import { writeFile } from "node:fs/promises";
+
+import { genSettings } from "./generateSettings/index.mts";
+import { commonOpts } from "./common.mts";
 
 const IS_DEV = process.argv.includes("--dev");
 

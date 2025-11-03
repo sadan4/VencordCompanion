@@ -1,8 +1,9 @@
-import { testOptions } from "./common.mts";
+import { rm } from "node:fs/promises";
 
 import { build } from "esbuild";
-import { rm } from "node:fs/promises";
 import { resolveTsPaths } from "resolve-tspaths";
+
+import { testOptions } from "./common.mts";
 
 await rm(testOptions[0].outdir, {
     recursive: true,

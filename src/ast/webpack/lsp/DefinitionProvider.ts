@@ -1,10 +1,11 @@
-import { webpackDefinitionsToVscodeDefinitions } from "@ast/util";
-import { outputChannel } from "@modules/logging";
-import { Definitions } from "@type/ast";
+import { DefinitionProvider as IDefinitionProvider, ExtensionContext, languages, Position, TextDocument } from "vscode";
+
 import { Position as WP_Position } from "@vencord-companion/shared/Position";
 import { isWebpackModule, WebpackAstParser } from "@vencord-companion/webpack-ast-parser";
 
-import { DefinitionProvider as IDefinitionProvider, ExtensionContext, languages, Position, TextDocument } from "vscode";
+import { webpackDefinitionsToVscodeDefinitions } from "@ast/util";
+import { outputChannel } from "@modules/logging";
+import { Definitions } from "@type/ast";
 
 
 export class DefinitionProvider implements IDefinitionProvider {

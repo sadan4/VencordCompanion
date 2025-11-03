@@ -1,5 +1,3 @@
-import type { ConfEntry } from "./index.mjs";
-
 import {
     type Block,
     type ClassDeclaration,
@@ -18,6 +16,8 @@ import {
     type TypeNode,
     type VariableStatement,
 } from "typescript";
+
+import type { ConfEntry } from "./index.mjs";
 
 type ConfType = [withUndefined: TypeNode, withoutUndefined: TypeNode];
 

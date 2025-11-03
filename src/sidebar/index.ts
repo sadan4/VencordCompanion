@@ -1,15 +1,16 @@
-import { ModuleCache, ModuleDepManager } from "@modules/cache";
-import { hasConnection, onConnect } from "@server/index";
-import { IDynamicNode, TNode } from "@type/sidebar";
-
-import { Button, Item, Section } from "./Nodes";
-
-import { nanoid } from "nanoid";
 import {
     EventEmitter,
     TreeDataProvider,
     TreeItem,
 } from "vscode";
+
+import { nanoid } from "nanoid";
+
+import { ModuleCache, ModuleDepManager } from "@modules/cache";
+import { hasConnection, onConnect } from "@server/index";
+import { IDynamicNode, TNode } from "@type/sidebar";
+
+import { Button, Item, Section } from "./Nodes";
 
 type Promisable<T> = T | Promise<T>;
 

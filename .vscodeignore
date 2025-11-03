@@ -40,3 +40,7 @@ packages
 .actrc
 pnpm-workspace.yaml
 build-artifacts.zip
+parsers/**
+*.code-workspace
+.gitmodules
+vitest.config.*

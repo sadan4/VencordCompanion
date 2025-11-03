@@ -1,11 +1,12 @@
-import { toVscodeRange } from "@ast/util";
-import { outputChannel } from "@modules/logging";
-import { hasConnection, sendAndGetData } from "@server/index";
+import { Diagnostic, DiagnosticSeverity, languages, TextDocument, TextDocumentChangeEvent, Uri, workspace } from "vscode";
+
 import { Range, zeroRange } from "@vencord-companion/shared/Range";
 import { debounceAsync } from "@vencord-companion/shared/util";
 import { VencordAstParser } from "@vencord-companion/vencord-ast-parser";
 
-import { Diagnostic, DiagnosticSeverity, languages, TextDocument, TextDocumentChangeEvent, Uri } from "vscode";
+import { toVscodeRange } from "@ast/util";
+import { outputChannel } from "@modules/logging";
+import { hasConnection, sendAndGetData } from "@server/index";
 
 const diagnosticCollection = languages.createDiagnosticCollection("vencord-companion");
 const runtimeErrorWarning = new Diagnostic(toVscodeRange(zeroRange), "An error occured, check the log for more info", DiagnosticSeverity.Warning);
@@ -36,7 +37,9 @@ async function updateDiagnosticsImmediately(e: Uri) {
         return;
     }
 
-    const doc = await VencordAstParser.fromPath(e.fsPath);
+    const decoder = new TextDecoder("utf-8", { fatal: true });
+    const bytes = await workspace.fs.readFile(e);
+    const doc = new VencordAstParser(decoder.decode(bytes), e.fsPath);
 
     // Set to filter duplicate error / no client warnings
     const diagnostics = Array.from(new Set((await Promise.all([

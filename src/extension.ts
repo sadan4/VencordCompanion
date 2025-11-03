@@ -1,3 +1,11 @@
+import { commands, ExtensionContext, QuickPickItem, TextDocument, Uri, window as vscWindow, window, workspace } from "vscode";
+import * as child_process from "node:child_process";
+import { promisify } from "node:util";
+
+import { setLogger as setAstLogger } from "@vencord-companion/ast-parser";
+import { SourcePatch } from "@vencord-companion/vencord-ast-parser";
+import { setLogger as setWebpackLogger, WebpackAstParser } from "@vencord-companion/webpack-ast-parser";
+
 import { onEditCallback, onOpenCallback } from "@ast/vencord/diagnostics";
 import { I18nHover } from "@ast/vencord/hover";
 import { PatchCodeLensProvider, PluginDefCodeLensProvider, WebpackCodeLensProvider } from "@ast/vencord/lenses";
@@ -11,16 +19,9 @@ import { handleDiffPayload, handleExtractPayload, moduleCache, sendAndGetData, s
 import { treeDataProvider } from "@sidebar";
 import { Discriminate } from "@type/server";
 import { DisablePluginData, FindData, OutgoingMessage, PatchData } from "@type/server/send";
-import { setLogger as setAstLogger } from "@vencord-companion/ast-parser";
-import { SourcePatch } from "@vencord-companion/vencord-ast-parser";
-import { setLogger as setWebpackLogger, WebpackAstParser } from "@vencord-companion/webpack-ast-parser";
 
 import { Settings } from "./settings";
 import { Registerable } from "./types";
-
-import * as child_process from "node:child_process";
-import { promisify } from "node:util";
-import { commands, ExtensionContext, QuickPickItem, TextDocument, Uri, window as vscWindow, window, workspace } from "vscode";
 
 export let extensionUri: Uri;
 export let extensionPath: string;

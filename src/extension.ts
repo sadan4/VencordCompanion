@@ -6,7 +6,7 @@ import { setLogger as setAstLogger } from "@vencord-companion/ast-parser";
 import { SourcePatch } from "@vencord-companion/vencord-ast-parser";
 import { setLogger as setWebpackLogger, WebpackAstParser } from "@vencord-companion/webpack-ast-parser";
 
-import { onEditCallback, onOpenCallback } from "@ast/vencord/diagnostics";
+import { onEditCallback, onOpenCallback, reloadDiagnostics } from "@ast/vencord/diagnostics";
 import { I18nHover } from "@ast/vencord/hover";
 import { PatchCodeLensProvider, PluginDefCodeLensProvider, WebpackCodeLensProvider } from "@ast/vencord/lenses";
 import { WebpackExportHover, WebpackI18nHover } from "@ast/webpack/hover";
@@ -357,6 +357,9 @@ export async function activate(context: ExtensionContext) {
                     type: "testPatch",
                     data: patch,
                 });
+                // sometimes the diagnostics don't update properly, so when test patch is clicked 
+                // reload them so the test patch result is in-sync with the diagnostics
+                reloadDiagnostics();
                 vscWindow.showInformationMessage("Patch OK!");
             } catch (e) {
                 outputChannel.info(`Patch failed: ${e}`);

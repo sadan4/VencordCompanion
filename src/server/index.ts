@@ -49,7 +49,6 @@ const defaultOpts: SendToSocketsOpts = {
     timeout: 5000,
 };
 
-// there is no autocomplete for this, https://github.com/microsoft/TypeScript/issues/52898
 export function sendAndGetData<T extends IncomingMessage["type"] = never>(data: OutgoingMessage, opts?: SendToSocketsOpts): Promise<[T] extends [never] ? ({ ok: true; } & Base<Record<string, any>>) : Discriminate<IncomingMessage, T>> {
     const { timeout } = opts ?? defaultOpts;
 

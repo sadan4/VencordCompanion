@@ -44,14 +44,14 @@ export class WebpackCodeLensProvider implements CodeLensProvider {
                     title: "View Module",
                     command: "vencord-companion.extractFind",
                     arguments: [
-{
-    type: "extract",
-    data: {
-        extractType: "find",
-        findType: type as AnyFindType,
-        findArgs: args.filter((x) => x != null),
-    },
-} satisfies Discriminate<OutgoingMessage, "extract">,
+                        {
+                            type: "extract",
+                            data: {
+                                extractType: "find",
+                                findType: type as AnyFindType,
+                                findArgs: args.filter((x) => x != null),
+                            },
+                        } satisfies Discriminate<OutgoingMessage, "extract">,
                     ],
                     tooltip: "View Module",
                 }));

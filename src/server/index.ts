@@ -133,6 +133,9 @@ async function isClientOutdated(): Promise<[boolean, SemVerVersion]> {
         data: {
             server_version: SERVER_VERSION,
         },
+    }, {
+        // large timeout for initial version check if the client is slow to start up
+        timeout: 30000,
     });
 
     const { clientVersion } = res.data;

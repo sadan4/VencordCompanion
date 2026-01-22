@@ -40,3 +40,11 @@ Added a live patch helper, make sure to update the plugin as well, as things wil
 # 0.2.4
 
 Added hover on intl keys and minor bugfixes
+
+# 1.6.0
+
+Support enums in discord modules
+
+# 1.6.1
+
+Increase timeout for initial websocket connection

@@ -1,3 +1,4 @@
+/* eslint-disable */
 /**
  * discord-intl
  *
@@ -9,21 +10,26 @@
 import { hash as h64 } from "@intrnl/xxhash64";
 
 const BASE64_TABLE = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".split("");
+
 const IS_BIG_ENDIAN = (() => {
     const array = new Uint8Array(4);
     const view = new Uint32Array(array.buffer);
+
     return !((view[0] = 1) & array[0]);
 })();
 
 function numberToBytes(number: number | bigint) {
     number = BigInt(number);
+
     const array: number[] = [];
     const byteCount = Math.ceil(Math.floor(Math.log2(Number(number)) + 1) / 8);
+
     for (let i = 0; i < byteCount; i++) {
         array.unshift(Number((number >> BigInt(8 * i)) & BigInt(255)));
     }
 
     const bytes = new Uint8Array(array);
+
     // The native `hashToMessageKey` always works in Big/Network Endian bytes, so this array
     // needs to be converted to the same endianness to get the same base64 result.
     return IS_BIG_ENDIAN ? bytes : bytes.reverse();
@@ -39,6 +45,7 @@ function numberToBytes(number: number | bigint) {
 export function runtimeHashMessageKey(key: string): string {
     const hash = h64(key, 0);
     const bytes = numberToBytes(hash);
+
     return [
         BASE64_TABLE[bytes[0] >> 2],
         BASE64_TABLE[((bytes[0] & 0x03) << 4) | (bytes[1] >> 4)],

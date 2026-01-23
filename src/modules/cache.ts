@@ -137,7 +137,14 @@ class _ModuleCache {
             if (canceled) {
                 throw new Error("Module formatting canceled");
             }
-            modmap[id] = Format(formatModule(text, id));
+            try {
+                modmap[id] = Format(formatModule(text, id));
+            } catch (error) {
+                progress.stop(error);
+                outputChannel.error(error);
+                outputChannel.error(`Failed to format module with id ${id} and source ${text}`);
+                throw error;
+            }
             await progress.increment();
         }
 

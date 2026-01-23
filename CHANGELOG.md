@@ -48,3 +48,8 @@ Support enums in discord modules
 # 1.6.1
 
 Increase timeout for initial websocket connection
+
+# 1.7.0
+
+Improve error message when formatting fails
+Switch to new intl hashes

@@ -53,3 +53,7 @@ Increase timeout for initial websocket connection
 
 Improve error message when formatting fails
 Switch to new intl hashes
+
+#1.7.1
+
+Add more hints on hover for constants

@@ -34,7 +34,7 @@
     "scripts": {
         "buildDeps": "pnpm -r --parallel -F \"./parsers/packages/*\" build",
         "prebuild": "pnpm buildDeps",
-        "build": "node ./scripts/build.mts",
+        "build": "node --experimental-transform-types ./scripts/build.mts",
         "eslint": "eslint --cache",
         "eslint:vscode:files": "pnpm eslint | grep -P ^[\\\\w/].*\\\\.[mc]?[jt]sx?$",
         "eslint:vscode": "bash -c 'code $(pnpm --silent eslint:vscode:files)'",

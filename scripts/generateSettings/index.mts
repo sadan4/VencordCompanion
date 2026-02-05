@@ -6,7 +6,7 @@ import { Generator } from "./Generator.mts";
 
 const __dirname = import.meta.dirname;
 const rootDir = join(__dirname, "..", "..");
-const SUPPORTED_TYPES = Object.freeze(["boolean"] as const);
+const SUPPORTED_TYPES = Object.freeze(["boolean", "integer"] as const);
 
 
 type SupportedType = (typeof SUPPORTED_TYPES)[number];
@@ -18,6 +18,7 @@ export interface ConfEntry {
      */
     key: string;
     default?: any;
+    description?: string;
     settingType: SupportedType;
 }
 
@@ -63,6 +64,7 @@ export async function genSettings() {
             key,
             settingType,
             default: val.default,
+            description: val.description,
         });
     }
 

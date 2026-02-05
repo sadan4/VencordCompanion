@@ -47,7 +47,7 @@
         "test": "vitest run",
         "test:watch": "vitest",
         "test:ui": "vitest --ui --api 9972",
-        "genTypes": "node scripts/generateSettings/index.mts",
+        "genTypes": "node --experimental-transform-types scripts/generateSettings/index.mts",
         "postinstall": "conc pnpm:genTypes pnpm:buildDeps"
     },
     "dependencies": {

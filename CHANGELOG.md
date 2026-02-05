@@ -62,3 +62,4 @@ Add more hints on hover for constants
 
 - Add setting to control delay between diagnostic updates
 - Fix weird behavior while updating diagnostics for more than one document
+- Cancel all pending messages if the connection is closed. This should give better errors.

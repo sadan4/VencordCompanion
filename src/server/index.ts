@@ -106,14 +106,21 @@ export async function sendToSockets(data: OutgoingMessage, dataCb?: (data: any) 
             reject(err);
         }
 
+        function onClose(code: number, reason: Buffer) {
+            cleanup();
+            reject(new Error(`Socket closed; outgoing message rejected: ${code} ${reason.toString()}`));
+        }
+
         function cleanup() {
             sock.off("message", onMessage);
             sock.off("error", onError);
+            sock.off("close", onClose);
         }
 
 
         sock.on("message", onMessage);
         sock.once("error", onError);
+        sock.once("close", onClose);
 
         setTimeout(() => {
             cleanup();

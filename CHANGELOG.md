@@ -57,3 +57,8 @@ Switch to new intl hashes
 # 1.7.1
 
 Add more hints on hover for constants
+
+# 1.7.2
+
+- Add setting to control delay between diagnostic updates
+- Fix weird behavior while updating diagnostics for more than one document

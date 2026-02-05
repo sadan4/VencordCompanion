@@ -35,6 +35,7 @@
 				"${workspaceFolder}/dist.test/**/*.js"
 			],
 			"pauseForSourceMap": true
-		}
+		},
+		"eslint.workingDirectories": [".", "./parsers"]
 	}
 }

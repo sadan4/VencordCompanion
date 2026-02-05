@@ -1,18 +1,41 @@
 import { Diagnostic, DiagnosticSeverity, languages, TextDocument, TextDocumentChangeEvent, Uri, workspace } from "vscode";
 
 import { Range, zeroRange } from "@vencord-companion/shared/Range";
-import { debounceAsync } from "@vencord-companion/shared/util";
 import { VencordAstParser } from "@vencord-companion/vencord-ast-parser";
 
 import { toVscodeRange } from "@ast/util";
 import { outputChannel } from "@modules/logging";
 import { hasConnection, sendAndGetData } from "@server/index";
 
+import { Settings } from "../../../settings";
+
 const diagnosticCollection = languages.createDiagnosticCollection("vencord-companion");
 const runtimeErrorWarning = new Diagnostic(toVscodeRange(zeroRange), "An error occured, check the log for more info", DiagnosticSeverity.Warning);
+const updatingDiagnostics = new Map<string, NodeJS.Timeout | "running">();
 
+export function updateDiagnostics(e: Uri) {
+    const delay = Settings.diagnosticRefreshTimeout;
 
-export const updateDiagnostics = debounceAsync(updateDiagnosticsImmediately, 1500);
+    if (delay === 0) {
+        return updateDiagnosticsImmediately(e);
+    }
+
+    if (updatingDiagnostics.has(e.toString()) && updatingDiagnostics.get(e.toString()) === "running") {
+        throw new Error("recursive call to updateDiagnostics");
+    }
+
+    clearTimeout(updatingDiagnostics.get(e.toString())! as NodeJS.Timeout);
+
+    const timeout = setTimeout(() => {
+        updatingDiagnostics.set(e.toString(), "running");
+        updateDiagnosticsImmediately(e)
+            .finally(() => {
+                updatingDiagnostics.delete(e.toString());
+            });
+    }, delay);
+
+    updatingDiagnostics.set(e.toString(), timeout);
+}
 export function onEditCallback(e: TextDocumentChangeEvent) {
     if (!e)
         return;

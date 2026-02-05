@@ -84,6 +84,7 @@
         "ovsx": "^0.10.5",
         "resolve-tspaths": "^0.8.23",
         "source-map-support": "^0.5.21",
+        "tsc-alias": "^1.8.16",
         "typescript-eslint": "^8.23.0",
         "vitest": "catalog:"
     },

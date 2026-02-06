@@ -133,19 +133,19 @@
         "commands": [
             {
                 "command": "vencord-companion.diffModuleSearch",
-                "title": "Diff Module Search"
+                "title": "Vencord Companion: Diff Module Search"
             },
             {
                 "command": "vencord-companion.diffModule",
-                "title": "Diff Module"
+                "title": "Vencord Companion: Diff Module"
             },
             {
                 "command": "vencord-companion.extract",
-                "title": "Extract"
+                "title": "Vencord Companion: Extract"
             },
             {
                 "command": "vencord-companion.extractSearch",
-                "title": "Extract With Search"
+                "title": "Vencord Companion: Extract With Search"
             }
         ],
         "snippets": [

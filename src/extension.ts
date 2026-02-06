@@ -357,13 +357,14 @@ export async function activate(context: ExtensionContext) {
                     type: "testPatch",
                     data: patch,
                 });
-                // sometimes the diagnostics don't update properly, so when test patch is clicked 
-                // reload them so the test patch result is in-sync with the diagnostics
-                reloadDiagnostics();
                 vscWindow.showInformationMessage("Patch OK!");
             } catch (e) {
                 outputChannel.info(`Patch failed: ${e}`);
                 vscWindow.showErrorMessage(`Patch failed: ${e}`);
+            } finally {
+                // sometimes the diagnostics don't update properly, so when test patch is clicked 
+                // reload them so the test patch result is in-sync with the diagnostics
+                reloadDiagnostics();
             }
         }),
 

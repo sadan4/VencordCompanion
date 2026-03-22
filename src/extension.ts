@@ -32,21 +32,32 @@ export async function activate(context: ExtensionContext) {
     setAstLogger(outputChannel);
     setWebpackLogger(outputChannel);
     WebpackAstParser.setDefaultModuleCache({
-        async getLatestModuleFromNum(id) {
-            const { data } = await sendAndGetData<"rawId">({
-                type: "rawId",
-                data: {
-                    id: +id,
-                },
-            });
-
-            return data;
-        },
         getModuleFilepath(id) {
             return ModuleCache.getModulePath(id);
         },
-        getModuleFromNum(id) {
-            return ModuleCache.getModuleFromNum(id);
+        async getModuleParser(_requestor, id, latest) {
+            if (latest) {
+                try {
+                    const { data, ok } = await sendAndGetData<"rawId">({
+                        type: "rawId",
+                        data: {
+                            id: +id,
+                        },
+                    });
+
+                    if (ok && data) {
+                        return WebpackAstParser.withFormattedModule(data, id);
+                    }
+                } catch { /* nop */ }
+            }
+
+            const moduleCode = await ModuleCache.getModuleFromNum(id);
+
+            if (!moduleCode) {
+                throw new Error(`module ${id} not found`);
+            }
+
+            return WebpackAstParser.withFormattedModule(moduleCode, id);
         },
     });
     WebpackAstParser.setDefaultModuleDepManager({

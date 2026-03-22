@@ -130,7 +130,7 @@ export class PluginDefCodeLensProvider implements CodeLensProvider {
 
     public static register({ subscriptions }: ExtensionContext) {
         subscriptions.push(languages.registerCodeLensProvider(
-            { pattern: "**/plugins{,/_*}/{*.ts,*.tsx,**/index.ts,**/index.tsx}" },
+            { pattern: "**/*plugins{,/_*}/{*.ts,*.tsx,**/index.ts,**/index.tsx}" },
             new this(),
         ));
     }
